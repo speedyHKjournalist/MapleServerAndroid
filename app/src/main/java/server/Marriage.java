@@ -19,6 +19,8 @@
 */
 package server;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.Inventory;
@@ -26,6 +28,8 @@ import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.ItemFactory;
 import client.inventory.manipulator.InventoryManipulator;
+import database.MapleDBHelper;
+import net.server.Server;
 import scripting.event.EventInstanceManager;
 import scripting.event.EventManager;
 import tools.DatabaseConnection;
@@ -118,9 +122,9 @@ public class Marriage extends EventInstanceManager {
     public static boolean claimGiftItems(Client c, Character chr) {
         List<Item> gifts = loadGiftItemsFromDb(c, chr.getId());
         if (Inventory.checkSpot(chr, gifts)) {
-            try (Connection con = DatabaseConnection.getConnection()) {
+            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
                 ItemFactory.MARRIAGE_GIFTS.saveItems(new LinkedList<>(), chr.getId(), con);
-            } catch (SQLException sqle) {
+            } catch (SQLiteException sqle) {
                 sqle.printStackTrace();
             }
 
@@ -141,7 +145,7 @@ public class Marriage extends EventInstanceManager {
             for (Pair<Item, InventoryType> it : ItemFactory.MARRIAGE_GIFTS.loadItems(cid, false)) {
                 items.add(it.getLeft());
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 
@@ -158,9 +162,9 @@ public class Marriage extends EventInstanceManager {
             items.add(new Pair<>(it, it.getInventoryType()));
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
             ItemFactory.MARRIAGE_GIFTS.saveItems(items, cid, con);
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }

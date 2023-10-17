@@ -598,7 +598,7 @@ public class PlayerNPC extends AbstractMapObject {
             return;
         }
 
-        Client c = Client.createMock();
+        Client c = Client.createMock(Server.getInstance().getContext());
         c.setWorld(world);
         c.setChannel(1);
 

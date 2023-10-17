@@ -20,6 +20,7 @@
  */
 package tools;
 
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.*;
 import client.Character.SkillEntry;
@@ -4942,7 +4943,7 @@ public class PacketCreator {
             for (Pair<Item, InventoryType> item : items) {
                 addItemInfo(p, item.getLeft(), true);
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         p.skip(3);

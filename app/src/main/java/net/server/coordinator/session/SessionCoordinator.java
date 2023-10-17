@@ -19,6 +19,7 @@
 */
 package net.server.coordinator.session;
 
+import android.content.Context;
 import client.Character;
 import client.Client;
 import config.YamlConfig;
@@ -43,11 +44,9 @@ import java.util.stream.Collectors;
 public class SessionCoordinator {
     private static final Logger log = LoggerFactory.getLogger(SessionCoordinator.class);
     private static final SessionCoordinator instance = new SessionCoordinator();
-
     public static SessionCoordinator getInstance() {
-        return instance;
+         return instance;
     }
-
     public enum AntiMulticlientResult {
         SUCCESS,
         REMOTE_LOGGEDIN,
@@ -64,7 +63,6 @@ public class SessionCoordinator {
     private final Set<Hwid> onlineRemoteHwids = new HashSet<>(); // Hwid/nibblehwid
     private final Map<String, Client> loginRemoteHosts = new ConcurrentHashMap<>(); // Key: Ip (+ nibblehwid)
     private final HostHwidCache hostHwidCache = new HostHwidCache();
-
     private SessionCoordinator() {
     }
 
@@ -274,7 +272,7 @@ public class SessionCoordinator {
             return null;
         }
 
-        Client fakeClient = Client.createMock();
+        Client fakeClient = Client.createMock(Server.getInstance().getContext());
         fakeClient.setHwid(hwid);
         Integer chrId = Server.getInstance().freeCharacteridInTransition(client);
         if (chrId != null) {

@@ -19,7 +19,11 @@
 */
 package server.expeditions;
 
+import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
+import database.MapleDBHelper;
 import tools.DatabaseConnection;
 import tools.Pair;
 
@@ -87,11 +91,10 @@ public class ExpeditionBossLog {
 
     }
 
-    public static void resetBossLogTable() {
+    public static void resetBossLogTable(Context context) {
         /*
         Boss logs resets 12am, weekly thursday 12AM - thanks Smitty Werbenjagermanjensen (superadlez) - https://www.reddit.com/r/Maplestory/comments/61tiup/about_reset_time/
         */
-
         Calendar thursday = Calendar.getInstance();
         thursday.set(Calendar.DAY_OF_WEEK, Calendar.THURSDAY);
         thursday.set(Calendar.HOUR, 0);
@@ -109,28 +112,26 @@ public class ExpeditionBossLog {
         deltaTime -= halfDayLength;
 
         if (deltaTime < halfDayLength) {
-            ExpeditionBossLog.resetBossLogTable(true, thursday);
+            ExpeditionBossLog.resetBossLogTable(true, thursday, context);
         }
 
         now.set(Calendar.HOUR, 0);
         now.set(Calendar.MINUTE, 0);
         now.set(Calendar.SECOND, 0);
 
-        ExpeditionBossLog.resetBossLogTable(false, now);
+        ExpeditionBossLog.resetBossLogTable(false, now, context);
     }
 
-    private static void resetBossLogTable(boolean week, Calendar c) {
+    private static void resetBossLogTable(boolean week, Calendar c, Context context) {
         List<Pair<Timestamp, BossLogEntry>> resetTimestamps = BossLogEntry.getBossLogResetTimestamps(c, week);
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(context);
+             SQLiteDatabase con = mapledb.getWritableDatabase()) {
             for (Pair<Timestamp, BossLogEntry> p : resetTimestamps) {
-                try (PreparedStatement ps = con.prepareStatement("DELETE FROM " + getBossLogTable(week) + " WHERE attempttime <= ? AND bosstype LIKE ?")) {
-                    ps.setTimestamp(1, p.getLeft());
-                    ps.setString(2, p.getRight().name());
-                    ps.executeUpdate();
-                }
+                con.delete(getBossLogTable(week), "attempttime <= ? AND bosstype LIKE ?",
+                        new String[]{String.valueOf(p.getLeft()), p.getRight().name()});
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

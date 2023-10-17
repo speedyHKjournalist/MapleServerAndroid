@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package scripting.npc;
 
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.*;
 import client.inventory.Item;
@@ -455,7 +456,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
             if (!ItemFactory.MERCHANT.loadItems(getPlayer().getId(), false).isEmpty()) {
                 return true;
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return false;
         }

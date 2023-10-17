@@ -23,6 +23,8 @@
 */
 package client.processor.npc;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.autoban.AutobanFactory;
@@ -35,6 +37,8 @@ import client.inventory.manipulator.KarmaManipulator;
 import config.YamlConfig;
 import constants.id.ItemId;
 import constants.inventory.ItemConstants;
+import database.MapleDBHelper;
+import net.server.Server;
 import net.server.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,18 +134,18 @@ public class DueyProcessor {
         }
     }
 
-    private static void deletePackageFromInventoryDB(Connection con, int packageId) throws SQLException {
+    private static void deletePackageFromInventoryDB(SQLiteDatabase con, int packageId) throws SQLiteException {
         ItemFactory.DUEY.saveItems(new LinkedList<>(), packageId, con);
     }
 
     private static void removePackageFromDB(int packageId) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM dueypackages WHERE PackageId = ?")) {
-            ps.setInt(1, packageId);
-            ps.executeUpdate();
-
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            String dueyPackagesTable = "dueypackages";
+            String selection = "PackageId = ?";
+            String[] selectionArgs = { String.valueOf(packageId) };
+            con.delete(dueyPackagesTable, selection, selectionArgs);
             deletePackageFromInventoryDB(con, packageId);
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -231,10 +235,10 @@ public class DueyProcessor {
 
     private static boolean insertPackageItem(int packageId, Item item) {
         Pair<Item, InventoryType> dueyItem = new Pair<>(item, InventoryType.getByType(item.getItemType()));
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
             ItemFactory.DUEY.saveItems(Collections.singletonList(dueyItem), packageId, con);
             return true;
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 

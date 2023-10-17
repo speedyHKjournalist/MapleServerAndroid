@@ -21,6 +21,8 @@
 */
 package provider.wz;
 
+import android.content.res.AssetManager;
+import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -30,9 +32,9 @@ import provider.DataProvider;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.InputStream;
+import java.nio.file.Paths;
 
 public class XMLWZFile implements DataProvider {
 	private static final Logger log = LoggerFactory.getLogger(DataProvider.class);
@@ -42,44 +44,69 @@ public class XMLWZFile implements DataProvider {
     public XMLWZFile(Path fileIn) {
         root = fileIn;
         rootForNavigation = new WZDirectoryEntry(fileIn.getFileName().toString(), 0, 0, null);
-        fillMapleDataEntitys(root, rootForNavigation);
+        AssetManager assetManager = Server.getInstance().getContext().getAssets();
+        fillMapleDataEntitys(root.toString(), rootForNavigation, assetManager);
     }
 
-    private void fillMapleDataEntitys(Path lroot, WZDirectoryEntry wzdir) {
-
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(lroot)) {
-            for (Path path : stream) {
-                String fileName = path.getFileName().toString();
-                if (Files.isDirectory(path) && !fileName.endsWith(".img")) {
+    private void fillMapleDataEntitys(String lroot, WZDirectoryEntry wzdir, AssetManager assetManager) {
+        try {
+            String[] stream = assetManager.list(lroot);
+            for (String fileName : stream) {
+                if (isDirectory(fileName, assetManager) && !fileName.endsWith(".img")) {
                     WZDirectoryEntry newDir = new WZDirectoryEntry(fileName, 0, 0, wzdir);
                     wzdir.addDirectory(newDir);
-                    fillMapleDataEntitys(path, newDir);
+                    fillMapleDataEntitys(lroot + "/" + fileName, newDir, assetManager);
                 } else if (fileName.endsWith(".xml")) {
                     wzdir.addFile(new WZFileEntry(fileName.substring(0, fileName.length() - 4), 0, 0, wzdir));
                 }
             }
         } catch (IOException e) {
-            log.warn("Can not open file/directory at " + lroot.toAbsolutePath().toString());
+            log.warn("Can not open file/directory at " + lroot);
         }
+    }
+
+    public static boolean isDirectory(String fileName, AssetManager assetManager) {
+        try {
+            String[] assets = assetManager.list(fileName);
+
+            if (assets.length == 0) {
+                // It's a file
+                return false;
+            }
+        } catch (IOException e) {
+            log.warn("open file/directory failed");
+        }
+        return true;
     }
 
     @Override
     public synchronized Data getData(String path) {
-        Path dataFile = root.resolve(path + ".xml");
-        Path imageDataDir = root.resolve(path);
-        if (!Files.exists(dataFile)) {
+        AssetManager assetManager = Server.getInstance().getContext().getAssets();
+        String dataFile = root + "/" + path + ".xml";
+        Path imageDataDir = Paths.get(root.toString(), path);
+        if (!isAssetFileExist(assetManager, dataFile)) {
             return null;
         }
         final XMLDomMapleData domMapleData;
-        try (FileInputStream fis = new FileInputStream(dataFile.toString())) {
+        try (InputStream fis = assetManager.open(dataFile)) {
             domMapleData = new XMLDomMapleData(fis, imageDataDir.getParent());
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("Datafile " + path + " does not exist in " + root.toAbsolutePath());
+            throw new RuntimeException("Datafile " + path + " does not exist in " + root);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         return domMapleData;
+    }
+
+    private boolean isAssetFileExist(AssetManager assetManager, String filePath) {
+        try {
+            InputStream inputStream = assetManager.open(filePath);
+            inputStream.close();
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
 	@Override

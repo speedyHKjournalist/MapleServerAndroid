@@ -35,6 +35,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -45,7 +46,7 @@ public class XMLDomMapleData implements Data {
     private final Node node;
     private Path imageDataDir;
 
-    public XMLDomMapleData(FileInputStream fis, Path imageDataDir) {
+    public XMLDomMapleData(InputStream fis, Path imageDataDir) {
         try {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();

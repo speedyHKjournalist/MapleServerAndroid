@@ -2,49 +2,77 @@ package database;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import java.io.*;
 
 public class MapleDBHelper extends SQLiteOpenHelper {
     public Context context;
     private static final String DATABASE_NAME = "cosmic";
+    private static String DATABASE_PATH = "";
     private static final int DATABASE_VERSION = 1;
     private static MapleDBHelper sInstance;
     private MapleDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         this.context = context;
+        this.DATABASE_PATH = context.getDatabasePath(DATABASE_NAME).getPath();
+    }
+
+    public void createDataBase() throws IOException
+    {
+        //If the database does not exist, copy it from the assets.
+
+        boolean mDataBaseExist = checkDataBase();
+        if(!mDataBaseExist)
+        {
+            try
+            {
+                //Copy the database from assests
+                copyDataBase();
+                Log.i("Database", "createDatabase database created");
+            }
+            catch (IOException mIOException)
+            {
+                mIOException.printStackTrace();
+                throw new Error("ErrorCopyingDataBase");
+            }
+        }
+    }
+
+    private boolean checkDataBase()
+    {
+        File dbFile = new File(DATABASE_PATH);
+        if (dbFile.exists()) return true;
+        if (!dbFile.getParentFile().exists()) dbFile.getParentFile().mkdirs();
+        if (new File(DATABASE_PATH + "-shm").exists())
+            new File(DATABASE_PATH + "-shm").delete();
+        if ((new File(DATABASE_PATH + "-wal")).exists())
+            new File(DATABASE_PATH + "-wal").delete();
+        return false;
+    }
+
+    private void copyDataBase() throws IOException
+    {
+        InputStream mInput = context.getAssets().open("sql/cosmic");
+        String outFileName = DATABASE_PATH;
+        OutputStream mOutput = new FileOutputStream(outFileName);
+        byte[] mBuffer = new byte[1024];
+        int mLength;
+        while ((mLength = mInput.read(mBuffer))>0)
+        {
+            mOutput.write(mBuffer, 0, mLength);
+        }
+        mOutput.flush();
+        mOutput.close();
+        mInput.close();
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        File databaseFile = context.getDatabasePath(DATABASE_NAME);
-        if (databaseFile.exists()) {
-            // Delete the existing database file
-            SQLiteDatabase.deleteDatabase(databaseFile);
-        }
-
-        try {
-            AssetManager assetManager = context.getAssets();
-            InputStream db_database = assetManager.open("sql/1_db_database.sql");
-            InputStream db_drops = assetManager.open("sql/2_db_drops.sql");
-            InputStream db_shopupdate = assetManager.open("sql/3_db_shopupdate.sql");
-            InputStream db_admin = assetManager.open("sql/4_db-admin.sql");
-            db.execSQL(convertInputStreamToString(db_database));
-            db.execSQL(convertInputStreamToString(db_drops));
-            db.execSQL(convertInputStreamToString(db_shopupdate));
-            db.execSQL(convertInputStreamToString(db_admin));
-
-            db_database.close();
-            db_drops.close();
-            db_shopupdate.close();
-            db_admin.close();
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Could not read database file : " + e.getMessage());
-        } catch (IOException e) {
-            throw new RuntimeException("Could not successfully parse database file " + e.getMessage());
-        }
     }
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -55,7 +83,13 @@ public class MapleDBHelper extends SQLiteOpenHelper {
         // don't accidentally leak an Activity's context.
         // See this article for more information: http://bit.ly/6LRzfx
         if (sInstance == null) {
-            sInstance = new MapleDBHelper(context.getApplicationContext());
+            try {
+                sInstance = new MapleDBHelper(context.getApplicationContext());
+                sInstance.createDataBase();
+            } catch (IOException mIOException) {
+                Log.e("Database", "createDatabase database created failed");
+                mIOException.printStackTrace();
+            }
         }
         return sInstance;
     }

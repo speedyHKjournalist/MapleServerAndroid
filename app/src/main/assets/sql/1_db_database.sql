@@ -1,4 +1,3 @@
-BEGIN TRANSACTION;
 CREATE TABLE IF NOT EXISTS `accounts` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(13) NOT NULL DEFAULT ''
@@ -31,9 +30,10 @@ CREATE TABLE IF NOT EXISTS `accounts` (
 ,  `hwid` varchar(12) NOT NULL DEFAULT ''
 ,  `language` integer NOT NULL DEFAULT '2'
 ,  UNIQUE (`name`)
-,  INDEX (id, name)
-,  INDEX (id, nxCredit, maplePoint, nxPrepaid)
 );
+CREATE INDEX IF NOT EXISTS idx_id_name ON `accounts` (`id`, `name`);
+CREATE INDEX IF NOT EXISTS idx_id_nxCredit_maplePoint_nxPrepaid ON `accounts` (`id`, `nxCredit`, `maplePoint`, `nxPrepaid`);
+
 CREATE TABLE IF NOT EXISTS `alliance` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `name` varchar(13) NOT NULL
@@ -44,8 +44,9 @@ CREATE TABLE IF NOT EXISTS `alliance` (
 ,  `rank3` varchar(11) NOT NULL DEFAULT 'Member'
 ,  `rank4` varchar(11) NOT NULL DEFAULT 'Member'
 ,  `rank5` varchar(11) NOT NULL DEFAULT 'Member'
-,  INDEX (name)
 );
+CREATE INDEX IF NOT EXISTS idx_name ON `alliance` (`name`);
+
 CREATE TABLE IF NOT EXISTS `allianceguilds` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `allianceid` integer NOT NULL DEFAULT '-1'
@@ -169,9 +170,10 @@ CREATE TABLE IF NOT EXISTS `characters` (
 ,  `lastExpGainTime` timestamp NOT NULL DEFAULT '2015-01-01 05:00:00'
 ,  `partySearch` integer NOT NULL DEFAULT '1'
 ,  `jailexpire` integer NOT NULL DEFAULT '0'
-,  INDEX (id, accountid, world)
-,  INDEX (id, accountid, name)
 );
+CREATE INDEX IF NOT EXISTS idx_id_accountid_world ON `characters` (`id`, `accountid`, `world`);
+CREATE INDEX IF NOT EXISTS idx_id_accountid_name ON `characters` (`id`, `accountid`, `name`);
+
 CREATE TABLE IF NOT EXISTS `cooldowns` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `charid` integer NOT NULL
@@ -188,7 +190,7 @@ CREATE TABLE IF NOT EXISTS `temp_data` (
 ,  `chance` integer NOT NULL DEFAULT '0'
 ,  PRIMARY KEY (`dropperid`, `itemid`)
 );
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9400121, 4000138, 1, 1, 0, 600000),
 (9400121, 4010006, 1, 1, 0, 45000),
 (9400121, 2000006, 1, 1, 0, 999999),
@@ -1500,7 +1502,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (3110102, 1072294, 1, 1, 0, 800),
 (3110102, 2044210, 1, 1, 0, 300),
 (3110102, 4130003, 1, 1, 0, 6000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (3110102, 4130004, 1, 1, 0, 6000),
 (3110102, 4130011, 1, 1, 0, 6000),
 (3110300, 2000003, 1, 1, 0, 20000),
@@ -2781,7 +2783,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (4230102, 1002215, 1, 1, 0, 1500),
 (4230102, 1002212, 1, 1, 0, 1500),
 (4230102, 1082066, 1, 1, 0, 1000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (4230102, 1072141, 1, 1, 0, 800),
 (4230102, 1072303, 1, 1, 0, 800),
 (4230102, 2330002, 1, 1, 0, 500),
@@ -4066,7 +4068,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (5120003, 2041023, 1, 1, 0, 300),
 (5120003, 1032019, 1, 1, 0, 1000),
 (5120003, 2070004, 1, 1, 0, 500);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (5120003, 2070010, 1, 1, 0, 500),
 (5120003, 1002153, 1, 1, 0, 1500),
 (5120003, 1002181, 1, 1, 0, 1500),
@@ -5348,7 +5350,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (6130208, 4130012, 1, 1, 0, 6000),
 (6130209, 4000289, 1, 1, 0, 600000),
 (6130209, 4000021, 1, 1, 0, 50000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (6130209, 4003005, 1, 1, 0, 200000),
 (6130209, 4020004, 1, 1, 0, 9000),
 (6130209, 4020002, 1, 1, 0, 9000),
@@ -6633,7 +6635,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (7160000, 2040619, 1, 1, 0, 300),
 (7160000, 4130003, 1, 1, 0, 6000),
 (7160000, 4130007, 1, 1, 0, 6000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (7160000, 4130011, 1, 1, 0, 6000),
 (7220000, 4000284, 1, 1, 0, 600000),
 (7220000, 4000284, 1, 1, 0, 600000),
@@ -7917,7 +7919,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (8170000, 1061106, 1, 1, 0, 800),
 (8170000, 1050083, 1, 1, 0, 700),
 (8170000, 1051069, 1, 1, 0, 700);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (8170000, 1072211, 1, 1, 0, 800),
 (8170000, 1072178, 1, 1, 0, 800),
 (8170000, 1462013, 1, 1, 0, 500),
@@ -9183,7 +9185,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (8830000, 2020015, 1, 1, 0, 999999),
 (8830000, 2049100, 1, 1, 0, 3000),
 (8830000, 2049000, 1, 1, 0, 1500);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (8830000, 2040739, 1, 1, 0, 3000),
 (8830000, 1072376, 1, 1, 0, 8000),
 (8830000, 4001261, 1, 1, 0, 600000),
@@ -10441,7 +10443,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (130101, 4031846, 1, 1, 2173, 50000),
 (1210100, 4031846, 1, 1, 2173, 50000),
 (8180001, 4031464, 1, 1, 6303, 1000000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (7130104, 4031436, 1, 1, 3828, 1000000),
 (3110302, 4031694, 1, 1, 3312, 50000),
 (3110303, 4031694, 1, 1, 3312, 100000),
@@ -11631,7 +11633,7 @@ INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maxi
 (9420530, 1382019, 1, 1, 0, 1800),
 (9420530, 2041002, 1, 1, 0, 1000),
 (9420530, 2040901, 1, 1, 0, 1000);
-INSERT IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO `temp_data` (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9420530, 2020014, 1, 1, 0, 10000),
 (9420530, 400006, 1, 1, 0, 333333),
 (9420530, 400002, 1, 1, 0, 10000),
@@ -12764,6 +12766,7 @@ CREATE TABLE IF NOT EXISTS `dueyitems` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `PackageId` integer  NOT NULL DEFAULT '0'
 ,  `inventoryitemid` integer  NOT NULL DEFAULT '0'
+,  CONSTRAINT `dueyitems_ibfk_1` FOREIGN KEY (`PackageId`) REFERENCES `dueypackages` (`PackageId`) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS `dueypackages` (
   `PackageId` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
@@ -12786,6 +12789,7 @@ CREATE TABLE IF NOT EXISTS `famelog` (
 ,  `characterid` integer NOT NULL DEFAULT '0'
 ,  `characterid_to` integer NOT NULL DEFAULT '0'
 ,  `when` timestamp NOT NULL DEFAULT current_timestamp
+, CONSTRAINT `famelog_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS `family_character` (
   `cid` integer NOT NULL
@@ -12798,15 +12802,16 @@ CREATE TABLE IF NOT EXISTS `family_character` (
 ,  `precepts` varchar(200) DEFAULT NULL
 ,  `lastresettime` integer NOT NULL DEFAULT '0'
 ,  PRIMARY KEY (`cid`)
-,  INDEX (cid, familyid)
+,  CONSTRAINT `family_character_ibfk_1` FOREIGN KEY (`cid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS idx_cid_familyid ON `family_character` (`cid`, `familyid`);
 CREATE TABLE IF NOT EXISTS `family_entitlement` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `charid` integer NOT NULL
 ,  `entitlementid` integer NOT NULL
 ,  `timestamp` integer NOT NULL DEFAULT '0'
-,  INDEX (charid)
 );
+CREATE INDEX IF NOT EXISTS idx_charid ON `family_entitlement` (`charid`);
 CREATE TABLE IF NOT EXISTS `fredstorage` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `cid` integer  NOT NULL
@@ -12840,8 +12845,8 @@ CREATE TABLE IF NOT EXISTS `guilds` (
 ,  `notice` varchar(101) DEFAULT NULL
 ,  `signature` integer NOT NULL DEFAULT '0'
 ,  `allianceId` integer  NOT NULL DEFAULT '0'
-,  INDEX (guildid, name)
 );
+CREATE INDEX IF NOT EXISTS idx_guildid_name ON `guilds` (`guildid`, `name`);
 CREATE TABLE IF NOT EXISTS `hwidaccounts` (
   `accountid` integer NOT NULL DEFAULT '0'
 ,  `hwid` varchar(40) NOT NULL DEFAULT ''
@@ -12949,7 +12954,7 @@ CREATE TABLE IF NOT EXISTS `makerrewarddata` (
 ,  `prob` integer  NOT NULL DEFAULT '100'
 ,  PRIMARY KEY (`itemid`,`rewardid`)
 );
-INSERT IGNORE INTO `makercreatedata` (`id`, `itemid`, `req_level`, `req_maker_level`, `req_meso`, `req_item`, `req_equip`, `catalyst`, `quantity`, `tuc`) VALUES
+INSERT OR IGNORE INTO `makercreatedata` (`id`, `itemid`, `req_level`, `req_maker_level`, `req_meso`, `req_item`, `req_equip`, `catalyst`, `quantity`, `tuc`) VALUES
   (0, 4250000, 45, 1, 110000, 0, 0, 0, 1, 0),
   (0, 4250100, 45, 1, 110000, 0, 0, 0, 1, 0),
   (0, 4250200, 45, 1, 110000, 0, 0, 0, 1, 0),
@@ -13784,7 +13789,7 @@ INSERT IGNORE INTO `makercreatedata` (`id`, `itemid`, `req_level`, `req_maker_le
   (16, 1492025, 115, 3, 627000, 0, 0, 4130017, 1, 3),
   (16, 1482023, 115, 3, 616000, 0, 0, 4130016, 1, 3),
   (16, 1492023, 115, 3, 627000, 0, 0, 4130017, 1, 3);
-INSERT IGNORE INTO `makerrecipedata` (`itemid`, `req_item`, `count`) VALUES
+INSERT OR IGNORE INTO `makerrecipedata` (`itemid`, `req_item`, `count`) VALUES
   (4250000, 4021007, 1),
   (4250100, 4021005, 1),
   (4250200, 4021000, 1),
@@ -15711,7 +15716,7 @@ INSERT IGNORE INTO `makerrecipedata` (`itemid`, `req_item`, `count`) VALUES
   (1492023, 4260007, 14),
   (1492023, 4260008, 20),
   (1492023, 4021010, 3);
-INSERT IGNORE INTO `makerrewarddata` (`itemid`, `rewardid`, `quantity`, `prob`) VALUES
+INSERT OR IGNORE INTO `makerrewarddata` (`itemid`, `rewardid`, `quantity`, `prob`) VALUES
   (4250000, 4250000, 1, 14),
   (4250000, 4250001, 1, 5),
   (4250000, 4250002, 1, 1),
@@ -15816,7 +15821,7 @@ CREATE TABLE IF NOT EXISTS `makerreagentdata` (
 ,  `value` integer NOT NULL
 ,  PRIMARY KEY (`itemid`)
 );
-INSERT IGNORE INTO `makerreagentdata` (`itemid`, `stat`, `value`) VALUES
+INSERT OR IGNORE INTO `makerreagentdata` (`itemid`, `stat`, `value`) VALUES
   (4250000, "incPAD", 1),
   (4250001, "incPAD", 2),
   (4250002, "incPAD", 3),
@@ -16249,8 +16254,8 @@ CREATE TABLE IF NOT EXISTS `namechanges` (
 ,  `new` varchar(13) NOT NULL
 ,  `requestTime` timestamp NOT NULL DEFAULT current_timestamp
 ,  `completionTime` timestamp NULL
-,  INDEX (characterid)
 );
+CREATE INDEX IF NOT EXISTS idx_characterid ON `namechanges` (`characterid`);
 CREATE TABLE IF NOT EXISTS `newyear` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `senderid` integer NOT NULL DEFAULT '-1'
@@ -16348,7 +16353,7 @@ CREATE TABLE IF NOT EXISTS `petignores` (
   `id` integer  NOT NULL PRIMARY KEY AUTOINCREMENT
 ,  `petid` integer  NOT NULL
 ,  `itemid` integer  NOT NULL
-,  CONSTRAINT `fk_petignorepetid` FOREIGN KEY (`petid`) REFERENCES `pets` (`petid`) ON DELETE CASCADE    # thanks Optimist for noticing queries over petid taking too long, shavit for pointing out an improvement using foreign key
+,  CONSTRAINT `fk_petignorepetid` FOREIGN KEY (`petid`) REFERENCES `pets` (`petid`) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS `playerdiseases` (
   `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
@@ -17284,7 +17289,7 @@ CREATE TABLE IF NOT EXISTS `reports` (
 ,  `victimid` integer NOT NULL
 ,  `reason` integer NOT NULL
 ,  `chatlog` text NOT NULL
-,  `description` text NOT NULL,  # correct field name, thanks resinate
+,  `description` text NOT NULL
 );
 CREATE TABLE IF NOT EXISTS `responses` (
   `chat` text
@@ -21253,7 +21258,8 @@ CREATE TABLE IF NOT EXISTS `skills` (
 ,  `skilllevel` integer NOT NULL DEFAULT '0'
 ,  `masterlevel` integer NOT NULL DEFAULT '0'
 ,  `expiration` integer NOT NULL DEFAULT '-1'
-,  UNIQUE INDEX `skillpair` (`skillid`, `characterid`)
+,  CONSTRAINT `skillpair` UNIQUE (`skillid`, `characterid`)
+,  CONSTRAINT `skills_chrid_fk` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS `specialcashitems` (
   `id` integer NOT NULL
@@ -21289,12 +21295,9 @@ CREATE TABLE IF NOT EXISTS `worldtransfers` (
 ,  `to` integer NOT NULL
 ,  `requestTime` timestamp NOT NULL DEFAULT current_timestamp
 ,  `completionTime` timestamp NULL
-,  INDEX (characterid)
 );
-,  ADD CONSTRAINT `dueyitems_ibfk_1` FOREIGN KEY (`PackageId`) REFERENCES `dueypackages` (`PackageId`) ON DELETE CASCADE;
-,  ADD CONSTRAINT `famelog_ibfk_1` FOREIGN KEY (`characterid`) REFERENCES `characters` (`id`) ON DELETE CASCADE;
-,
-,  ADD CONSTRAINT `family_character_ibfk_1` FOREIGN KEY (`cid`) REFERENCES `characters` (`id`) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_characterid ON `worldtransfers` (`characterid`);
+
 CREATE INDEX "idx_accounts_ranking1" ON "accounts" (`id`,`banned`);
 CREATE INDEX "idx_famelog_characterid" ON "famelog" (`characterid`);
 CREATE INDEX "idx_inventoryitems_CHARID" ON "inventoryitems" (`characterid`);
@@ -21310,4 +21313,3 @@ CREATE INDEX "idx_characters_accountid" ON "characters" (`accountid`);
 CREATE INDEX "idx_characters_party" ON "characters" (`party`);
 CREATE INDEX "idx_characters_ranking1" ON "characters" (`level`,`exp`);
 CREATE INDEX "idx_characters_ranking2" ON "characters" (`gm`,`job`);
-END TRANSACTION;

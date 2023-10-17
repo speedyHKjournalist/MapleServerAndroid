@@ -21,6 +21,9 @@
 */
 package client;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
@@ -176,27 +179,17 @@ public final class MonsterBook {
         calculateLevel();
     }
 
-    public void saveCards(Connection con, int chrId) throws SQLException {
-        final String query = """
-                INSERT INTO monsterbook (charid, cardid, level)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE level = ?;
-                """;
-        try (final PreparedStatement ps = con.prepareStatement(query)) {
-            for (Entry<Integer, Integer> cardAndLevel : cards.entrySet()) {
-                final int card = cardAndLevel.getKey();
-                final int level = cardAndLevel.getValue();
-                // insert
-                ps.setInt(1, chrId);
-                ps.setInt(2, card);
-                ps.setInt(3, level);
+    public void saveCards(SQLiteDatabase con, int chrId) throws SQLiteException {
+        for (Entry<Integer, Integer> cardAndLevel : cards.entrySet()) {
+            final int card = cardAndLevel.getKey();
+            final int level = cardAndLevel.getValue();
 
-                // update
-                ps.setInt(4, level);
+            ContentValues values = new ContentValues();
+            values.put("charid", chrId);
+            values.put("cardid", card);
+            values.put("level", level);
 
-                ps.addBatch();
-            }
-            ps.executeBatch();
+            con.insertWithOnConflict("monsterbook", null, values, SQLiteDatabase.CONFLICT_REPLACE);
         }
     }
 

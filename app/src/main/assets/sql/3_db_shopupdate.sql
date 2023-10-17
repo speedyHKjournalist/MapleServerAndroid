@@ -1,9 +1,8 @@
-BEGIN TRANSACTION;
 INSERT INTO `shops` (`shopid`,`npcid`) VALUES
 (2082014,2082014),
 (9110002,9110002),
 (9201101,9201101);
-INSERT IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
+INSERT OR IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
 (2082014, 2040004, 480000, 0, 1),
 (2082014, 2040025, 500000, 0, 2),
 (2082014, 2040029, 500000, 0, 3),
@@ -95,7 +94,7 @@ INSERT IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`
 (2082014, 2070018, 190000000, 0, 89),
 (2082014, 2030007, 1800000, 0, 90),
 (2082014, 4001017, 60000000, 0, 91);
-INSERT IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
+INSERT OR IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
 (1031100, 3010015, 20000, 0, 100),
 (9110002, 3010019, 7700000, 0, 92),
 (9110002, 3010008, 10000000, 0, 96),
@@ -121,7 +120,7 @@ INSERT IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`
 (9201101, 2022277, 5300000, 0, 160),
 (9201101, 2012008, 4200000, 0, 164),
 (9201101, 2022251, 3800000, 0, 168);
-INSERT IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
+INSERT OR IGNORE INTO `shopitems` (`shopid`, `itemid`, `price`, `pitch`, `position`) VALUES
 (1001100, 2030100, 450, 0, 130),
 (1011100, 2030100, 450, 0, 142),
 (1021100, 2030100, 450, 0, 142),
@@ -326,4 +325,3 @@ INSERT INTO `shopitems` ( `shopid`, `itemid`, `price`, `pitch`, `position`) VALU
  (9270020, 1052113, 120000, 0, 92),
  (9270020, 1052110, 100000, 0, 96),
  (9270020, 1002625, 75000, 0, 100);
-END TRANSACTION;

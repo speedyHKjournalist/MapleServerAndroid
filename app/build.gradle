@@ -1,8 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    // ScriptEngine implementation (GraalVM)
-    id 'org.graalvm.buildtools.native' version '0.9.27'
+//    // ScriptEngine implementation (GraalVM)
+//    id 'org.graalvm.buildtools.native' version '0.9.27'
 }
 
 android {
@@ -77,7 +77,7 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.20.0'
 
     // Networking (Netty)
-    implementation 'io.netty:netty-all:4.1.89.Final'
+    implementation 'io.netty:netty-all:4.1.100.Final'
 
     // Config file (YamlBeans)
     implementation 'com.esotericsoftware.yamlbeans:yamlbeans:1.15'
@@ -100,7 +100,8 @@ dependencies {
     // Unit test (Mockito)
     testImplementation 'org.mockito:mockito-core:5.1.1'
 
-    implementation 'wang.harlon.quickjs:wrapper-java:1.0.0-beta'
+//    implementation 'com.eclipsesource.j2v8:j2v8_android:3.0.5'
+     implementation 'wang.harlon.quickjs:wrapper-android:1.0.0'
 
     implementation files('libs/jsr223.jar')
 

@@ -23,6 +23,7 @@ package net.server;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.database.sqlite.SQLiteException;
@@ -37,6 +38,7 @@ import client.inventory.ItemFactory;
 import client.inventory.manipulator.CashIdGenerator;
 import client.newyear.NewYearCardRecord;
 import client.processor.npc.FredrickProcessor;
+import com.whl.quickjs.android.QuickJSLoader;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
@@ -70,6 +72,7 @@ import service.NoteService;
 import tools.DatabaseConnection;
 import tools.Pair;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -224,22 +227,31 @@ public class Server {
     private void loadPlayerNpcMapStepFromDb() {
         final List<World> wlist = this.getWorlds();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM playernpcs_field");
-             ResultSet rs = ps.executeQuery()) {
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
+             SQLiteDatabase con = mapledb.getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT * FROM playernpcs_field", null)) {
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    int worldIdx = cursor.getColumnIndex("world");
+                    int mapIdx = cursor.getColumnIndex("map");
+                    int stepIdx = cursor.getColumnIndex("step");
+                    int podiumIdx = cursor.getColumnIndex("podium");
 
-            while (rs.next()) {
-                int world = rs.getInt("world");
-                int map = rs.getInt("map");
-                int step = rs.getInt("step");
-                int podium = rs.getInt("podium");
+                    if (worldIdx != -1 && mapIdx != -1 && stepIdx != -1 && podiumIdx != -1) {
+                        int world = cursor.getInt(worldIdx);
+                        int map = cursor.getInt(mapIdx);
+                        int step = cursor.getInt(stepIdx);
+                        int podium = cursor.getInt(podiumIdx);
 
-                World w = wlist.get(world);
-                if (w != null) {
-                    w.setPlayerNpcMapData(map, step, podium);
+
+                        World w = wlist.get(world);
+                        if (w != null) {
+                            w.setPlayerNpcMapData(map, step, podium);
+                        }
+                    }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -378,7 +390,7 @@ public class Server {
             wldRLock.unlock();
         }
 
-        Channel channel = new Channel(worldid, channelid, getCurrentTime());
+        Channel channel = new Channel(worldid, channelid, getCurrentTime(), this.context);
         channel.setServerMessage(YamlConfig.config.worlds.get(worldid).why_am_i_recommended);
 
         if (world.addChannel(channel)) {
@@ -445,13 +457,13 @@ public class Server {
         World world = new World(i,
                 flag,
                 event_message,
-                exprate, droprate, bossdroprate, mesorate, questrate, travelrate, fishingrate);
+                exprate, droprate, bossdroprate, mesorate, questrate, travelrate, fishingrate, this.context);
 
         Map<Integer, String> channelInfo = new HashMap<>();
         long bootTime = getCurrentTime();
         for (int j = 1; j <= YamlConfig.config.worlds.get(i).channels; j++) {
             int channelid = j;
-            Channel channel = new Channel(i, channelid, bootTime);
+            Channel channel = new Channel(i, channelid, bootTime, this.context);
 
             world.addChannel(channel);
             channelInfo.put(channelid, channel.getIP());
@@ -817,10 +829,11 @@ public class Server {
         updateWorldPlayerRanking();
     }
 
-    private static List<Pair<Integer, List<Pair<String, Integer>>>> loadPlayerRankingFromDB(int worldid) {
+    private List<Pair<Integer, List<Pair<String, Integer>>>> loadPlayerRankingFromDB(int worldid) {
         List<Pair<Integer, List<Pair<String, Integer>>>> rankSystem = new ArrayList<>();
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
+             SQLiteDatabase con = mapledb.getWritableDatabase()) {
             String worldQuery;
             if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
                 if (worldid >= 0) {
@@ -833,31 +846,42 @@ public class Server {
             }
 
             List<Pair<String, Integer>> rankUpdate = new ArrayList<>(0);
-            try (PreparedStatement ps = con.prepareStatement("SELECT `characters`.`name`, `characters`.`level`, `characters`.`world` FROM `characters` LEFT JOIN accounts ON accounts.id = characters.accountid WHERE `characters`.`gm` < 2 AND `accounts`.`banned` = '0'" + worldQuery + " ORDER BY " + (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING ? "world, " : "") + "level DESC, exp DESC, lastExpGainTime ASC LIMIT 50");
-                 ResultSet rs = ps.executeQuery()) {
+            try (Cursor cursor = con.rawQuery("SELECT `characters`.`name`, `characters`.`level`, `characters`.`world` FROM `characters` LEFT JOIN accounts ON accounts.id = characters.accountid WHERE `characters`.`gm` < 2 AND `accounts`.`banned` = '0'" + worldQuery + " ORDER BY " + (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING ? "world, " : "") + "level DESC, exp DESC, lastExpGainTime ASC LIMIT 50", null)) {
+                if (cursor != null) {
+                    if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
+                        int currentWorld = -1;
+                        while (cursor.moveToNext()) {
+                            int worldIdx = cursor.getColumnIndex("world");
+                            if (worldIdx != -1) {
+                                int rsWorld = cursor.getInt(worldIdx);
+                                if (currentWorld < rsWorld) {
+                                    currentWorld = rsWorld;
+                                    rankUpdate = new ArrayList<>(50);
+                                    rankSystem.add(new Pair<>(rsWorld, rankUpdate));
+                                }
+                            }
 
-                if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
-                    int currentWorld = -1;
-                    while (rs.next()) {
-                        int rsWorld = rs.getInt("world");
-                        if (currentWorld < rsWorld) {
-                            currentWorld = rsWorld;
-                            rankUpdate = new ArrayList<>(50);
-                            rankSystem.add(new Pair<>(rsWorld, rankUpdate));
+                            int nameIdx = cursor.getColumnIndex("name");
+                            int levelIdx = cursor.getColumnIndex("level");
+                            if (nameIdx != -1 && levelIdx != -1) {
+                                rankUpdate.add(new Pair<>(cursor.getString(nameIdx), cursor.getInt(levelIdx)));
+                            }
                         }
+                    } else {
+                        rankUpdate = new ArrayList<>(50);
+                        rankSystem.add(new Pair<>(0, rankUpdate));
 
-                        rankUpdate.add(new Pair<>(rs.getString("name"), rs.getInt("level")));
-                    }
-                } else {
-                    rankUpdate = new ArrayList<>(50);
-                    rankSystem.add(new Pair<>(0, rankUpdate));
-
-                    while (rs.next()) {
-                        rankUpdate.add(new Pair<>(rs.getString("name"), rs.getInt("level")));
+                        while (cursor.moveToNext()) {
+                            int nameIdx = cursor.getColumnIndex("name");
+                            int levelIdx = cursor.getColumnIndex("level");
+                            if (nameIdx != -1 && levelIdx != -1) {
+                                rankUpdate.add(new Pair<>(cursor.getString(nameIdx), cursor.getInt(levelIdx)));
+                            }
+                        }
                     }
                 }
             }
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
 
@@ -866,6 +890,7 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
+        QuickJSLoader.init();
         log.info("Cosmic v{} starting up.", ServerConstants.VERSION);
         if (this.context != null) {
             YamlConfig.config = YamlConfig.loadConfig(this.context);
@@ -873,11 +898,6 @@ public class Server {
         if (YamlConfig.config.server.SHUTDOWNHOOK) {
             Runtime.getRuntime().addShutdownHook(new Thread(shutdown(false)));
         }
-
-//        if (!DatabaseConnection.initializeConnectionPool()) {
-//            throw new IllegalStateException("Failed to initiate a connection to the database");
-//        }
-
         channelDependencies = registerChannelDependencies();
 
         final ExecutorService initExecutor = Executors.newFixedThreadPool(10);
@@ -906,7 +926,7 @@ public class Server {
             applyAllWorldTransfers(db);
             PlayerNPC.loadRunningRankData(db, worldCount);
         } catch (SQLiteException sqle) {
-            Log.e("Failed to run all startup-bound database tasks", sqle.toString());
+            Log.e("Init Exception", "Failed to run all startup-bound database tasks " + sqle);
             throw new IllegalStateException(sqle);
         }
 
@@ -922,12 +942,13 @@ public class Server {
             loadPlayerNpcMapStepFromDb();
 
             if (YamlConfig.config.server.USE_FAMILY_SYSTEM) {
-                try (Connection con = DatabaseConnection.getConnection()) {
+                try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
+                     SQLiteDatabase con = mapledb.getWritableDatabase()) {
                     Family.loadAllFamilies(con);
                 }
             }
         } catch (Exception e) {
-            log.error("[SEVERE] Syntax error in 'world.ini'.", e); //For those who get errors
+            Log.e("Init Exception", "[SEVERE] Syntax error in 'world.ini'." + e); //For those who get errors
             System.exit(0);
         }
 
@@ -936,7 +957,7 @@ public class Server {
             try {
                 future.get();
             } catch (Exception e) {
-                log.error("Failed to run all startup-bound loading tasks", e);
+                Log.e("Init Exception", "Failed to run all startup-bound loading tasks" + e);
                 throw new IllegalStateException(e);
             }
         }
@@ -947,7 +968,7 @@ public class Server {
 
         online = true;
         Duration initDuration = Duration.between(beforeInit, Instant.now());
-        log.info("Cosmic is now online after {} ms.", initDuration.toMillis());
+        Log.i("Init Info", "Cosmic is now online after " + initDuration.toMillis() + " ms");
 
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
@@ -1008,8 +1029,8 @@ public class Server {
         tMan.register(new RespawnTask(), YamlConfig.config.server.RESPAWN_INTERVAL, YamlConfig.config.server.RESPAWN_INTERVAL);
 
         timeLeft = getTimeLeftForNextDay();
-        ExpeditionBossLog.resetBossLogTable();
-        tMan.register(new BossLogTask(), DAYS.toMillis(1), timeLeft);
+        ExpeditionBossLog.resetBossLogTable(this.context);
+        tMan.register(new BossLogTask(this.context), DAYS.toMillis(1), timeLeft);
     }
 
     public static void main(String[] args, Context context) {
@@ -1562,34 +1583,36 @@ public class Server {
                 playerEquips.add(ae.getLeft());
             }
 
+            String[] columns = {"id", "world"};
+            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+                 SQLiteDatabase con = mapledb.getWritableDatabase();
+                 Cursor cursor = con.query("characters", columns, "accountid = ?", new String[]{String.valueOf(accId)}, null, null, "world, id")) {
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT * FROM characters WHERE accountid = ? ORDER BY world, id")) {
-                ps.setInt(1, accId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        characterCount++;
+                while (cursor.moveToNext()) {
+                    characterCount++;
 
-                        int cworld = rs.getByte("world");
-                        if (cworld >= wlen) {
-                            continue;
-                        }
+                    int worldIdx = cursor.getColumnIndex("world");
 
-                        if (cworld > curWorld) {
-                            wchars.add(curWorld, chars);
-
-                            curWorld = cworld;
-                            chars = new LinkedList<>();
-                        }
-
-                        Integer cid = rs.getInt("id");
-                        chars.add(Character.loadCharacterEntryFromDB(rs, accPlayerEquips.get(cid)));
+                    int cworld = worldIdx != -1 ? cursor.getInt(worldIdx) : 0;
+                    if (cworld >= wlen) {
+                        continue;
                     }
+
+                    if (cworld > curWorld) {
+                        wchars.add(curWorld, chars);
+
+                        curWorld = cworld;
+                        chars = new LinkedList<>();
+                    }
+
+                    int idIdx = cursor.getColumnIndex("id");
+                    int cid = idIdx != -1 ? cursor.getInt(idIdx) : 0;
+                    chars.add(Character.loadCharacterEntryFromDB(cursor, accPlayerEquips.get(cid)));
                 }
             }
 
             wchars.add(curWorld, chars);
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 

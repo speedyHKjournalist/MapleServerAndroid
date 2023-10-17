@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="Field.img">
+  <imgdir name="Party1">
+    <sound name="Clear"/>
+    <sound name="Failed"/>
+  </imgdir>
+  <imgdir name="Coconut">
+    <sound name="Broken"/>
+    <sound name="Hit"/>
+    <sound name="Fall"/>
+    <sound name="Failed"/>
+    <sound name="Victory"/>
+  </imgdir>
+  <imgdir name="Cokeplay">
+    <sound name="Broken"/>
+    <sound name="Hit"/>
+    <sound name="Fall"/>
+    <sound name="Failed"/>
+    <sound name="Victory"/>
+  </imgdir>
+  <imgdir name="Party3">
+    <sound name="Eat"/>
+  </imgdir>
+  <imgdir name="MobCarnival">
+    <sound name="Lose"/>
+    <sound name="Win"/>
+  </imgdir>
+  <imgdir name="Romio">
+    <sound name="discovery"/>
+  </imgdir>
+  <imgdir name="Magatia">
+    <sound name="alceCircle"/>
+  </imgdir>
+  <imgdir name="orbis">
+    <sound name="do"/>
+    <sound name="re"/>
+    <sound name="mi"/>
+    <sound name="pa"/>
+    <sound name="sol"/>
+    <sound name="la"/>
+    <sound name="si"/>
+  </imgdir>
+  <imgdir name="5th_Maple">
+    <sound name="gaga"/>
+    <sound name="prize"/>
+  </imgdir>
+  <imgdir name="Dojang">
+    <sound name="clear"/>
+    <sound name="start"/>
+    <uol name="timeOver" value="clear"/>
+  </imgdir>
+  <imgdir name="GL">
+    <sound name="oliviaMirror"/>
+  </imgdir>
+  <imgdir name="AranEvent">
+    <sound name="wolf"/>
+  </imgdir>
+  <imgdir name="Aran">
+    <sound name="balloon"/>
+  </imgdir>
+  <imgdir name="quest2251">
+    <sound name="yes"/>
+    <sound name="no1"/>
+    <sound name="no2"/>
+    <sound name="no3"/>
+  </imgdir>
+  <imgdir name="quest2288">
+    <sound name="0"/>
+    <sound name="1"/>
+    <sound name="2"/>
+    <sound name="3"/>
+    <sound name="4"/>
+    <sound name="5"/>
+    <sound name="6"/>
+    <sound name="7"/>
+    <sound name="8"/>
+    <sound name="9"/>
+  </imgdir>
+  <imgdir name="quest2293">
+    <sound name="Die"/>
+  </imgdir>
+  <imgdir name="subway">
+    <sound name="whistle"/>
+  </imgdir>
+  <imgdir name="anthem">
+    <sound name="brazil"/>
+  </imgdir>
+  <imgdir name="Buyback">
+    <sound name="beginner"/>
+    <sound name="magician"/>
+    <sound name="thief"/>
+    <sound name="bowman"/>
+    <string name="src" value="https://freesound.org/
+www.freesfx.co.uk
+
+Warrior: https://freesound.org/people/Sclolex/sounds/209546/download/209546__sclolex__warriordrums.wav
+
+Magician: https://freesound.org/people/Timbre/sounds/221683/download/221683__timbre__another-magic-wand-spell-tinkle.flac
+
+Bowman: https://freesound.org/people/StephenSaldanha/sounds/166515/download/166515__stephensaldanha__srs-cinematic-hit.wav
+
+Thief: https://freesound.org/people/pcruzn/sounds/209579/download/209579__pcruzn__windy-transition.wav
+
+Pirate: https://freesound.org/people/plamdi1/sounds/95062/download/95062__plamdi1__suspense-cue-2.aiff
+
+Common: http://www.freesfx.co.uk/rx2/mp3s/6/18644_1464806042.mp3
+"/>
+    <sound name="warrior"/>
+    <sound name="pirate"/>
+  </imgdir>
+</imgdir>

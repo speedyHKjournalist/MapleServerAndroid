@@ -21,6 +21,7 @@
 */
 package net.server.channel.handlers;
 
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.ItemFactory;
@@ -83,7 +84,7 @@ public final class HiredMerchantRequest extends AbstractPacketHandler {
                     } else {
                         chr.sendPacket(PacketCreator.retrieveFirstMessage());
                     }
-                } catch (SQLException ex) {
+                } catch (SQLiteException ex) {
                     ex.printStackTrace();
                 }
             } else {

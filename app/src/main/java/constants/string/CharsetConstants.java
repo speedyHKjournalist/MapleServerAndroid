@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -63,6 +64,7 @@ public class CharsetConstants {
 
     private static String loadCharsetFromConfig() {
         try {
+            //InputStream mInput = context.getAssets().open("sql/cosmic");
             YamlReader reader = new YamlReader(Files.newBufferedReader(Paths.get(YamlConfig.CONFIG_FILE_NAME), StandardCharsets.US_ASCII));
             reader.getConfig().readConfig.setIgnoreUnknownProperties(true);
             StrippedYamlConfig charsetConfig = reader.read(StrippedYamlConfig.class);
@@ -76,7 +78,7 @@ public class CharsetConstants {
     }
 
     private static Charset loadCharset() {
-        String configCharset = loadCharsetFromConfig();
+        String configCharset = "US-ASCII";//loadCharsetFromConfig();
         if (configCharset != null) {
             Language language = Language.fromCharset(configCharset);
             return Charset.forName(language.getCharset());

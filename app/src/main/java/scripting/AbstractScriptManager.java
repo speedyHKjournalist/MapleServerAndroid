@@ -21,14 +21,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package scripting;
 
+import android.content.res.AssetManager;
+import android.util.Log;
 import client.Client;
 import com.whl.quickjs.wrapper.QuickJSContext;
 import com.whl.quickjs.wrapper.QuickJSException;
+import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.File;
+import java.io.InputStream;
 
 /**
  * @author Matze
@@ -40,17 +44,26 @@ public abstract class AbstractScriptManager {
     }
 
     protected QuickJSContext getInvocableScriptEngine(String path) {
-        File scriptFile = new File("scripts", path);
-        if (!scriptFile.exists()) {
-            return null;
-        }
+        AssetManager assetManager = Server.getInstance().getContext().getAssets();
+        try(InputStream is = assetManager.open("scripts/" + path)) {
+            try {
+                QuickJSContext engine = QuickJSContext.create();
+                StringBuilder stringBuilder = new StringBuilder();
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    // Append the read data to the StringBuilder.
+                    stringBuilder.append(new String(buffer, 0, bytesRead));
+                }
 
-        try {
-            QuickJSContext engine = QuickJSContext.create();
-            engine.evaluate(scriptFile.getPath());
-            return engine;
-        } catch (final QuickJSException t) {
-            log.warn("Exception during script eval for file: {}", path, t);
+                engine.evaluate(stringBuilder.toString());
+                return engine;
+            } catch (final QuickJSException t) {
+                log.warn("Exception during script eval for file: {}", path, t);
+                return null;
+            }
+        } catch (IOException ex) {
+            Log.e("FILE ERROR", path + " does not exist");
             return null;
         }
     }

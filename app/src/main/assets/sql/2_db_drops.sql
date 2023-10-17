@@ -1,5 +1,4 @@
-BEGIN TRANSACTION;
-,  INSERT IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (5100004, 2383034, 1, 1, 0, 10000),
 (2100108, 2381030, 1, 1, 0, 10000),
 (3230300, 2382021, 1, 1, 0, 10000),
@@ -18691,9 +18690,8 @@ BEGIN TRANSACTION;
 (8820012, 1072359, 1, 1, 0, 700),
 (8820013, 1072359, 1, 1, 0, 700),
 (8820014, 1072359, 1, 1, 0, 700);
-,  #--------------------------------------------------------------------------------------------
-,  #reinsert Kerning Square loot
-,  DELETE FROM temp_data WHERE dropperid>=4300006 AND dropperid<=4300013;
+DELETE FROM temp_data WHERE dropperid>=4300006 AND dropperid<=4300013;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (3400000,1002098,1,1,0,1500),
 (3400000,1002154,1,1,0,1500),
 (3400000,1002170,1,1,0,1500),
@@ -19193,8 +19191,8 @@ BEGIN TRANSACTION;
 (4300015,0,110,115,0,400000),
 (4300016,0,120,140,0,400000),
 (4300017,0,540,800,0,400000);
-,  # delete/normalize item drops from Horntail
-,  DELETE FROM temp_data WHERE dropperid=8810018;
+DELETE FROM temp_data WHERE dropperid=8810018;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (8810018,0,40000,50000,0,400000),
 (8810018,1122000,1,1,0,151200),
 (8810018,1302056,1,1,0,151200),
@@ -19268,7 +19266,7 @@ BEGIN TRANSACTION;
 (8810018,2290139,1,1,0,45000),
 (8810018,4001094,1,1,0,999999),
 (9300141,4031698,1,1,0,100000);
-,  #insert things that should be present by now, but aren't yet.
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (3000001, 0, 80, 120, 0, 400000),
 (2386010, 8143000, 1, 1, 0, 10000),
 (3230100, 4001004, 1, 1, 0, 5000),
@@ -20285,7 +20283,7 @@ BEGIN TRANSACTION;
 (6130103, 2022001, 1, 1, 0, 20000),
 (2220000, 1322001, 1, 1, 0, 8000),
 (9400551, 4031447, 1, 1, 0, 999999);
-,  # add more skill/mastery books
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (8150000, 2280013, 1, 1, 0, 40000),
 (8200005, 2280014, 1, 1, 0, 1000),
 (9300028, 2280015, 1, 1, 0, 100000),
@@ -20438,9 +20436,8 @@ BEGIN TRANSACTION;
 (8220015, 2280004, 1, 1, 0, 40000),
 (8220015, 2280005, 1, 1, 0, 40000),
 (8220015, 2280006, 1, 1, 0, 40000);
-,  # improve drop rates for skill/mastery books
-,  UPDATE IGNORE temp_data SET chance=1000 WHERE itemid >= 2280000 and itemid < 2300000 and chance < 1000;
-,  # make some mobs drop unusual accessory scrolls
+UPDATE OR IGNORE temp_data SET chance=1000 WHERE itemid >= 2280000 and itemid < 2300000 and chance < 1000;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (6090003, 2040103, 1, 1, 0, 3000),
 (6090003, 2040209, 1, 1, 0, 3000),
 (6090002, 2040106, 1, 1, 0, 3000),
@@ -20470,37 +20467,37 @@ BEGIN TRANSACTION;
 (6230601, 2048012, 1, 1, 0, 750),
 (6230500, 2048013, 1, 1, 0, 750),
 (7130601, 2048013, 1, 1, 0, 750);
-,  # delete all inexistent itemids
-,  DELETE FROM temp_data WHERE itemid=2290109;
-,  # delete item drops from other mobs named Freezer
-,  DELETE FROM temp_data WHERE dropperid=9300090;
-,  DELETE FROM temp_data WHERE dropperid=9420501;
-,  -- missing content for Bob found thanks to drmdsr & Thora
-,  # normalize item drops for Bob the Snail
-,  INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
-,  SELECT  9400551, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, LEAST(temp_data.chance * 80, 999999)
-,  FROM    temp_data
-,  WHERE   temp_data.dropperid = 100100;
-,  DELETE FROM temp_data WHERE dropperid=9400551 AND itemid=4000019;
-,  UPDATE IGNORE temp_data SET minimum_quantity=1000, maximum_quantity=5000 WHERE dropperid=9400551 AND itemid=0;
-,  # normalize item drops for left-side Pianus
-,  DELETE FROM temp_data WHERE dropperid=8520000;
-,  INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
-,  SELECT  8520000, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
-,  FROM    temp_data
-,  WHERE   temp_data.dropperid = 8510000;
-,  # delete/normalize item drops from clones of Pink Bean
-,  DELETE FROM temp_data WHERE dropperid=8820000;
-,  DELETE FROM temp_data WHERE dropperid>=8820010 AND dropperid<=8820014;
-,  INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
-,  SELECT  8820000, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
-,  FROM    temp_data
-,  WHERE   temp_data.dropperid = 8820001;
-,  INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
-,  SELECT  9300153, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
-,  FROM    temp_data
-,  WHERE   temp_data.dropperid = 5110300;
-,  # reinsert other Freezer's data
+
+DELETE FROM temp_data WHERE itemid=2290109;
+
+DELETE FROM temp_data WHERE dropperid=9300090;
+DELETE FROM temp_data WHERE dropperid=9420501;
+
+
+INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
+SELECT  9400551, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, MIN(temp_data.chance * 80, 999999)
+FROM    temp_data
+WHERE   temp_data.dropperid = 100100;
+DELETE FROM temp_data WHERE dropperid=9400551 AND itemid=4000019;
+UPDATE OR IGNORE temp_data SET minimum_quantity=1000, maximum_quantity=5000 WHERE dropperid=9400551 AND itemid=0;
+
+DELETE FROM temp_data WHERE dropperid=8520000;
+INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
+SELECT  8520000, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
+FROM    temp_data
+WHERE   temp_data.dropperid = 8510000;
+
+DELETE FROM temp_data WHERE dropperid=8820000;
+DELETE FROM temp_data WHERE dropperid>=8820010 AND dropperid<=8820014;
+INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
+SELECT  8820000, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
+FROM    temp_data
+WHERE   temp_data.dropperid = 8820001;
+INSERT INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`)
+SELECT  9300153, temp_data.itemid, temp_data.minimum_quantity, temp_data.maximum_quantity, temp_data.questid, temp_data.chance
+FROM    temp_data
+WHERE   temp_data.dropperid = 5110300;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9420501, 0, 92, 138, 0, 400000),
 (9420501, 4000372, 1, 1, 0, 300000),
 (9420501, 400003, 1, 1, 0, 10000),
@@ -20528,35 +20525,35 @@ BEGIN TRANSACTION;
 (9420501, 1482005, 1, 1, 0, 2000),
 (9420501, 1492005, 1, 1, 0, 2000),
 (8820001, 2388043, 1, 1, 0, 24000);
-,  # zhelms, pink bean customs
-,  DELETE FROM temp_data WHERE itemid=1002357;
+DELETE FROM temp_data WHERE itemid=1002357;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (8800002, 1002357, 1, 2, 0, 300000),
 (8800002, 1002390, 3, 5, 0, 80000),
 (8800002, 1002430, 3, 5, 0, 40000),
 (8820001, 1002971, 3, 5, 0, 80000),
 (8820001, 1052202, 3, 5, 0, 80000);
-,  # delete item drops from bosses in inactive form
-,  DELETE FROM temp_data WHERE dropperid=4220001;
-,  DELETE FROM temp_data WHERE dropperid=5220001;
-,  # delete item drops from summoned mobs
-,  DELETE FROM temp_data WHERE dropperid=9500100;
-,  DELETE FROM temp_data WHERE dropperid=9300103;
-,  DELETE FROM temp_data WHERE dropperid=9300104;
-,  # delete item drops from Dojo summoned mobs
-,  DELETE FROM temp_data WHERE dropperid>=9300217 AND dropperid<=9300270;
-,  UPDATE IGNORE temp_data SET chance=700 WHERE itemid=1302056;
-,  UPDATE IGNORE temp_data SET dropperid=9000002 WHERE dropperid=9000000;
-,  UPDATE IGNORE temp_data SET chance=600000 WHERE itemid=4000058;
-,  # update USE drops that were supposed to be ETC
-,  INSERT IGNORE INTO temp_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
-,    SELECT dropperid, 4001006, 1, 1, 0, 10000
-,    FROM   temp_data
-,    WHERE  itemid = 2050099;  #Flaming feather
-,  INSERT IGNORE INTO temp_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
-,    SELECT dropperid, 4000176, 1, 1, 0, 600000
-,    FROM   temp_data
-,    WHERE  itemid = 2011000;  #Poisonous Mushroom
-,  # add Giant Cake anniversary-themed drops
+
+DELETE FROM temp_data WHERE dropperid=4220001;
+DELETE FROM temp_data WHERE dropperid=5220001;
+
+DELETE FROM temp_data WHERE dropperid=9500100;
+DELETE FROM temp_data WHERE dropperid=9300103;
+DELETE FROM temp_data WHERE dropperid=9300104;
+
+DELETE FROM temp_data WHERE dropperid>=9300217 AND dropperid<=9300270;
+UPDATE OR IGNORE temp_data SET chance=700 WHERE itemid=1302056;
+UPDATE OR IGNORE temp_data SET dropperid=9000002 WHERE dropperid=9000000;
+UPDATE OR IGNORE temp_data SET chance=600000 WHERE itemid=4000058;
+
+INSERT OR IGNORE INTO temp_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
+  SELECT dropperid, 4001006, 1, 1, 0, 10000
+  FROM   temp_data
+  WHERE  itemid = 2050099;
+INSERT OR IGNORE INTO temp_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
+  SELECT dropperid, 4000176, 1, 1, 0, 600000
+  FROM   temp_data
+  WHERE  itemid = 2011000;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9400606, 1012098, 1, 1, 0, 120000),
 (9400606, 1012101, 1, 1, 0, 120000),
 (9400606, 1012102, 1, 1, 0, 120000),
@@ -20717,6 +20714,9 @@ BEGIN TRANSACTION;
 (9400606, 4021008, 1, 1, 0, 240000),
 (9400606, 4031348, 1, 1, 0, 100000),
 (9400606, 0, 25000, 30000, 0, 600000);
+DELETE FROM temp_data WHERE dropperid >= 9300127 AND dropperid <= 9300136;
+DELETE FROM temp_data WHERE dropperid >= 9300315 AND dropperid <= 9300324;
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9300127, 2022157, 1, 1, 0, 200000),
 (9300127, 2022158, 1, 1, 0, 200000),
 (9300127, 2022159, 1, 1, 0, 200000),
@@ -21037,89 +21037,86 @@ BEGIN TRANSACTION;
 (9300324, 2022177, 1, 1, 0, 200000),
 (9300324, 2022178, 1, 1, 0, 200000),
 (9300324, 4001129, 1, 1, 0, 12987);
+INSERT OR IGNORE INTO temp_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9300157, 2100067, 1, 1, 0, 100000),
 (9300157, 2022266, 1, 1, 0, 200000),
 (9300157, 2022267, 1, 1, 0, 200000),
 (9300157, 2022268, 1, 1, 0, 200000),
 (9300157, 2022269, 1, 1, 0, 200000);
-,  CREATE TABLE IF NOT EXISTS `drop_data` (
-,    `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+CREATE TABLE IF NOT EXISTS `drop_data` (
+`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,    `dropperid` integer NOT NULL
 ,    `itemid` integer NOT NULL DEFAULT '0'
 ,    `minimum_quantity` integer NOT NULL DEFAULT '1'
 ,    `maximum_quantity` integer NOT NULL DEFAULT '1'
 ,    `questid` integer NOT NULL DEFAULT '0'
 ,    `chance` integer NOT NULL DEFAULT '0'
-,    UNIQUE KEY (`dropperid`, `itemid`)
-,    KEY `mobid` (`dropperid`)
-,    INDEX (dropperid, itemid)
-,  ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 PRIMARY KEY AUTOINCREMENT=1 ;
+,    UNIQUE (`dropperid`, `itemid`)
+,    FOREIGN KEY (`dropperid`) REFERENCES `monstercarddata` (`mobid`) ON DELETE CASCADE
 );
-,  #pass (sorted) data from one table to another
-,  INSERT INTO drop_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
-,  (
-,    SELECT dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance
-,    FROM temp_data
-,  );
-,  DROP TABLE temp_data;
-,  UPDATE drop_data SET chance=10000 WHERE chance=0;
-,  UPDATE drop_data SET chance=70000 WHERE itemid=4031203;
-,  UPDATE drop_data SET chance=70000 WHERE itemid=4001356;
-,  UPDATE drop_data SET chance=7000 WHERE itemid=4001006;
-,  UPDATE drop_data SET chance=600000 WHERE itemid=4000058;
-,  UPDATE drop_data SET chance=3000 WHERE itemid=4005004;
-,  #update card rates
-,  UPDATE drop_data SET chance=8000 WHERE (itemid >= 2380000 AND itemid < 2388000);
-,  UPDATE drop_data SET chance=24000 WHERE (itemid >= 2388000 AND itemid < 2390000);
-,  UPDATE drop_data SET chance=24000 WHERE itemid = 2388046;
-,  #update quest mob items
-,  UPDATE drop_data SET questid=3232 WHERE itemid=4031098;
-,  UPDATE drop_data SET questid=3452 WHERE itemid=4001125;
-,  UPDATE drop_data SET questid=28248 WHERE itemid=4001360;
-,  UPDATE drop_data SET questid=20707 WHERE itemid=4032130;
-,  UPDATE drop_data SET questid=28170 WHERE itemid=4001345;
-,  UPDATE drop_data SET questid=7301 WHERE itemid=4001077;
-,  UPDATE drop_data SET chance=100000, questid=3250 WHERE itemid=4031992;
-,  UPDATE drop_data SET questid=6191 WHERE itemid=4001107;
-,  UPDATE drop_data SET questid=28344 WHERE itemid=4032475;
-,  UPDATE drop_data SET questid=28248 WHERE itemid=4001358;
-,  UPDATE drop_data SET questid=28248 WHERE itemid=4001359;
-,  UPDATE drop_data SET questid=28175 WHERE itemid=4001342;
-,  UPDATE drop_data SET questid=7777 WHERE itemid=4031905;	#id 7777 for ALL "quest items" with no v83 quest.
-,  UPDATE drop_data SET chance=0 WHERE itemid=2050099;
-,  UPDATE drop_data SET questid=6191 WHERE itemid=4031477;
-,  UPDATE drop_data SET questid=6190 WHERE itemid=4001111;
-,  # two items named "Sparta": remove the entries where lv100 Sparta is being dropped by low-level mobs.
-,  UPDATE IGNORE drop_data SET itemid=1402011 WHERE itemid=1302056 AND dropperid < 8000000;
-,  DELETE FROM drop_data WHERE itemid=1302056 AND dropperid < 8000000;
-,  # patch Masteria drops being very rare
-,  UPDATE drop_data SET chance=200000 WHERE itemid>=4032003 AND itemid<=4032033 AND chance=10000;
-,  # remove belts dropping from mobs
-,  DELETE FROM drop_data WHERE itemid>=1132000 AND itemid<=1132004;
-,  # remove Liar Tree Sap (unusable)
-,  DELETE FROM drop_data WHERE itemid=2049101;
-,  # remove items being dropped from mobs in HPQ
-,  DELETE FROM drop_data WHERE dropperid >= 9300061 AND dropperid <= 9300064;
-,  DELETE FROM drop_data WHERE dropperid >= 9300081 AND dropperid <= 9300083;
-,  # remove items being dropped from summoned mobs in PQs
-,  DELETE FROM drop_data WHERE dropperid >= 9300015 AND dropperid <= 9300017;
-,  DELETE FROM drop_data WHERE dropperid >= 9300054 AND dropperid <= 9300056;
-,  DELETE FROM drop_data WHERE dropperid >= 9300143 AND dropperid <= 9300144;
-,  DELETE FROM drop_data WHERE dropperid >= 8810019 AND dropperid <= 8810023;
-,  DELETE FROM drop_data WHERE dropperid = 9300157;
-,  DELETE FROM drop_data WHERE dropperid = 9500100;
-,  DELETE FROM drop_data where dropperid >= 9300141 AND dropperid <= 9300154 AND (itemid < 4001130 OR itemid >= 4001136);
-,  # remove drop data from mobs which respawns as other mobs
-,  DELETE FROM drop_data WHERE dropperid = 8190001;
-,  # remove key of dimension dropping outside PQ
-,  DELETE FROM drop_data WHERE itemid=4001023 AND dropperid!=9300012;
-,  # make Sword Earrings not drop by normal means, just like Shield Earrings
-,  DELETE FROM drop_data WHERE itemid=1032030;
-,  # remove every non-card drop from bosses out of their natural habitat
-,  DELETE FROM drop_data WHERE dropperid >= 9300184 AND dropperid < 9300215 AND (itemid < 2380000 OR itemid >= 2390000);
-,  DELETE FROM drop_data WHERE dropperid >= 9500337 AND dropperid < 9500364 AND (itemid < 2380000 OR itemid >= 2390000);
-,  # reinsert loot for Dark Nependeath
-,  DELETE FROM drop_data WHERE dropperid=4130104;
+
+INSERT INTO drop_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance)
+SELECT dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance
+FROM temp_data;
+
+DROP TABLE temp_data;
+UPDATE drop_data SET chance=10000 WHERE chance=0;
+UPDATE drop_data SET chance=70000 WHERE itemid=4031203;
+UPDATE drop_data SET chance=70000 WHERE itemid=4001356;
+UPDATE drop_data SET chance=7000 WHERE itemid=4001006;
+UPDATE drop_data SET chance=600000 WHERE itemid=4000058;
+UPDATE drop_data SET chance=3000 WHERE itemid=4005004;
+
+UPDATE drop_data SET chance=8000 WHERE (itemid >= 2380000 AND itemid < 2388000);
+UPDATE drop_data SET chance=24000 WHERE (itemid >= 2388000 AND itemid < 2390000);
+UPDATE drop_data SET chance=24000 WHERE itemid = 2388046;
+
+UPDATE drop_data SET questid=3232 WHERE itemid=4031098;
+UPDATE drop_data SET questid=3452 WHERE itemid=4001125;
+UPDATE drop_data SET questid=28248 WHERE itemid=4001360;
+UPDATE drop_data SET questid=20707 WHERE itemid=4032130;
+UPDATE drop_data SET questid=28170 WHERE itemid=4001345;
+UPDATE drop_data SET questid=7301 WHERE itemid=4001077;
+UPDATE drop_data SET chance=100000, questid=3250 WHERE itemid=4031992;
+UPDATE drop_data SET questid=6191 WHERE itemid=4001107;
+UPDATE drop_data SET questid=28344 WHERE itemid=4032475;
+UPDATE drop_data SET questid=28248 WHERE itemid=4001358;
+UPDATE drop_data SET questid=28248 WHERE itemid=4001359;
+UPDATE drop_data SET questid=28175 WHERE itemid=4001342;
+UPDATE drop_data SET questid=7777 WHERE itemid=4031905;
+UPDATE drop_data SET chance=0 WHERE itemid=2050099;
+UPDATE drop_data SET questid=6191 WHERE itemid=4031477;
+UPDATE drop_data SET questid=6190 WHERE itemid=4001111;
+UPDATE OR IGNORE drop_data SET itemid=1402011 WHERE itemid=1302056 AND dropperid < 8000000;
+DELETE FROM drop_data WHERE itemid=1302056 AND dropperid < 8000000;
+
+UPDATE drop_data SET chance=200000 WHERE itemid>=4032003 AND itemid<=4032033 AND chance=10000;
+DELETE FROM drop_data WHERE itemid>=1132000 AND itemid<=1132004;
+
+DELETE FROM drop_data WHERE itemid=2049101;
+
+DELETE FROM drop_data WHERE dropperid >= 9300061 AND dropperid <= 9300064;
+DELETE FROM drop_data WHERE dropperid >= 9300081 AND dropperid <= 9300083;
+
+DELETE FROM drop_data WHERE dropperid >= 9300015 AND dropperid <= 9300017;
+DELETE FROM drop_data WHERE dropperid >= 9300054 AND dropperid <= 9300056;
+DELETE FROM drop_data WHERE dropperid >= 9300143 AND dropperid <= 9300144;
+DELETE FROM drop_data WHERE dropperid >= 8810019 AND dropperid <= 8810023;
+DELETE FROM drop_data WHERE dropperid = 9300157;
+DELETE FROM drop_data WHERE dropperid = 9500100;
+DELETE FROM drop_data where dropperid >= 9300141 AND dropperid <= 9300154 AND (itemid < 4001130 OR itemid >= 4001136);
+
+DELETE FROM drop_data WHERE dropperid = 8190001;
+
+DELETE FROM drop_data WHERE itemid=4001023 AND dropperid!=9300012;
+
+DELETE FROM drop_data WHERE itemid=1032030;
+
+DELETE FROM drop_data WHERE dropperid >= 9300184 AND dropperid < 9300215 AND (itemid < 2380000 OR itemid >= 2390000);
+DELETE FROM drop_data WHERE dropperid >= 9500337 AND dropperid < 9500364 AND (itemid < 2380000 OR itemid >= 2390000);
+
+DELETE FROM drop_data WHERE dropperid=4130104;
+INSERT OR IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (4130104, 4000062, 1, 1, 0, 600000),
 (4130104, 2041014, 1, 1, 0, 300),
 (4130104, 4004004, 1, 1, 0, 10000),
@@ -21151,7 +21148,7 @@ BEGIN TRANSACTION;
 (4130104, 0, 172, 258, 0, 400000),
 (4130104, 1040096, 1, 1, 0, 700),
 (4130104, 1060085, 1, 1, 0, 700);
-,  # reinsert dojo loot
+INSERT OR IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9300184, 2022359, 1, 1, 0, 200000),
 (9300184, 2022360, 1, 1, 0, 200000),
 (9300184, 2022361, 1, 1, 0, 200000),
@@ -21440,6 +21437,7 @@ BEGIN TRANSACTION;
 (9300215, 2022419, 1, 1, 0, 200000),
 (9300215, 2022420, 1, 1, 0, 200000),
 (9300215, 2022421, 1, 1, 0, 200000);
+INSERT OR IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9300217, 2022430, 1, 1, 0, 200000),
 (9300217, 2022431, 1, 1, 0, 200000),
 (9300217, 2022432, 1, 1, 0, 200000),
@@ -21709,6 +21707,7 @@ BEGIN TRANSACTION;
 (9400532, 4031597, 1, 1, 0, 999999),
 (9400533, 4031597, 1, 1, 0, 999999),
 (9400534, 4031597, 1, 1, 0, 999999);
+INSERT OR IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (9300341, 0, 12, 18, 0, 400000),
 (9300341, 1002019, 1, 1, 0, 1500),
 (9300341, 1060002, 1, 1, 0, 700),
@@ -21769,20 +21768,20 @@ BEGIN TRANSACTION;
 (9300102, 4031507, 1, 1, 6002, 999999),
 (9300061, 4001101, 1, 1, 0, 999999),
 (9300093, 4031495, 1, 1, 6192, 999999);
-,  # update quest reactor items
-,  UPDATE reactordrops SET questid=2086 WHERE itemid=4031165;
-,  UPDATE reactordrops SET questid=3407 WHERE itemid=4031141;
-,  UPDATE reactordrops SET questid=3407 WHERE itemid=4031142;
-,  UPDATE reactordrops SET questid=3407 WHERE itemid=4031143;
-,  UPDATE reactordrops SET questid=2067 WHERE itemid=4031150;
-,  UPDATE reactordrops SET questid=3239 WHERE itemid=4031092;
-,  UPDATE reactordrops SET questid=6002 WHERE itemid=4031508;
-,  UPDATE reactordrops SET questid=9351 WHERE itemid=4031258;
-,  UPDATE reactordrops SET questid=3083 WHERE itemid >= 4031274 AND itemid <= 4031278;
-,  UPDATE reactordrops SET chance=5 WHERE itemid >= 4031274 AND itemid <= 4031278;
-,  UPDATE reactordrops SET questid=1008 WHERE itemid=4031161;
-,  UPDATE reactordrops SET questid=1008 WHERE itemid=4031162;
-,  # add Amoria Wedding reward boxes
+
+UPDATE reactordrops SET questid=2086 WHERE itemid=4031165;
+UPDATE reactordrops SET questid=3407 WHERE itemid=4031141;
+UPDATE reactordrops SET questid=3407 WHERE itemid=4031142;
+UPDATE reactordrops SET questid=3407 WHERE itemid=4031143;
+UPDATE reactordrops SET questid=2067 WHERE itemid=4031150;
+UPDATE reactordrops SET questid=3239 WHERE itemid=4031092;
+UPDATE reactordrops SET questid=6002 WHERE itemid=4031508;
+UPDATE reactordrops SET questid=9351 WHERE itemid=4031258;
+UPDATE reactordrops SET questid=3083 WHERE itemid >= 4031274 AND itemid <= 4031278;
+UPDATE reactordrops SET chance=5 WHERE itemid >= 4031274 AND itemid <= 4031278;
+UPDATE reactordrops SET questid=1008 WHERE itemid=4031161;
+UPDATE reactordrops SET questid=1008 WHERE itemid=4031162;
+INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
 (6802000, 4031423, 5, -1),
 (6802000, 4031424, 10, -1),
 (6802000, 1442047, 10, -1),
@@ -21855,8 +21854,9 @@ BEGIN TRANSACTION;
 (6802001, 2041023, 10, -1),
 (6802001, 2048012, 10, -1),
 (6802001, 2040502, 10, -1);
-,  # update Amoria PQ reward boxes
-,  DELETE FROM `reactordrops` WHERE `reactorid` >= 6702003 AND `reactorid` <= 6702012;
+
+DELETE FROM `reactordrops` WHERE `reactorid` >= 6702003 AND `reactorid` <= 6702012;
+INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
 (6702003, 1032043, 25, -1),
 (6702003, 1032044, 25, -1),
 (6702003, 1032045, 25, -1),
@@ -22137,6 +22137,7 @@ BEGIN TRANSACTION;
 (6702012, 2022015, 5, -1),
 (6702012, 3010011, 50, -1),
 (6702012, 3012005, 100, -1);
+INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
     (9102000, 4031157, 1, 2074),
     (9102001, 4031158, 1, 2074),
     (2502001, 2022116, 1, -1),
@@ -22410,7 +22411,7 @@ BEGIN TRANSACTION;
     (6742014, 1132008, 40, -1),
     (6742014, 1082223, 50, -1),
     (6742014, 1132009, 50, -1);
-,  # adding wish tickets on APQ boxes
+  INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
     (6702003, 4031543, 1, -1),
     (6702003, 4031544, 2, -1),
     (6702004, 4031544, 1, -1),
@@ -22431,7 +22432,7 @@ BEGIN TRANSACTION;
     (6702011, 4031545, 2, -1),
     (6702012, 4031543, 2, -1),
     (6702012, 4031544, 1, -1);
-,  # adding themed buffs into Zakum Prequest boxes
+INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
     (2112000, 2022439, 43, -1),
     (2112001, 2022439, 43, -1),
     (2112003, 2022439, 43, -1),
@@ -22456,8 +22457,7 @@ BEGIN TRANSACTION;
     (2112009, 2022441, 15, -1),
     (2112010, 2022441, 15, -1),
     (2112015, 2022441, 15, -1);
-,  -- thanks donny (Croosade forums) for showing a lack on GPQ rewards
-,  # adding more rewards into GPQ bonus boxes
+INSERT INTO `reactordrops` (`reactorid`, `itemid`, `chance`, `questid`) VALUES
     (9202012, 1002379, 45, -1),
     (9202012, 1002383, 45, -1),
     (9202012, 1002401, 45, -1),
@@ -22482,100 +22482,100 @@ BEGIN TRANSACTION;
     (9202012, 1332053, 25, -1),
     (9202012, 1372011, 25, -1),
     (9202012, 1442046, 25, -1);
-,  # updates info for all cards on monster book
-,  DROP TABLE `monstercarddata`;
-,  CREATE TABLE IF NOT EXISTS `monstercarddata` (
-,    `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
+
+DROP TABLE `monstercarddata`;
+CREATE TABLE IF NOT EXISTS `monstercarddata` (
+`id` integer NOT NULL PRIMARY KEY AUTOINCREMENT
 ,    `cardid` integer NOT NULL DEFAULT '0'
 ,    `mobid` integer NOT NULL DEFAULT '0'
 ,    UNIQUE (`id`)
-,  ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 PRIMARY KEY AUTOINCREMENT=1 ;
 );
-,  INSERT INTO `monstercarddata` (`cardid`, `mobid`) (SELECT itemid, min(dropperid) FROM drop_data where itemid>=2380000 and itemid<2390000 group by itemid);
-,  # delete all unused content on drop data
-,  DELETE FROM `drop_data` WHERE itemid=400000;
-,  DELETE FROM `drop_data` WHERE itemid=400001;
-,  DELETE FROM `drop_data` WHERE itemid=400002;
-,  DELETE FROM `drop_data` WHERE itemid=400003;
-,  DELETE FROM `drop_data` WHERE itemid=400004;
-,  DELETE FROM `drop_data` WHERE itemid=400005;
-,  DELETE FROM `drop_data` WHERE itemid=400006;
-,  DELETE FROM `drop_data` WHERE itemid=400009;
-,  DELETE FROM `drop_data` WHERE itemid=400010;
-,  DELETE FROM `drop_data` WHERE itemid=400011;
-,  DELETE FROM `drop_data` WHERE itemid=401000;
-,  DELETE FROM `drop_data` WHERE itemid=404000;
-,  DELETE FROM `drop_data` WHERE itemid=1002926;
-,  DELETE FROM `drop_data` WHERE itemid=1002927;
-,  DELETE FROM `drop_data` WHERE itemid=1027090;
-,  DELETE FROM `drop_data` WHERE itemid=1302096;
-,  DELETE FROM `drop_data` WHERE itemid=2002205;
-,  DELETE FROM `drop_data` WHERE itemid=2040033;
-,  DELETE FROM `drop_data` WHERE itemid=2040536;
-,  DELETE FROM `drop_data` WHERE itemid=2040827;
-,  DELETE FROM `drop_data` WHERE itemid=2040913;
-,  DELETE FROM `drop_data` WHERE itemid=2040935;
-,  DELETE FROM `drop_data` WHERE itemid=2043109;
-,  DELETE FROM `drop_data` WHERE itemid=2043309;
-,  DELETE FROM `drop_data` WHERE itemid=2043709;
-,  DELETE FROM `drop_data` WHERE itemid=2044009;
-,  DELETE FROM `drop_data` WHERE itemid=2044209;
-,  DELETE FROM `drop_data` WHERE itemid=2044309;
-,  DELETE FROM `drop_data` WHERE itemid=2044609;
-,  DELETE FROM `drop_data` WHERE itemid=2049212;
-,  DELETE FROM `drop_data` WHERE itemid=2049214;
-,  DELETE FROM `drop_data` WHERE itemid=4000306;
-,  DELETE FROM `drop_data` WHERE itemid=4000343;
-,  DELETE FROM `drop_data` WHERE itemid=4000420;
-,  DELETE FROM `drop_data` WHERE itemid=4000429;
-,  DELETE FROM `drop_data` WHERE itemid=4000430;
-,  DELETE FROM `drop_data` WHERE itemid=4000431;
-,  DELETE FROM `drop_data` WHERE itemid=4000432;
-,  DELETE FROM `drop_data` WHERE itemid=4000433;
-,  DELETE FROM `drop_data` WHERE itemid=4000434;
-,  DELETE FROM `drop_data` WHERE itemid=4000435;
-,  DELETE FROM `drop_data` WHERE itemid=4032192;
-,  DELETE FROM `drop_data` WHERE itemid=8143000;
-,  DELETE FROM `drop_data` WHERE itemid=2094101;
-,  # delete all unused content on reactor drop data
-,  DELETE FROM `reactordrops` WHERE itemid=1102260;
-,  DELETE FROM `reactordrops` WHERE itemid=1342019;
-,  DELETE FROM `reactordrops` WHERE itemid=1342020;
-,  DELETE FROM `reactordrops` WHERE itemid=1532022;
-,  DELETE FROM `reactordrops` WHERE itemid=1532023;
-,  DELETE FROM `reactordrops` WHERE itemid=2022712;
-,  DELETE FROM `reactordrops` WHERE itemid=3010126;
-,  DELETE FROM `reactordrops` WHERE itemid=3012000;
-,  DELETE FROM `reactordrops` WHERE itemid=4010008;
-,  DELETE FROM `reactordrops` WHERE itemid=4010010;
-,  DELETE FROM `reactordrops` WHERE itemid=4022000;
-,  DELETE FROM `reactordrops` WHERE itemid=4022001;
-,  DELETE FROM `reactordrops` WHERE itemid=4022002;
-,  DELETE FROM `reactordrops` WHERE itemid=4022003;
-,  DELETE FROM `reactordrops` WHERE itemid=4022004;
-,  DELETE FROM `reactordrops` WHERE itemid=4022005;
-,  DELETE FROM `reactordrops` WHERE itemid=4022006;
-,  DELETE FROM `reactordrops` WHERE itemid=4022007;
-,  DELETE FROM `reactordrops` WHERE itemid=4022008;
-,  DELETE FROM `reactordrops` WHERE itemid=4022009;
-,  DELETE FROM `reactordrops` WHERE itemid=4022010;
-,  DELETE FROM `reactordrops` WHERE itemid=4022011;
-,  DELETE FROM `reactordrops` WHERE itemid=4022012;
-,  DELETE FROM `reactordrops` WHERE itemid=4022013;
-,  DELETE FROM `reactordrops` WHERE itemid=4022014;
-,  DELETE FROM `reactordrops` WHERE itemid=4022015;
-,  DELETE FROM `reactordrops` WHERE itemid=4022016;
-,  DELETE FROM `reactordrops` WHERE itemid=4022017;
-,  DELETE FROM `reactordrops` WHERE itemid=4022018;
-,  DELETE FROM `reactordrops` WHERE itemid=4022019;
-,  DELETE FROM `reactordrops` WHERE itemid=4022020;
-,  DELETE FROM `reactordrops` WHERE itemid=4022021;
-,  DELETE FROM `reactordrops` WHERE itemid=4022022;
-,  DELETE FROM `reactordrops` WHERE itemid=4022023;
-,  DELETE FROM `reactordrops` WHERE itemid=4032362;
-,  DELETE FROM `reactordrops` WHERE itemid=4032363;
-,  DELETE FROM `reactordrops` WHERE itemid=4032980;
-,  # MapleMesoFetcher ftw! Set meso drop for remaining mobs which drops more than 4 items.
+INSERT INTO `monstercarddata` (`cardid`, `mobid`)
+SELECT itemid, min(dropperid) FROM drop_data where itemid>=2380000 and itemid<2390000 group by itemid;
+
+DELETE FROM `drop_data` WHERE itemid=400000;
+DELETE FROM `drop_data` WHERE itemid=400001;
+DELETE FROM `drop_data` WHERE itemid=400002;
+DELETE FROM `drop_data` WHERE itemid=400003;
+DELETE FROM `drop_data` WHERE itemid=400004;
+DELETE FROM `drop_data` WHERE itemid=400005;
+DELETE FROM `drop_data` WHERE itemid=400006;
+DELETE FROM `drop_data` WHERE itemid=400009;
+DELETE FROM `drop_data` WHERE itemid=400010;
+DELETE FROM `drop_data` WHERE itemid=400011;
+DELETE FROM `drop_data` WHERE itemid=401000;
+DELETE FROM `drop_data` WHERE itemid=404000;
+DELETE FROM `drop_data` WHERE itemid=1002926;
+DELETE FROM `drop_data` WHERE itemid=1002927;
+DELETE FROM `drop_data` WHERE itemid=1027090;
+DELETE FROM `drop_data` WHERE itemid=1302096;
+DELETE FROM `drop_data` WHERE itemid=2002205;
+DELETE FROM `drop_data` WHERE itemid=2040033;
+DELETE FROM `drop_data` WHERE itemid=2040536;
+DELETE FROM `drop_data` WHERE itemid=2040827;
+DELETE FROM `drop_data` WHERE itemid=2040913;
+DELETE FROM `drop_data` WHERE itemid=2040935;
+DELETE FROM `drop_data` WHERE itemid=2043109;
+DELETE FROM `drop_data` WHERE itemid=2043309;
+DELETE FROM `drop_data` WHERE itemid=2043709;
+DELETE FROM `drop_data` WHERE itemid=2044009;
+DELETE FROM `drop_data` WHERE itemid=2044209;
+DELETE FROM `drop_data` WHERE itemid=2044309;
+DELETE FROM `drop_data` WHERE itemid=2044609;
+DELETE FROM `drop_data` WHERE itemid=2049212;
+DELETE FROM `drop_data` WHERE itemid=2049214;
+DELETE FROM `drop_data` WHERE itemid=4000306;
+DELETE FROM `drop_data` WHERE itemid=4000343;
+DELETE FROM `drop_data` WHERE itemid=4000420;
+DELETE FROM `drop_data` WHERE itemid=4000429;
+DELETE FROM `drop_data` WHERE itemid=4000430;
+DELETE FROM `drop_data` WHERE itemid=4000431;
+DELETE FROM `drop_data` WHERE itemid=4000432;
+DELETE FROM `drop_data` WHERE itemid=4000433;
+DELETE FROM `drop_data` WHERE itemid=4000434;
+DELETE FROM `drop_data` WHERE itemid=4000435;
+DELETE FROM `drop_data` WHERE itemid=4032192;
+DELETE FROM `drop_data` WHERE itemid=8143000;
+DELETE FROM `drop_data` WHERE itemid=2094101;
+
+DELETE FROM `reactordrops` WHERE itemid=1102260;
+DELETE FROM `reactordrops` WHERE itemid=1342019;
+DELETE FROM `reactordrops` WHERE itemid=1342020;
+DELETE FROM `reactordrops` WHERE itemid=1532022;
+DELETE FROM `reactordrops` WHERE itemid=1532023;
+DELETE FROM `reactordrops` WHERE itemid=2022712;
+DELETE FROM `reactordrops` WHERE itemid=3010126;
+DELETE FROM `reactordrops` WHERE itemid=3012000;
+DELETE FROM `reactordrops` WHERE itemid=4010008;
+DELETE FROM `reactordrops` WHERE itemid=4010010;
+DELETE FROM `reactordrops` WHERE itemid=4022000;
+DELETE FROM `reactordrops` WHERE itemid=4022001;
+DELETE FROM `reactordrops` WHERE itemid=4022002;
+DELETE FROM `reactordrops` WHERE itemid=4022003;
+DELETE FROM `reactordrops` WHERE itemid=4022004;
+DELETE FROM `reactordrops` WHERE itemid=4022005;
+DELETE FROM `reactordrops` WHERE itemid=4022006;
+DELETE FROM `reactordrops` WHERE itemid=4022007;
+DELETE FROM `reactordrops` WHERE itemid=4022008;
+DELETE FROM `reactordrops` WHERE itemid=4022009;
+DELETE FROM `reactordrops` WHERE itemid=4022010;
+DELETE FROM `reactordrops` WHERE itemid=4022011;
+DELETE FROM `reactordrops` WHERE itemid=4022012;
+DELETE FROM `reactordrops` WHERE itemid=4022013;
+DELETE FROM `reactordrops` WHERE itemid=4022014;
+DELETE FROM `reactordrops` WHERE itemid=4022015;
+DELETE FROM `reactordrops` WHERE itemid=4022016;
+DELETE FROM `reactordrops` WHERE itemid=4022017;
+DELETE FROM `reactordrops` WHERE itemid=4022018;
+DELETE FROM `reactordrops` WHERE itemid=4022019;
+DELETE FROM `reactordrops` WHERE itemid=4022020;
+DELETE FROM `reactordrops` WHERE itemid=4022021;
+DELETE FROM `reactordrops` WHERE itemid=4022022;
+DELETE FROM `reactordrops` WHERE itemid=4022023;
+DELETE FROM `reactordrops` WHERE itemid=4032362;
+DELETE FROM `reactordrops` WHERE itemid=4032363;
+DELETE FROM `reactordrops` WHERE itemid=4032980;
+  INSERT OR IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (100122, 0, 35, 52, 0, 400000),
 (100123, 0, 38, 55, 0, 400000),
 (100124, 0, 40, 59, 0, 400000),
@@ -23015,770 +23015,771 @@ BEGIN TRANSACTION;
 (9500370, 0, 49, 72, 0, 400000),
 (9500371, 0, 49, 72, 0, 400000),
 (9500372, 0, 49, 72, 0, 400000);
-,  DELETE FROM drop_data WHERE dropperid >= 9300184 AND dropperid <= 9300215 AND itemid = 0;
-,  # MapleArrowFetcher! Set proper arrow quantity drop for the mobs.
-,                       WHEN dropperid = 100100 AND itemid = 2060000 THEN 1
-,                       WHEN dropperid = 100100 AND itemid = 2061000 THEN 1
-,                       WHEN dropperid = 100101 AND itemid = 2060000 THEN 2
-,                       WHEN dropperid = 100101 AND itemid = 2061000 THEN 2
-,                       WHEN dropperid = 100120 AND itemid = 2060000 THEN 1
-,                       WHEN dropperid = 100120 AND itemid = 2061000 THEN 1
-,                       WHEN dropperid = 100121 AND itemid = 2060000 THEN 4
-,                       WHEN dropperid = 100123 AND itemid = 2061000 THEN 9
-,                       WHEN dropperid = 100124 AND itemid = 2060000 THEN 11
-,                       WHEN dropperid = 100124 AND itemid = 2061000 THEN 11
-,                       WHEN dropperid = 120100 AND itemid = 2060000 THEN 2
-,                       WHEN dropperid = 120100 AND itemid = 2061000 THEN 2
-,                       WHEN dropperid = 130100 AND itemid = 2060000 THEN 5
-,                       WHEN dropperid = 130100 AND itemid = 2061000 THEN 5
-,                       WHEN dropperid = 130101 AND itemid = 2060000 THEN 5
-,                       WHEN dropperid = 130101 AND itemid = 2061000 THEN 5
-,                       WHEN dropperid = 210100 AND itemid = 2060000 THEN 7
-,                       WHEN dropperid = 210100 AND itemid = 2061000 THEN 7
-,                       WHEN dropperid = 1110100 AND itemid = 2060000 THEN 19
-,                       WHEN dropperid = 1110100 AND itemid = 2061000 THEN 19
-,                       WHEN dropperid = 1110101 AND itemid = 2060000 THEN 13
-,                       WHEN dropperid = 1110101 AND itemid = 2061000 THEN 13
-,                       WHEN dropperid = 1110130 AND itemid = 2060000 THEN 19
-,                       WHEN dropperid = 1110130 AND itemid = 2061000 THEN 19
-,                       WHEN dropperid = 1120100 AND itemid = 2060000 THEN 15
-,                       WHEN dropperid = 1120100 AND itemid = 2061000 THEN 15
-,                       WHEN dropperid = 1130100 AND itemid = 2060000 THEN 22
-,                       WHEN dropperid = 1130100 AND itemid = 2061000 THEN 22
-,                       WHEN dropperid = 1140100 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 1140100 AND itemid = 2061000 THEN 24
-,                       WHEN dropperid = 1140130 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 1140130 AND itemid = 2061000 THEN 24
-,                       WHEN dropperid = 1210100 AND itemid = 2060000 THEN 9
-,                       WHEN dropperid = 1210100 AND itemid = 2061000 THEN 9
-,                       WHEN dropperid = 1210101 AND itemid = 2060000 THEN 13
-,                       WHEN dropperid = 1210101 AND itemid = 2061000 THEN 13
-,                       WHEN dropperid = 1210102 AND itemid = 2060000 THEN 10
-,                       WHEN dropperid = 1210102 AND itemid = 2061000 THEN 10
-,                       WHEN dropperid = 1210103 AND itemid = 2060000 THEN 19
-,                       WHEN dropperid = 1210103 AND itemid = 2061000 THEN 19
-,                       WHEN dropperid = 2100100 AND itemid = 2060000 THEN 26
-,                       WHEN dropperid = 2100100 AND itemid = 2061000 THEN 26
-,                       WHEN dropperid = 2100101 AND itemid = 2060000 THEN 27
-,                       WHEN dropperid = 2100101 AND itemid = 2061000 THEN 27
-,                       WHEN dropperid = 2100102 AND itemid = 2060000 THEN 28
-,                       WHEN dropperid = 2100102 AND itemid = 2061000 THEN 28
-,                       WHEN dropperid = 2100103 AND itemid = 2060000 THEN 32
-,                       WHEN dropperid = 2100103 AND itemid = 2061000 THEN 32
-,                       WHEN dropperid = 2100104 AND itemid = 2060000 THEN 36
-,                       WHEN dropperid = 2100104 AND itemid = 2061000 THEN 36
-,                       WHEN dropperid = 2100105 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 2100105 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 2100106 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2100106 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2100107 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2100107 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2100108 AND itemid = 2060000 THEN 37
-,                       WHEN dropperid = 2100108 AND itemid = 2061000 THEN 37
-,                       WHEN dropperid = 2110200 AND itemid = 2060000 THEN 28
-,                       WHEN dropperid = 2110200 AND itemid = 2061000 THEN 28
-,                       WHEN dropperid = 2110300 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2110300 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2110301 AND itemid = 2060000 THEN 37
-,                       WHEN dropperid = 2110301 AND itemid = 2061000 THEN 37
-,                       WHEN dropperid = 2130100 AND itemid = 2060000 THEN 28
-,                       WHEN dropperid = 2130100 AND itemid = 2061000 THEN 28
-,                       WHEN dropperid = 2220000 AND itemid = 2060000 THEN 36
-,                       WHEN dropperid = 2220000 AND itemid = 2061000 THEN 36
-,                       WHEN dropperid = 2220100 AND itemid = 2060000 THEN 26
-,                       WHEN dropperid = 2220100 AND itemid = 2061000 THEN 26
-,                       WHEN dropperid = 2230100 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2230100 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2230101 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2230101 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2230102 AND itemid = 2060000 THEN 32
-,                       WHEN dropperid = 2230102 AND itemid = 2061000 THEN 32
-,                       WHEN dropperid = 2230103 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 2230103 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 2230104 AND itemid = 2060000 THEN 36
-,                       WHEN dropperid = 2230104 AND itemid = 2061000 THEN 36
-,                       WHEN dropperid = 2230105 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 2230105 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 2230106 AND itemid = 2060000 THEN 32
-,                       WHEN dropperid = 2230106 AND itemid = 2061000 THEN 32
-,                       WHEN dropperid = 2230107 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2230107 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2230108 AND itemid = 2060000 THEN 28
-,                       WHEN dropperid = 2230108 AND itemid = 2061000 THEN 28
-,                       WHEN dropperid = 2230109 AND itemid = 2060000 THEN 36
-,                       WHEN dropperid = 2230109 AND itemid = 2061000 THEN 36
-,                       WHEN dropperid = 2230110 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 2230110 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 2230111 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2230111 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2230131 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 2230131 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 2230200 AND itemid = 2060000 THEN 37
-,                       WHEN dropperid = 2230200 AND itemid = 2061000 THEN 37
-,                       WHEN dropperid = 2300100 AND itemid = 2060000 THEN 26
-,                       WHEN dropperid = 2300100 AND itemid = 2061000 THEN 26
-,                       WHEN dropperid = 3000000 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3000000 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3000005 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3000005 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3000006 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3000006 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3100101 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3100101 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3100102 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3100102 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3110101 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3110101 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3110102 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3110102 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3110300 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3110300 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3110301 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3110301 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3110302 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3110302 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3110303 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3110303 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3210100 AND itemid = 2060005 THEN 6
-,                       WHEN dropperid = 3210203 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 3210203 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 3210204 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 3210204 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 3210205 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 3210205 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 3210206 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 3210206 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 3210207 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 3210207 AND itemid = 2060005 THEN 7
-,                       WHEN dropperid = 3210207 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 3210208 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 3210208 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 3210450 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 3210450 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 3210800 AND itemid = 2060005 THEN 8
-,                       WHEN dropperid = 3220000 AND itemid = 2060000 THEN 63
-,                       WHEN dropperid = 3220000 AND itemid = 2061000 THEN 63
-,                       WHEN dropperid = 3230100 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3230100 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3230103 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3230103 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3230200 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3230200 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3230302 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3230302 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3230303 AND itemid = 2060000 THEN 48
-,                       WHEN dropperid = 3230303 AND itemid = 2061000 THEN 48
-,                       WHEN dropperid = 3230304 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3230304 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3230305 AND itemid = 2060000 THEN 51
-,                       WHEN dropperid = 3230305 AND itemid = 2061000 THEN 51
-,                       WHEN dropperid = 3230306 AND itemid = 2060000 THEN 48
-,                       WHEN dropperid = 3230306 AND itemid = 2061000 THEN 48
-,                       WHEN dropperid = 3230307 AND itemid = 2060000 THEN 40
-,                       WHEN dropperid = 3230307 AND itemid = 2061000 THEN 40
-,                       WHEN dropperid = 3230308 AND itemid = 2060000 THEN 51
-,                       WHEN dropperid = 3230308 AND itemid = 2061000 THEN 51
-,                       WHEN dropperid = 3230400 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3230400 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3230405 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3230405 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3300000 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3300000 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3300001 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 3300001 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 3300002 AND itemid = 2060000 THEN 40
-,                       WHEN dropperid = 3300002 AND itemid = 2061000 THEN 40
-,                       WHEN dropperid = 3300003 AND itemid = 2060000 THEN 41
-,                       WHEN dropperid = 3300003 AND itemid = 2061000 THEN 41
-,                       WHEN dropperid = 3300004 AND itemid = 2060000 THEN 43
-,                       WHEN dropperid = 3300004 AND itemid = 2061000 THEN 43
-,                       WHEN dropperid = 3300006 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3300006 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3300007 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 3300007 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 3300008 AND itemid = 2060000 THEN 69
-,                       WHEN dropperid = 3300008 AND itemid = 2061000 THEN 69
-,                       WHEN dropperid = 4110300 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 4110300 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 4110301 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4110301 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4130103 AND itemid = 2060000 THEN 85
-,                       WHEN dropperid = 4130103 AND itemid = 2061000 THEN 85
-,                       WHEN dropperid = 4230103 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 4230103 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 4230106 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230106 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230108 AND itemid = 2060000 THEN 56
-,                       WHEN dropperid = 4230108 AND itemid = 2061000 THEN 56
-,                       WHEN dropperid = 4230109 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 4230109 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 4230110 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230110 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230111 AND itemid = 2060000 THEN 53
-,                       WHEN dropperid = 4230111 AND itemid = 2061000 THEN 53
-,                       WHEN dropperid = 4230112 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 4230112 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 4230113 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 4230113 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 4230114 AND itemid = 2060000 THEN 53
-,                       WHEN dropperid = 4230114 AND itemid = 2061000 THEN 53
-,                       WHEN dropperid = 4230115 AND itemid = 2060000 THEN 60
-,                       WHEN dropperid = 4230115 AND itemid = 2061000 THEN 60
-,                       WHEN dropperid = 4230116 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 4230116 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 4230117 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 4230117 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 4230118 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230118 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230119 AND itemid = 2060000 THEN 53
-,                       WHEN dropperid = 4230119 AND itemid = 2061000 THEN 53
-,                       WHEN dropperid = 4230120 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 4230120 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 4230121 AND itemid = 2060000 THEN 60
-,                       WHEN dropperid = 4230121 AND itemid = 2061000 THEN 60
-,                       WHEN dropperid = 4230123 AND itemid = 2060000 THEN 56
-,                       WHEN dropperid = 4230123 AND itemid = 2061000 THEN 56
-,                       WHEN dropperid = 4230124 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 4230124 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 4230125 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 4230125 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 4230126 AND itemid = 2060000 THEN 61
-,                       WHEN dropperid = 4230126 AND itemid = 2061000 THEN 61
-,                       WHEN dropperid = 4230201 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 4230201 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 4230300 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230300 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230400 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230400 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230500 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 4230500 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 4230501 AND itemid = 2060000 THEN 53
-,                       WHEN dropperid = 4230501 AND itemid = 2061000 THEN 53
-,                       WHEN dropperid = 4230502 AND itemid = 2060000 THEN 56
-,                       WHEN dropperid = 4230502 AND itemid = 2061000 THEN 56
-,                       WHEN dropperid = 4230503 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230503 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230504 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 4230504 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 4230600 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 4230600 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 4240000 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 4240000 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 5120100 AND itemid = 2060000 THEN 98
-,                       WHEN dropperid = 5120100 AND itemid = 2061000 THEN 98
-,                       WHEN dropperid = 5130104 AND itemid = 2060000 THEN 71
-,                       WHEN dropperid = 5130104 AND itemid = 2061000 THEN 71
-,                       WHEN dropperid = 5140000 AND itemid = 2060000 THEN 75
-,                       WHEN dropperid = 5140000 AND itemid = 2061000 THEN 75
-,                       WHEN dropperid = 5150000 AND itemid = 2060000 THEN 77
-,                       WHEN dropperid = 5150000 AND itemid = 2061000 THEN 77
-,                       WHEN dropperid = 5200000 AND itemid = 2060001 THEN 15
-,                       WHEN dropperid = 5200000 AND itemid = 2061001 THEN 15
-,                       WHEN dropperid = 5200001 AND itemid = 2060001 THEN 19
-,                       WHEN dropperid = 5200001 AND itemid = 2061001 THEN 19
-,                       WHEN dropperid = 5200002 AND itemid = 2060001 THEN 19
-,                       WHEN dropperid = 5200002 AND itemid = 2061001 THEN 19
-,                       WHEN dropperid = 5220000 AND itemid = 2060000 THEN 100
-,                       WHEN dropperid = 5220000 AND itemid = 2061000 THEN 100
-,                       WHEN dropperid = 5220002 AND itemid = 2060000 THEN 91
-,                       WHEN dropperid = 5220002 AND itemid = 2061000 THEN 91
-,                       WHEN dropperid = 5220003 AND itemid = 2060000 THEN 107
-,                       WHEN dropperid = 5220003 AND itemid = 2061000 THEN 107
-,                       WHEN dropperid = 5400000 AND itemid = 2060001 THEN 22
-,                       WHEN dropperid = 5400000 AND itemid = 2061001 THEN 22
-,                       WHEN dropperid = 6220000 AND itemid = 2060000 THEN 118
-,                       WHEN dropperid = 6220000 AND itemid = 2061000 THEN 118
-,                       WHEN dropperid = 7120103 AND itemid = 2060003 THEN 22
-,                       WHEN dropperid = 7220000 AND itemid = 2060001 THEN 64
-,                       WHEN dropperid = 7220000 AND itemid = 2061001 THEN 64
-,                       WHEN dropperid = 7220001 AND itemid = 2060001 THEN 63
-,                       WHEN dropperid = 7220001 AND itemid = 2061001 THEN 63
-,                       WHEN dropperid = 7220002 AND itemid = 2060001 THEN 70
-,                       WHEN dropperid = 7220002 AND itemid = 2061001 THEN 70
-,                       WHEN dropperid = 8220000 AND itemid = 2060001 THEN 75
-,                       WHEN dropperid = 8220000 AND itemid = 2061001 THEN 75
-,                       WHEN dropperid = 8220001 AND itemid = 2060001 THEN 82
-,                       WHEN dropperid = 8220001 AND itemid = 2061001 THEN 82
-,                       WHEN dropperid = 9300011 AND itemid = 2060000 THEN 51
-,                       WHEN dropperid = 9300011 AND itemid = 2061000 THEN 51
-,                       WHEN dropperid = 9300060 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 9300060 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 9300131 AND itemid = 2060000 THEN 51
-,                       WHEN dropperid = 9300131 AND itemid = 2061000 THEN 51
-,                       WHEN dropperid = 9300132 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 9300132 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9300133 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9300160 AND itemid = 2060000 THEN 82
-,                       WHEN dropperid = 9300160 AND itemid = 2061000 THEN 82
-,                       WHEN dropperid = 9300161 AND itemid = 2060000 THEN 82
-,                       WHEN dropperid = 9300161 AND itemid = 2061000 THEN 82
-,                       WHEN dropperid = 9300274 AND itemid = 2060000 THEN 10
-,                       WHEN dropperid = 9300274 AND itemid = 2061000 THEN 10
-,                       WHEN dropperid = 9300332 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 9300334 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 9300341 AND itemid = 2060000 THEN 7
-,                       WHEN dropperid = 9300341 AND itemid = 2061000 THEN 7
-,                       WHEN dropperid = 9300342 AND itemid = 2060000 THEN 10
-,                       WHEN dropperid = 9300342 AND itemid = 2061000 THEN 10
-,                       WHEN dropperid = 9300343 AND itemid = 2060000 THEN 9
-,                       WHEN dropperid = 9300343 AND itemid = 2061000 THEN 9
-,                       WHEN dropperid = 9303005 AND itemid = 2060001 THEN 17
-,                       WHEN dropperid = 9303005 AND itemid = 2061001 THEN 17
-,                       WHEN dropperid = 9303008 AND itemid = 2060001 THEN 17
-,                       WHEN dropperid = 9303008 AND itemid = 2061001 THEN 17
-,                       WHEN dropperid = 9303009 AND itemid = 2060001 THEN 33
-,                       WHEN dropperid = 9303009 AND itemid = 2061001 THEN 33
-,                       WHEN dropperid = 9400000 AND itemid = 2060001 THEN 16
-,                       WHEN dropperid = 9400009 AND itemid = 2060001 THEN 130
-,                       WHEN dropperid = 9400011 AND itemid = 2060002 THEN 17
-,                       WHEN dropperid = 9400100 AND itemid = 2060003 THEN 14
-,                       WHEN dropperid = 9400101 AND itemid = 2061003 THEN 15
-,                       WHEN dropperid = 9400204 AND itemid = 2060003 THEN 17
-,                       WHEN dropperid = 9400239 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 9400239 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 9400244 AND itemid = 2060000 THEN 77
-,                       WHEN dropperid = 9400244 AND itemid = 2061000 THEN 77
-,                       WHEN dropperid = 9400248 AND itemid = 2060000 THEN 31
-,                       WHEN dropperid = 9400248 AND itemid = 2061000 THEN 31
-,                       WHEN dropperid = 9400540 AND itemid = 2060004 THEN 6
-,                       WHEN dropperid = 9400540 AND itemid = 2061004 THEN 6
-,                       WHEN dropperid = 9400541 AND itemid = 2060004 THEN 6
-,                       WHEN dropperid = 9400541 AND itemid = 2061004 THEN 6
-,                       WHEN dropperid = 9400542 AND itemid = 2060004 THEN 9
-,                       WHEN dropperid = 9400542 AND itemid = 2061004 THEN 9
-,                       WHEN dropperid = 9400543 AND itemid = 2060004 THEN 10
-,                       WHEN dropperid = 9400543 AND itemid = 2061004 THEN 10
-,                       WHEN dropperid = 9400547 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 9400547 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 9400548 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 9400548 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9400550 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 9400550 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 9400558 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 9400558 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9400563 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 9400563 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 9400638 AND itemid = 2060000 THEN 26
-,                       WHEN dropperid = 9400638 AND itemid = 2061000 THEN 26
-,                       WHEN dropperid = 9420500 AND itemid = 2060000 THEN 36
-,                       WHEN dropperid = 9420500 AND itemid = 2061000 THEN 36
-,                       WHEN dropperid = 9420502 AND itemid = 2060000 THEN 23
-,                       WHEN dropperid = 9420502 AND itemid = 2061000 THEN 23
-,                       WHEN dropperid = 9420506 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 9420506 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 9420508 AND itemid = 2060000 THEN 56
-,                       WHEN dropperid = 9420508 AND itemid = 2061000 THEN 56
-,                       WHEN dropperid = 9420527 AND itemid = 2060001 THEN 29
-,                       WHEN dropperid = 9420527 AND itemid = 2061001 THEN 29
-,                       WHEN dropperid = 9420531 AND itemid = 2060001 THEN 38
-,                       WHEN dropperid = 9420531 AND itemid = 2061001 THEN 38
-,                       WHEN dropperid = 9500112 AND itemid = 2060001 THEN 22
-,                       WHEN dropperid = 9500112 AND itemid = 2061001 THEN 22
-,                       WHEN dropperid = 9500119 AND itemid = 2060000 THEN 51
-,                       WHEN dropperid = 9500119 AND itemid = 2061000 THEN 51
-,                       WHEN dropperid = 9500120 AND itemid = 2060000 THEN 58
-,                       WHEN dropperid = 9500120 AND itemid = 2061000 THEN 58
-,                       WHEN dropperid = 9500122 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 9500123 AND itemid = 2060000 THEN 77
-,                       WHEN dropperid = 9500123 AND itemid = 2061000 THEN 77
-,                       WHEN dropperid = 9500308 AND itemid = 2060000 THEN 91
-,                       WHEN dropperid = 9500308 AND itemid = 2061000 THEN 91
-,                       WHEN dropperid = 9500310 AND itemid = 2060000 THEN 107
-,                       WHEN dropperid = 9500310 AND itemid = 2061000 THEN 107
-,                       WHEN dropperid = 9500312 AND itemid = 2060001 THEN 63
-,                       WHEN dropperid = 9500312 AND itemid = 2061001 THEN 63
-,                       WHEN dropperid = 9500313 AND itemid = 2060001 THEN 64
-,                       WHEN dropperid = 9500313 AND itemid = 2061001 THEN 64
-,                       WHEN dropperid = 9500314 AND itemid = 2060001 THEN 70
-,                       WHEN dropperid = 9500314 AND itemid = 2061001 THEN 70
-,                       WHEN dropperid = 9500321 AND itemid = 2060001 THEN 6
-,                       WHEN dropperid = 9500321 AND itemid = 2061001 THEN 6
-,                       WHEN dropperid = 9500366 AND itemid = 2060000 THEN 19
-,                       WHEN dropperid = 9500369 AND itemid = 2060000 THEN 19
-,  ELSE minimum_quantity END
-,    maximum_quantity = CASE
-,                       WHEN dropperid = 100100 AND itemid = 2060000 THEN 2
-,                       WHEN dropperid = 100100 AND itemid = 2061000 THEN 2
-,                       WHEN dropperid = 100101 AND itemid = 2060000 THEN 3
-,                       WHEN dropperid = 100101 AND itemid = 2061000 THEN 3
-,                       WHEN dropperid = 100120 AND itemid = 2060000 THEN 2
-,                       WHEN dropperid = 100120 AND itemid = 2061000 THEN 2
-,                       WHEN dropperid = 100121 AND itemid = 2060000 THEN 5
-,                       WHEN dropperid = 100123 AND itemid = 2061000 THEN 12
-,                       WHEN dropperid = 100124 AND itemid = 2060000 THEN 14
-,                       WHEN dropperid = 100124 AND itemid = 2061000 THEN 14
-,                       WHEN dropperid = 120100 AND itemid = 2060000 THEN 3
-,                       WHEN dropperid = 120100 AND itemid = 2061000 THEN 3
-,                       WHEN dropperid = 130100 AND itemid = 2060000 THEN 7
-,                       WHEN dropperid = 130100 AND itemid = 2061000 THEN 7
-,                       WHEN dropperid = 130101 AND itemid = 2060000 THEN 7
-,                       WHEN dropperid = 130101 AND itemid = 2061000 THEN 7
-,                       WHEN dropperid = 210100 AND itemid = 2060000 THEN 9
-,                       WHEN dropperid = 210100 AND itemid = 2061000 THEN 9
-,                       WHEN dropperid = 1110100 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 1110100 AND itemid = 2061000 THEN 24
-,                       WHEN dropperid = 1110101 AND itemid = 2060000 THEN 17
-,                       WHEN dropperid = 1110101 AND itemid = 2061000 THEN 17
-,                       WHEN dropperid = 1110130 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 1110130 AND itemid = 2061000 THEN 24
-,                       WHEN dropperid = 1120100 AND itemid = 2060000 THEN 19
-,                       WHEN dropperid = 1120100 AND itemid = 2061000 THEN 19
-,                       WHEN dropperid = 1130100 AND itemid = 2060000 THEN 28
-,                       WHEN dropperid = 1130100 AND itemid = 2061000 THEN 28
-,                       WHEN dropperid = 1140100 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 1140100 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 1140130 AND itemid = 2060000 THEN 30
-,                       WHEN dropperid = 1140130 AND itemid = 2061000 THEN 30
-,                       WHEN dropperid = 1210100 AND itemid = 2060000 THEN 12
-,                       WHEN dropperid = 1210100 AND itemid = 2061000 THEN 12
-,                       WHEN dropperid = 1210101 AND itemid = 2060000 THEN 17
-,                       WHEN dropperid = 1210101 AND itemid = 2061000 THEN 17
-,                       WHEN dropperid = 1210102 AND itemid = 2060000 THEN 13
-,                       WHEN dropperid = 1210102 AND itemid = 2061000 THEN 13
-,                       WHEN dropperid = 1210103 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 1210103 AND itemid = 2061000 THEN 24
-,                       WHEN dropperid = 2100100 AND itemid = 2060000 THEN 33
-,                       WHEN dropperid = 2100100 AND itemid = 2061000 THEN 33
-,                       WHEN dropperid = 2100101 AND itemid = 2060000 THEN 34
-,                       WHEN dropperid = 2100101 AND itemid = 2061000 THEN 34
-,                       WHEN dropperid = 2100102 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2100102 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2100103 AND itemid = 2060000 THEN 40
-,                       WHEN dropperid = 2100103 AND itemid = 2061000 THEN 40
-,                       WHEN dropperid = 2100104 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 2100104 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 2100105 AND itemid = 2060000 THEN 38
-,                       WHEN dropperid = 2100105 AND itemid = 2061000 THEN 38
-,                       WHEN dropperid = 2100106 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2100106 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2100107 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 2100107 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 2100108 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 2100108 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 2110200 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2110200 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2110300 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2110300 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2110301 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 2110301 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 2130100 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2130100 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2220000 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 2220000 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 2220100 AND itemid = 2060000 THEN 33
-,                       WHEN dropperid = 2220100 AND itemid = 2061000 THEN 33
-,                       WHEN dropperid = 2230100 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 2230100 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 2230101 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2230101 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2230102 AND itemid = 2060000 THEN 40
-,                       WHEN dropperid = 2230102 AND itemid = 2061000 THEN 40
-,                       WHEN dropperid = 2230103 AND itemid = 2060000 THEN 38
-,                       WHEN dropperid = 2230103 AND itemid = 2061000 THEN 38
-,                       WHEN dropperid = 2230104 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 2230104 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 2230105 AND itemid = 2060000 THEN 38
-,                       WHEN dropperid = 2230105 AND itemid = 2061000 THEN 38
-,                       WHEN dropperid = 2230106 AND itemid = 2060000 THEN 40
-,                       WHEN dropperid = 2230106 AND itemid = 2061000 THEN 40
-,                       WHEN dropperid = 2230107 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2230107 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2230108 AND itemid = 2060000 THEN 35
-,                       WHEN dropperid = 2230108 AND itemid = 2061000 THEN 35
-,                       WHEN dropperid = 2230109 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 2230109 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 2230110 AND itemid = 2060000 THEN 38
-,                       WHEN dropperid = 2230110 AND itemid = 2061000 THEN 38
-,                       WHEN dropperid = 2230111 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2230111 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2230131 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 2230131 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 2230200 AND itemid = 2060000 THEN 47
-,                       WHEN dropperid = 2230200 AND itemid = 2061000 THEN 47
-,                       WHEN dropperid = 2300100 AND itemid = 2060000 THEN 33
-,                       WHEN dropperid = 2300100 AND itemid = 2061000 THEN 33
-,                       WHEN dropperid = 3000000 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3000000 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3000005 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3000005 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3000006 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3000006 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3100101 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3100101 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3100102 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3100102 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3110101 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3110101 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3110102 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3110102 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3110300 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3110300 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3110301 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3110301 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3110302 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3110302 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3110303 AND itemid = 2060000 THEN 62
-,                       WHEN dropperid = 3110303 AND itemid = 2061000 THEN 62
-,                       WHEN dropperid = 3210100 AND itemid = 2060005 THEN 8
-,                       WHEN dropperid = 3210203 AND itemid = 2060000 THEN 59
-,                       WHEN dropperid = 3210203 AND itemid = 2061000 THEN 59
-,                       WHEN dropperid = 3210204 AND itemid = 2060000 THEN 55
-,                       WHEN dropperid = 3210204 AND itemid = 2061000 THEN 55
-,                       WHEN dropperid = 3210205 AND itemid = 2060000 THEN 55
-,                       WHEN dropperid = 3210205 AND itemid = 2061000 THEN 55
-,                       WHEN dropperid = 3210206 AND itemid = 2060000 THEN 59
-,                       WHEN dropperid = 3210206 AND itemid = 2061000 THEN 59
-,                       WHEN dropperid = 3210207 AND itemid = 2060000 THEN 55
-,                       WHEN dropperid = 3210207 AND itemid = 2060005 THEN 9
-,                       WHEN dropperid = 3210207 AND itemid = 2061000 THEN 55
-,                       WHEN dropperid = 3210208 AND itemid = 2060000 THEN 59
-,                       WHEN dropperid = 3210208 AND itemid = 2061000 THEN 59
-,                       WHEN dropperid = 3210450 AND itemid = 2060000 THEN 59
-,                       WHEN dropperid = 3210450 AND itemid = 2061000 THEN 59
-,                       WHEN dropperid = 3210800 AND itemid = 2060005 THEN 10
-,                       WHEN dropperid = 3220000 AND itemid = 2060000 THEN 79
-,                       WHEN dropperid = 3220000 AND itemid = 2061000 THEN 79
-,                       WHEN dropperid = 3230100 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3230100 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3230103 AND itemid = 2060000 THEN 62
-,                       WHEN dropperid = 3230103 AND itemid = 2061000 THEN 62
-,                       WHEN dropperid = 3230200 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3230200 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3230302 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3230302 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3230303 AND itemid = 2060000 THEN 60
-,                       WHEN dropperid = 3230303 AND itemid = 2061000 THEN 60
-,                       WHEN dropperid = 3230304 AND itemid = 2060000 THEN 62
-,                       WHEN dropperid = 3230304 AND itemid = 2061000 THEN 62
-,                       WHEN dropperid = 3230305 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 3230305 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 3230306 AND itemid = 2060000 THEN 60
-,                       WHEN dropperid = 3230306 AND itemid = 2061000 THEN 60
-,                       WHEN dropperid = 3230307 AND itemid = 2060000 THEN 50
-,                       WHEN dropperid = 3230307 AND itemid = 2061000 THEN 50
-,                       WHEN dropperid = 3230308 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 3230308 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 3230400 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3230400 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3230405 AND itemid = 2060000 THEN 62
-,                       WHEN dropperid = 3230405 AND itemid = 2061000 THEN 62
-,                       WHEN dropperid = 3300000 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3300000 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3300001 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 3300001 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 3300002 AND itemid = 2060000 THEN 50
-,                       WHEN dropperid = 3300002 AND itemid = 2061000 THEN 50
-,                       WHEN dropperid = 3300003 AND itemid = 2060000 THEN 52
-,                       WHEN dropperid = 3300003 AND itemid = 2061000 THEN 52
-,                       WHEN dropperid = 3300004 AND itemid = 2060000 THEN 54
-,                       WHEN dropperid = 3300004 AND itemid = 2061000 THEN 54
-,                       WHEN dropperid = 3300006 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3300006 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3300007 AND itemid = 2060000 THEN 57
-,                       WHEN dropperid = 3300007 AND itemid = 2061000 THEN 57
-,                       WHEN dropperid = 3300008 AND itemid = 2060000 THEN 87
-,                       WHEN dropperid = 3300008 AND itemid = 2061000 THEN 87
-,                       WHEN dropperid = 4110300 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 4110300 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 4110301 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4110301 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4130103 AND itemid = 2060000 THEN 107
-,                       WHEN dropperid = 4130103 AND itemid = 2061000 THEN 107
-,                       WHEN dropperid = 4230103 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 4230103 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 4230106 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230106 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230108 AND itemid = 2060000 THEN 70
-,                       WHEN dropperid = 4230108 AND itemid = 2061000 THEN 70
-,                       WHEN dropperid = 4230109 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 4230109 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 4230110 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230110 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230111 AND itemid = 2060000 THEN 67
-,                       WHEN dropperid = 4230111 AND itemid = 2061000 THEN 67
-,                       WHEN dropperid = 4230112 AND itemid = 2060000 THEN 72
-,                       WHEN dropperid = 4230112 AND itemid = 2061000 THEN 72
-,                       WHEN dropperid = 4230113 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 4230113 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 4230114 AND itemid = 2060000 THEN 67
-,                       WHEN dropperid = 4230114 AND itemid = 2061000 THEN 67
-,                       WHEN dropperid = 4230115 AND itemid = 2060000 THEN 75
-,                       WHEN dropperid = 4230115 AND itemid = 2061000 THEN 75
-,                       WHEN dropperid = 4230116 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 4230116 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 4230117 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 4230117 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 4230118 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230118 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230119 AND itemid = 2060000 THEN 67
-,                       WHEN dropperid = 4230119 AND itemid = 2061000 THEN 67
-,                       WHEN dropperid = 4230120 AND itemid = 2060000 THEN 72
-,                       WHEN dropperid = 4230120 AND itemid = 2061000 THEN 72
-,                       WHEN dropperid = 4230121 AND itemid = 2060000 THEN 75
-,                       WHEN dropperid = 4230121 AND itemid = 2061000 THEN 75
-,                       WHEN dropperid = 4230123 AND itemid = 2060000 THEN 70
-,                       WHEN dropperid = 4230123 AND itemid = 2061000 THEN 70
-,                       WHEN dropperid = 4230124 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 4230124 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 4230125 AND itemid = 2060000 THEN 72
-,                       WHEN dropperid = 4230125 AND itemid = 2061000 THEN 72
-,                       WHEN dropperid = 4230126 AND itemid = 2060000 THEN 77
-,                       WHEN dropperid = 4230126 AND itemid = 2061000 THEN 77
-,                       WHEN dropperid = 4230201 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 4230201 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 4230300 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230300 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230400 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230400 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230500 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 4230500 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 4230501 AND itemid = 2060000 THEN 67
-,                       WHEN dropperid = 4230501 AND itemid = 2061000 THEN 67
-,                       WHEN dropperid = 4230502 AND itemid = 2060000 THEN 70
-,                       WHEN dropperid = 4230502 AND itemid = 2061000 THEN 70
-,                       WHEN dropperid = 4230503 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230503 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230504 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 4230504 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 4230600 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 4230600 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 4240000 AND itemid = 2060000 THEN 80
-,                       WHEN dropperid = 4240000 AND itemid = 2061000 THEN 80
-,                       WHEN dropperid = 5120100 AND itemid = 2060000 THEN 123
-,                       WHEN dropperid = 5120100 AND itemid = 2061000 THEN 123
-,                       WHEN dropperid = 5130104 AND itemid = 2060000 THEN 89
-,                       WHEN dropperid = 5130104 AND itemid = 2061000 THEN 89
-,                       WHEN dropperid = 5140000 AND itemid = 2060000 THEN 94
-,                       WHEN dropperid = 5140000 AND itemid = 2061000 THEN 94
-,                       WHEN dropperid = 5150000 AND itemid = 2060000 THEN 97
-,                       WHEN dropperid = 5150000 AND itemid = 2061000 THEN 97
-,                       WHEN dropperid = 5200000 AND itemid = 2060001 THEN 19
-,                       WHEN dropperid = 5200000 AND itemid = 2061001 THEN 19
-,                       WHEN dropperid = 5200001 AND itemid = 2060001 THEN 24
-,                       WHEN dropperid = 5200001 AND itemid = 2061001 THEN 24
-,                       WHEN dropperid = 5200002 AND itemid = 2060001 THEN 24
-,                       WHEN dropperid = 5200002 AND itemid = 2061001 THEN 24
-,                       WHEN dropperid = 5220000 AND itemid = 2060000 THEN 125
-,                       WHEN dropperid = 5220000 AND itemid = 2061000 THEN 125
-,                       WHEN dropperid = 5220002 AND itemid = 2060000 THEN 114
-,                       WHEN dropperid = 5220002 AND itemid = 2061000 THEN 114
-,                       WHEN dropperid = 5220003 AND itemid = 2060000 THEN 134
-,                       WHEN dropperid = 5220003 AND itemid = 2061000 THEN 134
-,                       WHEN dropperid = 5400000 AND itemid = 2060001 THEN 28
-,                       WHEN dropperid = 5400000 AND itemid = 2061001 THEN 28
-,                       WHEN dropperid = 6220000 AND itemid = 2060000 THEN 148
-,                       WHEN dropperid = 6220000 AND itemid = 2061000 THEN 148
-,                       WHEN dropperid = 7120103 AND itemid = 2060003 THEN 28
-,                       WHEN dropperid = 7220000 AND itemid = 2060001 THEN 81
-,                       WHEN dropperid = 7220000 AND itemid = 2061001 THEN 81
-,                       WHEN dropperid = 7220001 AND itemid = 2060001 THEN 79
-,                       WHEN dropperid = 7220001 AND itemid = 2061001 THEN 79
-,                       WHEN dropperid = 7220002 AND itemid = 2060001 THEN 87
-,                       WHEN dropperid = 7220002 AND itemid = 2061001 THEN 87
-,                       WHEN dropperid = 8220000 AND itemid = 2060001 THEN 94
-,                       WHEN dropperid = 8220000 AND itemid = 2061001 THEN 94
-,                       WHEN dropperid = 8220001 AND itemid = 2060001 THEN 102
-,                       WHEN dropperid = 8220001 AND itemid = 2061001 THEN 102
-,                       WHEN dropperid = 9300011 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 9300011 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 9300060 AND itemid = 2060000 THEN 68
-,                       WHEN dropperid = 9300060 AND itemid = 2061000 THEN 68
-,                       WHEN dropperid = 9300131 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 9300131 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 9300132 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 9300132 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 9300133 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 9300160 AND itemid = 2060000 THEN 103
-,                       WHEN dropperid = 9300160 AND itemid = 2061000 THEN 103
-,                       WHEN dropperid = 9300161 AND itemid = 2060000 THEN 103
-,                       WHEN dropperid = 9300161 AND itemid = 2061000 THEN 103
-,                       WHEN dropperid = 9300274 AND itemid = 2060000 THEN 13
-,                       WHEN dropperid = 9300274 AND itemid = 2061000 THEN 13
-,                       WHEN dropperid = 9300332 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 9300334 AND itemid = 2060000 THEN 80
-,                       WHEN dropperid = 9300341 AND itemid = 2060000 THEN 9
-,                       WHEN dropperid = 9300341 AND itemid = 2061000 THEN 9
-,                       WHEN dropperid = 9300342 AND itemid = 2060000 THEN 13
-,                       WHEN dropperid = 9300342 AND itemid = 2061000 THEN 13
-,                       WHEN dropperid = 9300343 AND itemid = 2060000 THEN 12
-,                       WHEN dropperid = 9300343 AND itemid = 2061000 THEN 12
-,                       WHEN dropperid = 9303005 AND itemid = 2060001 THEN 21
-,                       WHEN dropperid = 9303005 AND itemid = 2061001 THEN 21
-,                       WHEN dropperid = 9303008 AND itemid = 2060001 THEN 21
-,                       WHEN dropperid = 9303008 AND itemid = 2061001 THEN 21
-,                       WHEN dropperid = 9303009 AND itemid = 2060001 THEN 41
-,                       WHEN dropperid = 9303009 AND itemid = 2061001 THEN 41
-,                       WHEN dropperid = 9400000 AND itemid = 2060001 THEN 20
-,                       WHEN dropperid = 9400009 AND itemid = 2060001 THEN 163
-,                       WHEN dropperid = 9400011 AND itemid = 2060002 THEN 21
-,                       WHEN dropperid = 9400100 AND itemid = 2060003 THEN 18
-,                       WHEN dropperid = 9400101 AND itemid = 2061003 THEN 19
-,                       WHEN dropperid = 9400204 AND itemid = 2060003 THEN 22
-,                       WHEN dropperid = 9400239 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 9400239 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9400244 AND itemid = 2060000 THEN 97
-,                       WHEN dropperid = 9400244 AND itemid = 2061000 THEN 97
-,                       WHEN dropperid = 9400248 AND itemid = 2060000 THEN 39
-,                       WHEN dropperid = 9400248 AND itemid = 2061000 THEN 39
-,                       WHEN dropperid = 9400540 AND itemid = 2060004 THEN 8
-,                       WHEN dropperid = 9400540 AND itemid = 2061004 THEN 8
-,                       WHEN dropperid = 9400541 AND itemid = 2060004 THEN 8
-,                       WHEN dropperid = 9400541 AND itemid = 2061004 THEN 8
-,                       WHEN dropperid = 9400542 AND itemid = 2060004 THEN 11
-,                       WHEN dropperid = 9400542 AND itemid = 2061004 THEN 11
-,                       WHEN dropperid = 9400543 AND itemid = 2060004 THEN 13
-,                       WHEN dropperid = 9400543 AND itemid = 2061004 THEN 13
-,                       WHEN dropperid = 9400547 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 9400547 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 9400548 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 9400548 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 9400550 AND itemid = 2060000 THEN 44
-,                       WHEN dropperid = 9400550 AND itemid = 2061000 THEN 44
-,                       WHEN dropperid = 9400558 AND itemid = 2060000 THEN 49
-,                       WHEN dropperid = 9400558 AND itemid = 2061000 THEN 49
-,                       WHEN dropperid = 9400563 AND itemid = 2060000 THEN 65
-,                       WHEN dropperid = 9400563 AND itemid = 2061000 THEN 65
-,                       WHEN dropperid = 9400638 AND itemid = 2060000 THEN 33
-,                       WHEN dropperid = 9400638 AND itemid = 2061000 THEN 33
-,                       WHEN dropperid = 9420500 AND itemid = 2060000 THEN 45
-,                       WHEN dropperid = 9420500 AND itemid = 2061000 THEN 45
-,                       WHEN dropperid = 9420502 AND itemid = 2060000 THEN 29
-,                       WHEN dropperid = 9420502 AND itemid = 2061000 THEN 29
-,                       WHEN dropperid = 9420506 AND itemid = 2060000 THEN 38
-,                       WHEN dropperid = 9420506 AND itemid = 2061000 THEN 38
-,                       WHEN dropperid = 9420508 AND itemid = 2060000 THEN 70
-,                       WHEN dropperid = 9420508 AND itemid = 2061000 THEN 70
-,                       WHEN dropperid = 9420527 AND itemid = 2060001 THEN 36
-,                       WHEN dropperid = 9420527 AND itemid = 2061001 THEN 36
-,                       WHEN dropperid = 9420531 AND itemid = 2060001 THEN 48
-,                       WHEN dropperid = 9420531 AND itemid = 2061001 THEN 48
-,                       WHEN dropperid = 9500112 AND itemid = 2060001 THEN 28
-,                       WHEN dropperid = 9500112 AND itemid = 2061001 THEN 28
-,                       WHEN dropperid = 9500119 AND itemid = 2060000 THEN 64
-,                       WHEN dropperid = 9500119 AND itemid = 2061000 THEN 64
-,                       WHEN dropperid = 9500120 AND itemid = 2060000 THEN 73
-,                       WHEN dropperid = 9500120 AND itemid = 2061000 THEN 73
-,                       WHEN dropperid = 9500122 AND itemid = 2060000 THEN 80
-,                       WHEN dropperid = 9500123 AND itemid = 2060000 THEN 97
-,                       WHEN dropperid = 9500123 AND itemid = 2061000 THEN 97
-,                       WHEN dropperid = 9500308 AND itemid = 2060000 THEN 114
-,                       WHEN dropperid = 9500308 AND itemid = 2061000 THEN 114
-,                       WHEN dropperid = 9500310 AND itemid = 2060000 THEN 134
-,                       WHEN dropperid = 9500310 AND itemid = 2061000 THEN 134
-,                       WHEN dropperid = 9500312 AND itemid = 2060001 THEN 79
-,                       WHEN dropperid = 9500312 AND itemid = 2061001 THEN 79
-,                       WHEN dropperid = 9500313 AND itemid = 2060001 THEN 81
-,                       WHEN dropperid = 9500313 AND itemid = 2061001 THEN 81
-,                       WHEN dropperid = 9500314 AND itemid = 2060001 THEN 87
-,                       WHEN dropperid = 9500314 AND itemid = 2061001 THEN 87
-,                       WHEN dropperid = 9500321 AND itemid = 2060001 THEN 8
-,                       WHEN dropperid = 9500321 AND itemid = 2061001 THEN 8
-,                       WHEN dropperid = 9500366 AND itemid = 2060000 THEN 24
-,                       WHEN dropperid = 9500369 AND itemid = 2060000 THEN 24
-,  ELSE maximum_quantity END
-,  UPDATE drop_data SET `chance`=1287 WHERE `chance`=1500;
-,  # MapleSkillbookChanceFetcher! Tuning up some skillbook drop chances in order to fit their dropper's availability (whether's a boss or not) and level.
-,  # thanks unnqca for reporting some skillbooks having unusually high drop chances.
+DELETE FROM drop_data WHERE dropperid >= 9300184 AND dropperid <= 9300215 AND itemid = 0;
+UPDATE drop_data
+SET minimum_quantity = CASE
+WHEN dropperid = 100100 AND itemid = 2060000 THEN 1
+WHEN dropperid = 100100 AND itemid = 2061000 THEN 1
+WHEN dropperid = 100101 AND itemid = 2060000 THEN 2
+WHEN dropperid = 100101 AND itemid = 2061000 THEN 2
+WHEN dropperid = 100120 AND itemid = 2060000 THEN 1
+WHEN dropperid = 100120 AND itemid = 2061000 THEN 1
+WHEN dropperid = 100121 AND itemid = 2060000 THEN 4
+WHEN dropperid = 100123 AND itemid = 2061000 THEN 9
+WHEN dropperid = 100124 AND itemid = 2060000 THEN 11
+WHEN dropperid = 100124 AND itemid = 2061000 THEN 11
+WHEN dropperid = 120100 AND itemid = 2060000 THEN 2
+WHEN dropperid = 120100 AND itemid = 2061000 THEN 2
+WHEN dropperid = 130100 AND itemid = 2060000 THEN 5
+WHEN dropperid = 130100 AND itemid = 2061000 THEN 5
+WHEN dropperid = 130101 AND itemid = 2060000 THEN 5
+WHEN dropperid = 130101 AND itemid = 2061000 THEN 5
+WHEN dropperid = 210100 AND itemid = 2060000 THEN 7
+WHEN dropperid = 210100 AND itemid = 2061000 THEN 7
+WHEN dropperid = 1110100 AND itemid = 2060000 THEN 19
+WHEN dropperid = 1110100 AND itemid = 2061000 THEN 19
+WHEN dropperid = 1110101 AND itemid = 2060000 THEN 13
+WHEN dropperid = 1110101 AND itemid = 2061000 THEN 13
+WHEN dropperid = 1110130 AND itemid = 2060000 THEN 19
+WHEN dropperid = 1110130 AND itemid = 2061000 THEN 19
+WHEN dropperid = 1120100 AND itemid = 2060000 THEN 15
+WHEN dropperid = 1120100 AND itemid = 2061000 THEN 15
+WHEN dropperid = 1130100 AND itemid = 2060000 THEN 22
+WHEN dropperid = 1130100 AND itemid = 2061000 THEN 22
+WHEN dropperid = 1140100 AND itemid = 2060000 THEN 24
+WHEN dropperid = 1140100 AND itemid = 2061000 THEN 24
+WHEN dropperid = 1140130 AND itemid = 2060000 THEN 24
+WHEN dropperid = 1140130 AND itemid = 2061000 THEN 24
+WHEN dropperid = 1210100 AND itemid = 2060000 THEN 9
+WHEN dropperid = 1210100 AND itemid = 2061000 THEN 9
+WHEN dropperid = 1210101 AND itemid = 2060000 THEN 13
+WHEN dropperid = 1210101 AND itemid = 2061000 THEN 13
+WHEN dropperid = 1210102 AND itemid = 2060000 THEN 10
+WHEN dropperid = 1210102 AND itemid = 2061000 THEN 10
+WHEN dropperid = 1210103 AND itemid = 2060000 THEN 19
+WHEN dropperid = 1210103 AND itemid = 2061000 THEN 19
+WHEN dropperid = 2100100 AND itemid = 2060000 THEN 26
+WHEN dropperid = 2100100 AND itemid = 2061000 THEN 26
+WHEN dropperid = 2100101 AND itemid = 2060000 THEN 27
+WHEN dropperid = 2100101 AND itemid = 2061000 THEN 27
+WHEN dropperid = 2100102 AND itemid = 2060000 THEN 28
+WHEN dropperid = 2100102 AND itemid = 2061000 THEN 28
+WHEN dropperid = 2100103 AND itemid = 2060000 THEN 32
+WHEN dropperid = 2100103 AND itemid = 2061000 THEN 32
+WHEN dropperid = 2100104 AND itemid = 2060000 THEN 36
+WHEN dropperid = 2100104 AND itemid = 2061000 THEN 36
+WHEN dropperid = 2100105 AND itemid = 2060000 THEN 30
+WHEN dropperid = 2100105 AND itemid = 2061000 THEN 30
+WHEN dropperid = 2100106 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2100106 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2100107 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2100107 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2100108 AND itemid = 2060000 THEN 37
+WHEN dropperid = 2100108 AND itemid = 2061000 THEN 37
+WHEN dropperid = 2110200 AND itemid = 2060000 THEN 28
+WHEN dropperid = 2110200 AND itemid = 2061000 THEN 28
+WHEN dropperid = 2110300 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2110300 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2110301 AND itemid = 2060000 THEN 37
+WHEN dropperid = 2110301 AND itemid = 2061000 THEN 37
+WHEN dropperid = 2130100 AND itemid = 2060000 THEN 28
+WHEN dropperid = 2130100 AND itemid = 2061000 THEN 28
+WHEN dropperid = 2220000 AND itemid = 2060000 THEN 36
+WHEN dropperid = 2220000 AND itemid = 2061000 THEN 36
+WHEN dropperid = 2220100 AND itemid = 2060000 THEN 26
+WHEN dropperid = 2220100 AND itemid = 2061000 THEN 26
+WHEN dropperid = 2230100 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2230100 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2230101 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2230101 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2230102 AND itemid = 2060000 THEN 32
+WHEN dropperid = 2230102 AND itemid = 2061000 THEN 32
+WHEN dropperid = 2230103 AND itemid = 2060000 THEN 30
+WHEN dropperid = 2230103 AND itemid = 2061000 THEN 30
+WHEN dropperid = 2230104 AND itemid = 2060000 THEN 36
+WHEN dropperid = 2230104 AND itemid = 2061000 THEN 36
+WHEN dropperid = 2230105 AND itemid = 2060000 THEN 30
+WHEN dropperid = 2230105 AND itemid = 2061000 THEN 30
+WHEN dropperid = 2230106 AND itemid = 2060000 THEN 32
+WHEN dropperid = 2230106 AND itemid = 2061000 THEN 32
+WHEN dropperid = 2230107 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2230107 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2230108 AND itemid = 2060000 THEN 28
+WHEN dropperid = 2230108 AND itemid = 2061000 THEN 28
+WHEN dropperid = 2230109 AND itemid = 2060000 THEN 36
+WHEN dropperid = 2230109 AND itemid = 2061000 THEN 36
+WHEN dropperid = 2230110 AND itemid = 2060000 THEN 30
+WHEN dropperid = 2230110 AND itemid = 2061000 THEN 30
+WHEN dropperid = 2230111 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2230111 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2230131 AND itemid = 2060000 THEN 31
+WHEN dropperid = 2230131 AND itemid = 2061000 THEN 31
+WHEN dropperid = 2230200 AND itemid = 2060000 THEN 37
+WHEN dropperid = 2230200 AND itemid = 2061000 THEN 37
+WHEN dropperid = 2300100 AND itemid = 2060000 THEN 26
+WHEN dropperid = 2300100 AND itemid = 2061000 THEN 26
+WHEN dropperid = 3000000 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3000000 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3000005 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3000005 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3000006 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3000006 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3100101 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3100101 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3100102 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3100102 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3110101 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3110101 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3110102 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3110102 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3110300 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3110300 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3110301 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3110301 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3110302 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3110302 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3110303 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3110303 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3210100 AND itemid = 2060005 THEN 6
+WHEN dropperid = 3210203 AND itemid = 2060000 THEN 47
+WHEN dropperid = 3210203 AND itemid = 2061000 THEN 47
+WHEN dropperid = 3210204 AND itemid = 2060000 THEN 44
+WHEN dropperid = 3210204 AND itemid = 2061000 THEN 44
+WHEN dropperid = 3210205 AND itemid = 2060000 THEN 44
+WHEN dropperid = 3210205 AND itemid = 2061000 THEN 44
+WHEN dropperid = 3210206 AND itemid = 2060000 THEN 47
+WHEN dropperid = 3210206 AND itemid = 2061000 THEN 47
+WHEN dropperid = 3210207 AND itemid = 2060000 THEN 44
+WHEN dropperid = 3210207 AND itemid = 2060005 THEN 7
+WHEN dropperid = 3210207 AND itemid = 2061000 THEN 44
+WHEN dropperid = 3210208 AND itemid = 2060000 THEN 47
+WHEN dropperid = 3210208 AND itemid = 2061000 THEN 47
+WHEN dropperid = 3210450 AND itemid = 2060000 THEN 47
+WHEN dropperid = 3210450 AND itemid = 2061000 THEN 47
+WHEN dropperid = 3210800 AND itemid = 2060005 THEN 8
+WHEN dropperid = 3220000 AND itemid = 2060000 THEN 63
+WHEN dropperid = 3220000 AND itemid = 2061000 THEN 63
+WHEN dropperid = 3230100 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3230100 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3230103 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3230103 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3230200 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3230200 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3230302 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3230302 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3230303 AND itemid = 2060000 THEN 48
+WHEN dropperid = 3230303 AND itemid = 2061000 THEN 48
+WHEN dropperid = 3230304 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3230304 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3230305 AND itemid = 2060000 THEN 51
+WHEN dropperid = 3230305 AND itemid = 2061000 THEN 51
+WHEN dropperid = 3230306 AND itemid = 2060000 THEN 48
+WHEN dropperid = 3230306 AND itemid = 2061000 THEN 48
+WHEN dropperid = 3230307 AND itemid = 2060000 THEN 40
+WHEN dropperid = 3230307 AND itemid = 2061000 THEN 40
+WHEN dropperid = 3230308 AND itemid = 2060000 THEN 51
+WHEN dropperid = 3230308 AND itemid = 2061000 THEN 51
+WHEN dropperid = 3230400 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3230400 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3230405 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3230405 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3300000 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3300000 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3300001 AND itemid = 2060000 THEN 39
+WHEN dropperid = 3300001 AND itemid = 2061000 THEN 39
+WHEN dropperid = 3300002 AND itemid = 2060000 THEN 40
+WHEN dropperid = 3300002 AND itemid = 2061000 THEN 40
+WHEN dropperid = 3300003 AND itemid = 2060000 THEN 41
+WHEN dropperid = 3300003 AND itemid = 2061000 THEN 41
+WHEN dropperid = 3300004 AND itemid = 2060000 THEN 43
+WHEN dropperid = 3300004 AND itemid = 2061000 THEN 43
+WHEN dropperid = 3300006 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3300006 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3300007 AND itemid = 2060000 THEN 45
+WHEN dropperid = 3300007 AND itemid = 2061000 THEN 45
+WHEN dropperid = 3300008 AND itemid = 2060000 THEN 69
+WHEN dropperid = 3300008 AND itemid = 2061000 THEN 69
+WHEN dropperid = 4110300 AND itemid = 2060000 THEN 54
+WHEN dropperid = 4110300 AND itemid = 2061000 THEN 54
+WHEN dropperid = 4110301 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4110301 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4130103 AND itemid = 2060000 THEN 85
+WHEN dropperid = 4130103 AND itemid = 2061000 THEN 85
+WHEN dropperid = 4230103 AND itemid = 2060000 THEN 54
+WHEN dropperid = 4230103 AND itemid = 2061000 THEN 54
+WHEN dropperid = 4230106 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230106 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230108 AND itemid = 2060000 THEN 56
+WHEN dropperid = 4230108 AND itemid = 2061000 THEN 56
+WHEN dropperid = 4230109 AND itemid = 2060000 THEN 54
+WHEN dropperid = 4230109 AND itemid = 2061000 THEN 54
+WHEN dropperid = 4230110 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230110 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230111 AND itemid = 2060000 THEN 53
+WHEN dropperid = 4230111 AND itemid = 2061000 THEN 53
+WHEN dropperid = 4230112 AND itemid = 2060000 THEN 57
+WHEN dropperid = 4230112 AND itemid = 2061000 THEN 57
+WHEN dropperid = 4230113 AND itemid = 2060000 THEN 52
+WHEN dropperid = 4230113 AND itemid = 2061000 THEN 52
+WHEN dropperid = 4230114 AND itemid = 2060000 THEN 53
+WHEN dropperid = 4230114 AND itemid = 2061000 THEN 53
+WHEN dropperid = 4230115 AND itemid = 2060000 THEN 60
+WHEN dropperid = 4230115 AND itemid = 2061000 THEN 60
+WHEN dropperid = 4230116 AND itemid = 2060000 THEN 52
+WHEN dropperid = 4230116 AND itemid = 2061000 THEN 52
+WHEN dropperid = 4230117 AND itemid = 2060000 THEN 54
+WHEN dropperid = 4230117 AND itemid = 2061000 THEN 54
+WHEN dropperid = 4230118 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230118 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230119 AND itemid = 2060000 THEN 53
+WHEN dropperid = 4230119 AND itemid = 2061000 THEN 53
+WHEN dropperid = 4230120 AND itemid = 2060000 THEN 57
+WHEN dropperid = 4230120 AND itemid = 2061000 THEN 57
+WHEN dropperid = 4230121 AND itemid = 2060000 THEN 60
+WHEN dropperid = 4230121 AND itemid = 2061000 THEN 60
+WHEN dropperid = 4230123 AND itemid = 2060000 THEN 56
+WHEN dropperid = 4230123 AND itemid = 2061000 THEN 56
+WHEN dropperid = 4230124 AND itemid = 2060000 THEN 54
+WHEN dropperid = 4230124 AND itemid = 2061000 THEN 54
+WHEN dropperid = 4230125 AND itemid = 2060000 THEN 57
+WHEN dropperid = 4230125 AND itemid = 2061000 THEN 57
+WHEN dropperid = 4230126 AND itemid = 2060000 THEN 61
+WHEN dropperid = 4230126 AND itemid = 2061000 THEN 61
+WHEN dropperid = 4230201 AND itemid = 2060000 THEN 52
+WHEN dropperid = 4230201 AND itemid = 2061000 THEN 52
+WHEN dropperid = 4230300 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230300 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230400 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230400 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230500 AND itemid = 2060000 THEN 52
+WHEN dropperid = 4230500 AND itemid = 2061000 THEN 52
+WHEN dropperid = 4230501 AND itemid = 2060000 THEN 53
+WHEN dropperid = 4230501 AND itemid = 2061000 THEN 53
+WHEN dropperid = 4230502 AND itemid = 2060000 THEN 56
+WHEN dropperid = 4230502 AND itemid = 2061000 THEN 56
+WHEN dropperid = 4230503 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230503 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230504 AND itemid = 2060000 THEN 58
+WHEN dropperid = 4230504 AND itemid = 2061000 THEN 58
+WHEN dropperid = 4230600 AND itemid = 2060000 THEN 52
+WHEN dropperid = 4230600 AND itemid = 2061000 THEN 52
+WHEN dropperid = 4240000 AND itemid = 2060000 THEN 64
+WHEN dropperid = 4240000 AND itemid = 2061000 THEN 64
+WHEN dropperid = 5120100 AND itemid = 2060000 THEN 98
+WHEN dropperid = 5120100 AND itemid = 2061000 THEN 98
+WHEN dropperid = 5130104 AND itemid = 2060000 THEN 71
+WHEN dropperid = 5130104 AND itemid = 2061000 THEN 71
+WHEN dropperid = 5140000 AND itemid = 2060000 THEN 75
+WHEN dropperid = 5140000 AND itemid = 2061000 THEN 75
+WHEN dropperid = 5150000 AND itemid = 2060000 THEN 77
+WHEN dropperid = 5150000 AND itemid = 2061000 THEN 77
+WHEN dropperid = 5200000 AND itemid = 2060001 THEN 15
+WHEN dropperid = 5200000 AND itemid = 2061001 THEN 15
+WHEN dropperid = 5200001 AND itemid = 2060001 THEN 19
+WHEN dropperid = 5200001 AND itemid = 2061001 THEN 19
+WHEN dropperid = 5200002 AND itemid = 2060001 THEN 19
+WHEN dropperid = 5200002 AND itemid = 2061001 THEN 19
+WHEN dropperid = 5220000 AND itemid = 2060000 THEN 100
+WHEN dropperid = 5220000 AND itemid = 2061000 THEN 100
+WHEN dropperid = 5220002 AND itemid = 2060000 THEN 91
+WHEN dropperid = 5220002 AND itemid = 2061000 THEN 91
+WHEN dropperid = 5220003 AND itemid = 2060000 THEN 107
+WHEN dropperid = 5220003 AND itemid = 2061000 THEN 107
+WHEN dropperid = 5400000 AND itemid = 2060001 THEN 22
+WHEN dropperid = 5400000 AND itemid = 2061001 THEN 22
+WHEN dropperid = 6220000 AND itemid = 2060000 THEN 118
+WHEN dropperid = 6220000 AND itemid = 2061000 THEN 118
+WHEN dropperid = 7120103 AND itemid = 2060003 THEN 22
+WHEN dropperid = 7220000 AND itemid = 2060001 THEN 64
+WHEN dropperid = 7220000 AND itemid = 2061001 THEN 64
+WHEN dropperid = 7220001 AND itemid = 2060001 THEN 63
+WHEN dropperid = 7220001 AND itemid = 2061001 THEN 63
+WHEN dropperid = 7220002 AND itemid = 2060001 THEN 70
+WHEN dropperid = 7220002 AND itemid = 2061001 THEN 70
+WHEN dropperid = 8220000 AND itemid = 2060001 THEN 75
+WHEN dropperid = 8220000 AND itemid = 2061001 THEN 75
+WHEN dropperid = 8220001 AND itemid = 2060001 THEN 82
+WHEN dropperid = 8220001 AND itemid = 2061001 THEN 82
+WHEN dropperid = 9300011 AND itemid = 2060000 THEN 51
+WHEN dropperid = 9300011 AND itemid = 2061000 THEN 51
+WHEN dropperid = 9300060 AND itemid = 2060000 THEN 54
+WHEN dropperid = 9300060 AND itemid = 2061000 THEN 54
+WHEN dropperid = 9300131 AND itemid = 2060000 THEN 51
+WHEN dropperid = 9300131 AND itemid = 2061000 THEN 51
+WHEN dropperid = 9300132 AND itemid = 2060000 THEN 39
+WHEN dropperid = 9300132 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9300133 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9300160 AND itemid = 2060000 THEN 82
+WHEN dropperid = 9300160 AND itemid = 2061000 THEN 82
+WHEN dropperid = 9300161 AND itemid = 2060000 THEN 82
+WHEN dropperid = 9300161 AND itemid = 2061000 THEN 82
+WHEN dropperid = 9300274 AND itemid = 2060000 THEN 10
+WHEN dropperid = 9300274 AND itemid = 2061000 THEN 10
+WHEN dropperid = 9300332 AND itemid = 2060000 THEN 52
+WHEN dropperid = 9300334 AND itemid = 2060000 THEN 64
+WHEN dropperid = 9300341 AND itemid = 2060000 THEN 7
+WHEN dropperid = 9300341 AND itemid = 2061000 THEN 7
+WHEN dropperid = 9300342 AND itemid = 2060000 THEN 10
+WHEN dropperid = 9300342 AND itemid = 2061000 THEN 10
+WHEN dropperid = 9300343 AND itemid = 2060000 THEN 9
+WHEN dropperid = 9300343 AND itemid = 2061000 THEN 9
+WHEN dropperid = 9303005 AND itemid = 2060001 THEN 17
+WHEN dropperid = 9303005 AND itemid = 2061001 THEN 17
+WHEN dropperid = 9303008 AND itemid = 2060001 THEN 17
+WHEN dropperid = 9303008 AND itemid = 2061001 THEN 17
+WHEN dropperid = 9303009 AND itemid = 2060001 THEN 33
+WHEN dropperid = 9303009 AND itemid = 2061001 THEN 33
+WHEN dropperid = 9400000 AND itemid = 2060001 THEN 16
+WHEN dropperid = 9400009 AND itemid = 2060001 THEN 130
+WHEN dropperid = 9400011 AND itemid = 2060002 THEN 17
+WHEN dropperid = 9400100 AND itemid = 2060003 THEN 14
+WHEN dropperid = 9400101 AND itemid = 2061003 THEN 15
+WHEN dropperid = 9400204 AND itemid = 2060003 THEN 17
+WHEN dropperid = 9400239 AND itemid = 2060000 THEN 31
+WHEN dropperid = 9400239 AND itemid = 2061000 THEN 31
+WHEN dropperid = 9400244 AND itemid = 2060000 THEN 77
+WHEN dropperid = 9400244 AND itemid = 2061000 THEN 77
+WHEN dropperid = 9400248 AND itemid = 2060000 THEN 31
+WHEN dropperid = 9400248 AND itemid = 2061000 THEN 31
+WHEN dropperid = 9400540 AND itemid = 2060004 THEN 6
+WHEN dropperid = 9400540 AND itemid = 2061004 THEN 6
+WHEN dropperid = 9400541 AND itemid = 2060004 THEN 6
+WHEN dropperid = 9400541 AND itemid = 2061004 THEN 6
+WHEN dropperid = 9400542 AND itemid = 2060004 THEN 9
+WHEN dropperid = 9400542 AND itemid = 2061004 THEN 9
+WHEN dropperid = 9400543 AND itemid = 2060004 THEN 10
+WHEN dropperid = 9400543 AND itemid = 2061004 THEN 10
+WHEN dropperid = 9400547 AND itemid = 2060000 THEN 35
+WHEN dropperid = 9400547 AND itemid = 2061000 THEN 35
+WHEN dropperid = 9400548 AND itemid = 2060000 THEN 39
+WHEN dropperid = 9400548 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9400550 AND itemid = 2060000 THEN 35
+WHEN dropperid = 9400550 AND itemid = 2061000 THEN 35
+WHEN dropperid = 9400558 AND itemid = 2060000 THEN 39
+WHEN dropperid = 9400558 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9400563 AND itemid = 2060000 THEN 52
+WHEN dropperid = 9400563 AND itemid = 2061000 THEN 52
+WHEN dropperid = 9400638 AND itemid = 2060000 THEN 26
+WHEN dropperid = 9400638 AND itemid = 2061000 THEN 26
+WHEN dropperid = 9420500 AND itemid = 2060000 THEN 36
+WHEN dropperid = 9420500 AND itemid = 2061000 THEN 36
+WHEN dropperid = 9420502 AND itemid = 2060000 THEN 23
+WHEN dropperid = 9420502 AND itemid = 2061000 THEN 23
+WHEN dropperid = 9420506 AND itemid = 2060000 THEN 30
+WHEN dropperid = 9420506 AND itemid = 2061000 THEN 30
+WHEN dropperid = 9420508 AND itemid = 2060000 THEN 56
+WHEN dropperid = 9420508 AND itemid = 2061000 THEN 56
+WHEN dropperid = 9420527 AND itemid = 2060001 THEN 29
+WHEN dropperid = 9420527 AND itemid = 2061001 THEN 29
+WHEN dropperid = 9420531 AND itemid = 2060001 THEN 38
+WHEN dropperid = 9420531 AND itemid = 2061001 THEN 38
+WHEN dropperid = 9500112 AND itemid = 2060001 THEN 22
+WHEN dropperid = 9500112 AND itemid = 2061001 THEN 22
+WHEN dropperid = 9500119 AND itemid = 2060000 THEN 51
+WHEN dropperid = 9500119 AND itemid = 2061000 THEN 51
+WHEN dropperid = 9500120 AND itemid = 2060000 THEN 58
+WHEN dropperid = 9500120 AND itemid = 2061000 THEN 58
+WHEN dropperid = 9500122 AND itemid = 2060000 THEN 64
+WHEN dropperid = 9500123 AND itemid = 2060000 THEN 77
+WHEN dropperid = 9500123 AND itemid = 2061000 THEN 77
+WHEN dropperid = 9500308 AND itemid = 2060000 THEN 91
+WHEN dropperid = 9500308 AND itemid = 2061000 THEN 91
+WHEN dropperid = 9500310 AND itemid = 2060000 THEN 107
+WHEN dropperid = 9500310 AND itemid = 2061000 THEN 107
+WHEN dropperid = 9500312 AND itemid = 2060001 THEN 63
+WHEN dropperid = 9500312 AND itemid = 2061001 THEN 63
+WHEN dropperid = 9500313 AND itemid = 2060001 THEN 64
+WHEN dropperid = 9500313 AND itemid = 2061001 THEN 64
+WHEN dropperid = 9500314 AND itemid = 2060001 THEN 70
+WHEN dropperid = 9500314 AND itemid = 2061001 THEN 70
+WHEN dropperid = 9500321 AND itemid = 2060001 THEN 6
+WHEN dropperid = 9500321 AND itemid = 2061001 THEN 6
+WHEN dropperid = 9500366 AND itemid = 2060000 THEN 19
+WHEN dropperid = 9500369 AND itemid = 2060000 THEN 19
+ELSE minimum_quantity END,
+maximum_quantity = CASE
+WHEN dropperid = 100100 AND itemid = 2060000 THEN 2
+WHEN dropperid = 100100 AND itemid = 2061000 THEN 2
+WHEN dropperid = 100101 AND itemid = 2060000 THEN 3
+WHEN dropperid = 100101 AND itemid = 2061000 THEN 3
+WHEN dropperid = 100120 AND itemid = 2060000 THEN 2
+WHEN dropperid = 100120 AND itemid = 2061000 THEN 2
+WHEN dropperid = 100121 AND itemid = 2060000 THEN 5
+WHEN dropperid = 100123 AND itemid = 2061000 THEN 12
+WHEN dropperid = 100124 AND itemid = 2060000 THEN 14
+WHEN dropperid = 100124 AND itemid = 2061000 THEN 14
+WHEN dropperid = 120100 AND itemid = 2060000 THEN 3
+WHEN dropperid = 120100 AND itemid = 2061000 THEN 3
+WHEN dropperid = 130100 AND itemid = 2060000 THEN 7
+WHEN dropperid = 130100 AND itemid = 2061000 THEN 7
+WHEN dropperid = 130101 AND itemid = 2060000 THEN 7
+WHEN dropperid = 130101 AND itemid = 2061000 THEN 7
+WHEN dropperid = 210100 AND itemid = 2060000 THEN 9
+WHEN dropperid = 210100 AND itemid = 2061000 THEN 9
+WHEN dropperid = 1110100 AND itemid = 2060000 THEN 24
+WHEN dropperid = 1110100 AND itemid = 2061000 THEN 24
+WHEN dropperid = 1110101 AND itemid = 2060000 THEN 17
+WHEN dropperid = 1110101 AND itemid = 2061000 THEN 17
+WHEN dropperid = 1110130 AND itemid = 2060000 THEN 24
+WHEN dropperid = 1110130 AND itemid = 2061000 THEN 24
+WHEN dropperid = 1120100 AND itemid = 2060000 THEN 19
+WHEN dropperid = 1120100 AND itemid = 2061000 THEN 19
+WHEN dropperid = 1130100 AND itemid = 2060000 THEN 28
+WHEN dropperid = 1130100 AND itemid = 2061000 THEN 28
+WHEN dropperid = 1140100 AND itemid = 2060000 THEN 30
+WHEN dropperid = 1140100 AND itemid = 2061000 THEN 30
+WHEN dropperid = 1140130 AND itemid = 2060000 THEN 30
+WHEN dropperid = 1140130 AND itemid = 2061000 THEN 30
+WHEN dropperid = 1210100 AND itemid = 2060000 THEN 12
+WHEN dropperid = 1210100 AND itemid = 2061000 THEN 12
+WHEN dropperid = 1210101 AND itemid = 2060000 THEN 17
+WHEN dropperid = 1210101 AND itemid = 2061000 THEN 17
+WHEN dropperid = 1210102 AND itemid = 2060000 THEN 13
+WHEN dropperid = 1210102 AND itemid = 2061000 THEN 13
+WHEN dropperid = 1210103 AND itemid = 2060000 THEN 24
+WHEN dropperid = 1210103 AND itemid = 2061000 THEN 24
+WHEN dropperid = 2100100 AND itemid = 2060000 THEN 33
+WHEN dropperid = 2100100 AND itemid = 2061000 THEN 33
+WHEN dropperid = 2100101 AND itemid = 2060000 THEN 34
+WHEN dropperid = 2100101 AND itemid = 2061000 THEN 34
+WHEN dropperid = 2100102 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2100102 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2100103 AND itemid = 2060000 THEN 40
+WHEN dropperid = 2100103 AND itemid = 2061000 THEN 40
+WHEN dropperid = 2100104 AND itemid = 2060000 THEN 45
+WHEN dropperid = 2100104 AND itemid = 2061000 THEN 45
+WHEN dropperid = 2100105 AND itemid = 2060000 THEN 38
+WHEN dropperid = 2100105 AND itemid = 2061000 THEN 38
+WHEN dropperid = 2100106 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2100106 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2100107 AND itemid = 2060000 THEN 44
+WHEN dropperid = 2100107 AND itemid = 2061000 THEN 44
+WHEN dropperid = 2100108 AND itemid = 2060000 THEN 47
+WHEN dropperid = 2100108 AND itemid = 2061000 THEN 47
+WHEN dropperid = 2110200 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2110200 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2110300 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2110300 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2110301 AND itemid = 2060000 THEN 47
+WHEN dropperid = 2110301 AND itemid = 2061000 THEN 47
+WHEN dropperid = 2130100 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2130100 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2220000 AND itemid = 2060000 THEN 45
+WHEN dropperid = 2220000 AND itemid = 2061000 THEN 45
+WHEN dropperid = 2220100 AND itemid = 2060000 THEN 33
+WHEN dropperid = 2220100 AND itemid = 2061000 THEN 33
+WHEN dropperid = 2230100 AND itemid = 2060000 THEN 44
+WHEN dropperid = 2230100 AND itemid = 2061000 THEN 44
+WHEN dropperid = 2230101 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2230101 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2230102 AND itemid = 2060000 THEN 40
+WHEN dropperid = 2230102 AND itemid = 2061000 THEN 40
+WHEN dropperid = 2230103 AND itemid = 2060000 THEN 38
+WHEN dropperid = 2230103 AND itemid = 2061000 THEN 38
+WHEN dropperid = 2230104 AND itemid = 2060000 THEN 45
+WHEN dropperid = 2230104 AND itemid = 2061000 THEN 45
+WHEN dropperid = 2230105 AND itemid = 2060000 THEN 38
+WHEN dropperid = 2230105 AND itemid = 2061000 THEN 38
+WHEN dropperid = 2230106 AND itemid = 2060000 THEN 40
+WHEN dropperid = 2230106 AND itemid = 2061000 THEN 40
+WHEN dropperid = 2230107 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2230107 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2230108 AND itemid = 2060000 THEN 35
+WHEN dropperid = 2230108 AND itemid = 2061000 THEN 35
+WHEN dropperid = 2230109 AND itemid = 2060000 THEN 45
+WHEN dropperid = 2230109 AND itemid = 2061000 THEN 45
+WHEN dropperid = 2230110 AND itemid = 2060000 THEN 38
+WHEN dropperid = 2230110 AND itemid = 2061000 THEN 38
+WHEN dropperid = 2230111 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2230111 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2230131 AND itemid = 2060000 THEN 39
+WHEN dropperid = 2230131 AND itemid = 2061000 THEN 39
+WHEN dropperid = 2230200 AND itemid = 2060000 THEN 47
+WHEN dropperid = 2230200 AND itemid = 2061000 THEN 47
+WHEN dropperid = 2300100 AND itemid = 2060000 THEN 33
+WHEN dropperid = 2300100 AND itemid = 2061000 THEN 33
+WHEN dropperid = 3000000 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3000000 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3000005 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3000005 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3000006 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3000006 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3100101 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3100101 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3100102 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3100102 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3110101 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3110101 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3110102 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3110102 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3110300 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3110300 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3110301 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3110301 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3110302 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3110302 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3110303 AND itemid = 2060000 THEN 62
+WHEN dropperid = 3110303 AND itemid = 2061000 THEN 62
+WHEN dropperid = 3210100 AND itemid = 2060005 THEN 8
+WHEN dropperid = 3210203 AND itemid = 2060000 THEN 59
+WHEN dropperid = 3210203 AND itemid = 2061000 THEN 59
+WHEN dropperid = 3210204 AND itemid = 2060000 THEN 55
+WHEN dropperid = 3210204 AND itemid = 2061000 THEN 55
+WHEN dropperid = 3210205 AND itemid = 2060000 THEN 55
+WHEN dropperid = 3210205 AND itemid = 2061000 THEN 55
+WHEN dropperid = 3210206 AND itemid = 2060000 THEN 59
+WHEN dropperid = 3210206 AND itemid = 2061000 THEN 59
+WHEN dropperid = 3210207 AND itemid = 2060000 THEN 55
+WHEN dropperid = 3210207 AND itemid = 2060005 THEN 9
+WHEN dropperid = 3210207 AND itemid = 2061000 THEN 55
+WHEN dropperid = 3210208 AND itemid = 2060000 THEN 59
+WHEN dropperid = 3210208 AND itemid = 2061000 THEN 59
+WHEN dropperid = 3210450 AND itemid = 2060000 THEN 59
+WHEN dropperid = 3210450 AND itemid = 2061000 THEN 59
+WHEN dropperid = 3210800 AND itemid = 2060005 THEN 10
+WHEN dropperid = 3220000 AND itemid = 2060000 THEN 79
+WHEN dropperid = 3220000 AND itemid = 2061000 THEN 79
+WHEN dropperid = 3230100 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3230100 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3230103 AND itemid = 2060000 THEN 62
+WHEN dropperid = 3230103 AND itemid = 2061000 THEN 62
+WHEN dropperid = 3230200 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3230200 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3230302 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3230302 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3230303 AND itemid = 2060000 THEN 60
+WHEN dropperid = 3230303 AND itemid = 2061000 THEN 60
+WHEN dropperid = 3230304 AND itemid = 2060000 THEN 62
+WHEN dropperid = 3230304 AND itemid = 2061000 THEN 62
+WHEN dropperid = 3230305 AND itemid = 2060000 THEN 64
+WHEN dropperid = 3230305 AND itemid = 2061000 THEN 64
+WHEN dropperid = 3230306 AND itemid = 2060000 THEN 60
+WHEN dropperid = 3230306 AND itemid = 2061000 THEN 60
+WHEN dropperid = 3230307 AND itemid = 2060000 THEN 50
+WHEN dropperid = 3230307 AND itemid = 2061000 THEN 50
+WHEN dropperid = 3230308 AND itemid = 2060000 THEN 64
+WHEN dropperid = 3230308 AND itemid = 2061000 THEN 64
+WHEN dropperid = 3230400 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3230400 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3230405 AND itemid = 2060000 THEN 62
+WHEN dropperid = 3230405 AND itemid = 2061000 THEN 62
+WHEN dropperid = 3300000 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3300000 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3300001 AND itemid = 2060000 THEN 49
+WHEN dropperid = 3300001 AND itemid = 2061000 THEN 49
+WHEN dropperid = 3300002 AND itemid = 2060000 THEN 50
+WHEN dropperid = 3300002 AND itemid = 2061000 THEN 50
+WHEN dropperid = 3300003 AND itemid = 2060000 THEN 52
+WHEN dropperid = 3300003 AND itemid = 2061000 THEN 52
+WHEN dropperid = 3300004 AND itemid = 2060000 THEN 54
+WHEN dropperid = 3300004 AND itemid = 2061000 THEN 54
+WHEN dropperid = 3300006 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3300006 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3300007 AND itemid = 2060000 THEN 57
+WHEN dropperid = 3300007 AND itemid = 2061000 THEN 57
+WHEN dropperid = 3300008 AND itemid = 2060000 THEN 87
+WHEN dropperid = 3300008 AND itemid = 2061000 THEN 87
+WHEN dropperid = 4110300 AND itemid = 2060000 THEN 68
+WHEN dropperid = 4110300 AND itemid = 2061000 THEN 68
+WHEN dropperid = 4110301 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4110301 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4130103 AND itemid = 2060000 THEN 107
+WHEN dropperid = 4130103 AND itemid = 2061000 THEN 107
+WHEN dropperid = 4230103 AND itemid = 2060000 THEN 68
+WHEN dropperid = 4230103 AND itemid = 2061000 THEN 68
+WHEN dropperid = 4230106 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230106 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230108 AND itemid = 2060000 THEN 70
+WHEN dropperid = 4230108 AND itemid = 2061000 THEN 70
+WHEN dropperid = 4230109 AND itemid = 2060000 THEN 68
+WHEN dropperid = 4230109 AND itemid = 2061000 THEN 68
+WHEN dropperid = 4230110 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230110 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230111 AND itemid = 2060000 THEN 67
+WHEN dropperid = 4230111 AND itemid = 2061000 THEN 67
+WHEN dropperid = 4230112 AND itemid = 2060000 THEN 72
+WHEN dropperid = 4230112 AND itemid = 2061000 THEN 72
+WHEN dropperid = 4230113 AND itemid = 2060000 THEN 65
+WHEN dropperid = 4230113 AND itemid = 2061000 THEN 65
+WHEN dropperid = 4230114 AND itemid = 2060000 THEN 67
+WHEN dropperid = 4230114 AND itemid = 2061000 THEN 67
+WHEN dropperid = 4230115 AND itemid = 2060000 THEN 75
+WHEN dropperid = 4230115 AND itemid = 2061000 THEN 75
+WHEN dropperid = 4230116 AND itemid = 2060000 THEN 65
+WHEN dropperid = 4230116 AND itemid = 2061000 THEN 65
+WHEN dropperid = 4230117 AND itemid = 2060000 THEN 68
+WHEN dropperid = 4230117 AND itemid = 2061000 THEN 68
+WHEN dropperid = 4230118 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230118 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230119 AND itemid = 2060000 THEN 67
+WHEN dropperid = 4230119 AND itemid = 2061000 THEN 67
+WHEN dropperid = 4230120 AND itemid = 2060000 THEN 72
+WHEN dropperid = 4230120 AND itemid = 2061000 THEN 72
+WHEN dropperid = 4230121 AND itemid = 2060000 THEN 75
+WHEN dropperid = 4230121 AND itemid = 2061000 THEN 75
+WHEN dropperid = 4230123 AND itemid = 2060000 THEN 70
+WHEN dropperid = 4230123 AND itemid = 2061000 THEN 70
+WHEN dropperid = 4230124 AND itemid = 2060000 THEN 68
+WHEN dropperid = 4230124 AND itemid = 2061000 THEN 68
+WHEN dropperid = 4230125 AND itemid = 2060000 THEN 72
+WHEN dropperid = 4230125 AND itemid = 2061000 THEN 72
+WHEN dropperid = 4230126 AND itemid = 2060000 THEN 77
+WHEN dropperid = 4230126 AND itemid = 2061000 THEN 77
+WHEN dropperid = 4230201 AND itemid = 2060000 THEN 65
+WHEN dropperid = 4230201 AND itemid = 2061000 THEN 65
+WHEN dropperid = 4230300 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230300 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230400 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230400 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230500 AND itemid = 2060000 THEN 65
+WHEN dropperid = 4230500 AND itemid = 2061000 THEN 65
+WHEN dropperid = 4230501 AND itemid = 2060000 THEN 67
+WHEN dropperid = 4230501 AND itemid = 2061000 THEN 67
+WHEN dropperid = 4230502 AND itemid = 2060000 THEN 70
+WHEN dropperid = 4230502 AND itemid = 2061000 THEN 70
+WHEN dropperid = 4230503 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230503 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230504 AND itemid = 2060000 THEN 73
+WHEN dropperid = 4230504 AND itemid = 2061000 THEN 73
+WHEN dropperid = 4230600 AND itemid = 2060000 THEN 65
+WHEN dropperid = 4230600 AND itemid = 2061000 THEN 65
+WHEN dropperid = 4240000 AND itemid = 2060000 THEN 80
+WHEN dropperid = 4240000 AND itemid = 2061000 THEN 80
+WHEN dropperid = 5120100 AND itemid = 2060000 THEN 123
+WHEN dropperid = 5120100 AND itemid = 2061000 THEN 123
+WHEN dropperid = 5130104 AND itemid = 2060000 THEN 89
+WHEN dropperid = 5130104 AND itemid = 2061000 THEN 89
+WHEN dropperid = 5140000 AND itemid = 2060000 THEN 94
+WHEN dropperid = 5140000 AND itemid = 2061000 THEN 94
+WHEN dropperid = 5150000 AND itemid = 2060000 THEN 97
+WHEN dropperid = 5150000 AND itemid = 2061000 THEN 97
+WHEN dropperid = 5200000 AND itemid = 2060001 THEN 19
+WHEN dropperid = 5200000 AND itemid = 2061001 THEN 19
+WHEN dropperid = 5200001 AND itemid = 2060001 THEN 24
+WHEN dropperid = 5200001 AND itemid = 2061001 THEN 24
+WHEN dropperid = 5200002 AND itemid = 2060001 THEN 24
+WHEN dropperid = 5200002 AND itemid = 2061001 THEN 24
+WHEN dropperid = 5220000 AND itemid = 2060000 THEN 125
+WHEN dropperid = 5220000 AND itemid = 2061000 THEN 125
+WHEN dropperid = 5220002 AND itemid = 2060000 THEN 114
+WHEN dropperid = 5220002 AND itemid = 2061000 THEN 114
+WHEN dropperid = 5220003 AND itemid = 2060000 THEN 134
+WHEN dropperid = 5220003 AND itemid = 2061000 THEN 134
+WHEN dropperid = 5400000 AND itemid = 2060001 THEN 28
+WHEN dropperid = 5400000 AND itemid = 2061001 THEN 28
+WHEN dropperid = 6220000 AND itemid = 2060000 THEN 148
+WHEN dropperid = 6220000 AND itemid = 2061000 THEN 148
+WHEN dropperid = 7120103 AND itemid = 2060003 THEN 28
+WHEN dropperid = 7220000 AND itemid = 2060001 THEN 81
+WHEN dropperid = 7220000 AND itemid = 2061001 THEN 81
+WHEN dropperid = 7220001 AND itemid = 2060001 THEN 79
+WHEN dropperid = 7220001 AND itemid = 2061001 THEN 79
+WHEN dropperid = 7220002 AND itemid = 2060001 THEN 87
+WHEN dropperid = 7220002 AND itemid = 2061001 THEN 87
+WHEN dropperid = 8220000 AND itemid = 2060001 THEN 94
+WHEN dropperid = 8220000 AND itemid = 2061001 THEN 94
+WHEN dropperid = 8220001 AND itemid = 2060001 THEN 102
+WHEN dropperid = 8220001 AND itemid = 2061001 THEN 102
+WHEN dropperid = 9300011 AND itemid = 2060000 THEN 64
+WHEN dropperid = 9300011 AND itemid = 2061000 THEN 64
+WHEN dropperid = 9300060 AND itemid = 2060000 THEN 68
+WHEN dropperid = 9300060 AND itemid = 2061000 THEN 68
+WHEN dropperid = 9300131 AND itemid = 2060000 THEN 64
+WHEN dropperid = 9300131 AND itemid = 2061000 THEN 64
+WHEN dropperid = 9300132 AND itemid = 2060000 THEN 49
+WHEN dropperid = 9300132 AND itemid = 2061000 THEN 49
+WHEN dropperid = 9300133 AND itemid = 2061000 THEN 49
+WHEN dropperid = 9300160 AND itemid = 2060000 THEN 103
+WHEN dropperid = 9300160 AND itemid = 2061000 THEN 103
+WHEN dropperid = 9300161 AND itemid = 2060000 THEN 103
+WHEN dropperid = 9300161 AND itemid = 2061000 THEN 103
+WHEN dropperid = 9300274 AND itemid = 2060000 THEN 13
+WHEN dropperid = 9300274 AND itemid = 2061000 THEN 13
+WHEN dropperid = 9300332 AND itemid = 2060000 THEN 65
+WHEN dropperid = 9300334 AND itemid = 2060000 THEN 80
+WHEN dropperid = 9300341 AND itemid = 2060000 THEN 9
+WHEN dropperid = 9300341 AND itemid = 2061000 THEN 9
+WHEN dropperid = 9300342 AND itemid = 2060000 THEN 13
+WHEN dropperid = 9300342 AND itemid = 2061000 THEN 13
+WHEN dropperid = 9300343 AND itemid = 2060000 THEN 12
+WHEN dropperid = 9300343 AND itemid = 2061000 THEN 12
+WHEN dropperid = 9303005 AND itemid = 2060001 THEN 21
+WHEN dropperid = 9303005 AND itemid = 2061001 THEN 21
+WHEN dropperid = 9303008 AND itemid = 2060001 THEN 21
+WHEN dropperid = 9303008 AND itemid = 2061001 THEN 21
+WHEN dropperid = 9303009 AND itemid = 2060001 THEN 41
+WHEN dropperid = 9303009 AND itemid = 2061001 THEN 41
+WHEN dropperid = 9400000 AND itemid = 2060001 THEN 20
+WHEN dropperid = 9400009 AND itemid = 2060001 THEN 163
+WHEN dropperid = 9400011 AND itemid = 2060002 THEN 21
+WHEN dropperid = 9400100 AND itemid = 2060003 THEN 18
+WHEN dropperid = 9400101 AND itemid = 2061003 THEN 19
+WHEN dropperid = 9400204 AND itemid = 2060003 THEN 22
+WHEN dropperid = 9400239 AND itemid = 2060000 THEN 39
+WHEN dropperid = 9400239 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9400244 AND itemid = 2060000 THEN 97
+WHEN dropperid = 9400244 AND itemid = 2061000 THEN 97
+WHEN dropperid = 9400248 AND itemid = 2060000 THEN 39
+WHEN dropperid = 9400248 AND itemid = 2061000 THEN 39
+WHEN dropperid = 9400540 AND itemid = 2060004 THEN 8
+WHEN dropperid = 9400540 AND itemid = 2061004 THEN 8
+WHEN dropperid = 9400541 AND itemid = 2060004 THEN 8
+WHEN dropperid = 9400541 AND itemid = 2061004 THEN 8
+WHEN dropperid = 9400542 AND itemid = 2060004 THEN 11
+WHEN dropperid = 9400542 AND itemid = 2061004 THEN 11
+WHEN dropperid = 9400543 AND itemid = 2060004 THEN 13
+WHEN dropperid = 9400543 AND itemid = 2061004 THEN 13
+WHEN dropperid = 9400547 AND itemid = 2060000 THEN 44
+WHEN dropperid = 9400547 AND itemid = 2061000 THEN 44
+WHEN dropperid = 9400548 AND itemid = 2060000 THEN 49
+WHEN dropperid = 9400548 AND itemid = 2061000 THEN 49
+WHEN dropperid = 9400550 AND itemid = 2060000 THEN 44
+WHEN dropperid = 9400550 AND itemid = 2061000 THEN 44
+WHEN dropperid = 9400558 AND itemid = 2060000 THEN 49
+WHEN dropperid = 9400558 AND itemid = 2061000 THEN 49
+WHEN dropperid = 9400563 AND itemid = 2060000 THEN 65
+WHEN dropperid = 9400563 AND itemid = 2061000 THEN 65
+WHEN dropperid = 9400638 AND itemid = 2060000 THEN 33
+WHEN dropperid = 9400638 AND itemid = 2061000 THEN 33
+WHEN dropperid = 9420500 AND itemid = 2060000 THEN 45
+WHEN dropperid = 9420500 AND itemid = 2061000 THEN 45
+WHEN dropperid = 9420502 AND itemid = 2060000 THEN 29
+WHEN dropperid = 9420502 AND itemid = 2061000 THEN 29
+WHEN dropperid = 9420506 AND itemid = 2060000 THEN 38
+WHEN dropperid = 9420506 AND itemid = 2061000 THEN 38
+WHEN dropperid = 9420508 AND itemid = 2060000 THEN 70
+WHEN dropperid = 9420508 AND itemid = 2061000 THEN 70
+WHEN dropperid = 9420527 AND itemid = 2060001 THEN 36
+WHEN dropperid = 9420527 AND itemid = 2061001 THEN 36
+WHEN dropperid = 9420531 AND itemid = 2060001 THEN 48
+WHEN dropperid = 9420531 AND itemid = 2061001 THEN 48
+WHEN dropperid = 9500112 AND itemid = 2060001 THEN 28
+WHEN dropperid = 9500112 AND itemid = 2061001 THEN 28
+WHEN dropperid = 9500119 AND itemid = 2060000 THEN 64
+WHEN dropperid = 9500119 AND itemid = 2061000 THEN 64
+WHEN dropperid = 9500120 AND itemid = 2060000 THEN 73
+WHEN dropperid = 9500120 AND itemid = 2061000 THEN 73
+WHEN dropperid = 9500122 AND itemid = 2060000 THEN 80
+WHEN dropperid = 9500123 AND itemid = 2060000 THEN 97
+WHEN dropperid = 9500123 AND itemid = 2061000 THEN 97
+WHEN dropperid = 9500308 AND itemid = 2060000 THEN 114
+WHEN dropperid = 9500308 AND itemid = 2061000 THEN 114
+WHEN dropperid = 9500310 AND itemid = 2060000 THEN 134
+WHEN dropperid = 9500310 AND itemid = 2061000 THEN 134
+WHEN dropperid = 9500312 AND itemid = 2060001 THEN 79
+WHEN dropperid = 9500312 AND itemid = 2061001 THEN 79
+WHEN dropperid = 9500313 AND itemid = 2060001 THEN 81
+WHEN dropperid = 9500313 AND itemid = 2061001 THEN 81
+WHEN dropperid = 9500314 AND itemid = 2060001 THEN 87
+WHEN dropperid = 9500314 AND itemid = 2061001 THEN 87
+WHEN dropperid = 9500321 AND itemid = 2060001 THEN 8
+WHEN dropperid = 9500321 AND itemid = 2061001 THEN 8
+WHEN dropperid = 9500366 AND itemid = 2060000 THEN 24
+WHEN dropperid = 9500369 AND itemid = 2060000 THEN 24
+ELSE maximum_quantity END;
+
+UPDATE drop_data SET `chance`=1287 WHERE `chance`=1500;
+REPLACE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES
 (851000, 2290132, 1, 1, 0, 3861),
 (7090000, 2290087, 1, 1, 0, 10000),
 (8090000, 2290045, 1, 1, 0, 10000),
@@ -24394,4 +24395,3 @@ BEGIN TRANSACTION;
 (9500333, 2290076, 1, 1, 0, 10000),
 (9500333, 2290104, 1, 1, 0, 10000),
 (9500333, 2290117, 1, 1, 0, 10000);
-END TRANSACTION;

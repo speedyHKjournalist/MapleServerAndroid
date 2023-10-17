@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package net.server.channel;
 
+import android.content.Context;
+import android.content.res.AssetManager;
 import client.Character;
 import config.YamlConfig;
 import constants.id.MapId;
@@ -107,8 +109,10 @@ public final class Channel {
     private final Lock lock = new ReentrantLock(true);;
     private final Lock merchRlock;
     private final Lock merchWlock;
+    private final Context context;
 
-    public Channel(final int world, final int channel, long startTime) {
+    public Channel(final int world, final int channel, long startTime, Context context) {
+        this.context = context;
         this.world = world;
         this.channel = channel;
 
@@ -151,7 +155,7 @@ public final class Channel {
     }
 
     private ChannelServer initServer(int port, int world, int channel) {
-        ChannelServer channelServer = new ChannelServer(port, world, channel);
+        ChannelServer channelServer = new ChannelServer(port, world, channel, this.context);
         channelServer.start();
         return channelServer;
     }
@@ -437,9 +441,10 @@ public final class Channel {
 
     private static String[] getEvents() {
         List<String> events = new ArrayList<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get("scripts/event"))) {
-            for (Path path : stream) {
-                String fileName = path.getFileName().toString();
+        AssetManager assetManager = Server.getInstance().getContext().getAssets();
+        try {
+            String[] stream = assetManager.list("scripts/event");
+            for (String fileName : stream) {
                 events.add(fileName.substring(0, fileName.length() - 3));
             }
         } catch (IOException e) {

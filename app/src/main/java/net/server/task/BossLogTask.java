@@ -19,15 +19,20 @@
 */
 package net.server.task;
 
+import android.content.Context;
 import server.expeditions.ExpeditionBossLog;
 
 /**
  * @author Ronan
  */
 public class BossLogTask implements Runnable {
+    private final Context context;
+    public BossLogTask(Context context) {
+        this.context = context;
+    }
 
     @Override
     public void run() {
-        ExpeditionBossLog.resetBossLogTable();
+        ExpeditionBossLog.resetBossLogTable(context);
     }
 }

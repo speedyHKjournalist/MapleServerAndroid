@@ -21,10 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.util.Log;
 import client.inventory.*;
 import config.YamlConfig;
 import constants.id.ItemId;
 import constants.inventory.ItemConstants;
+import database.MapleDBHelper;
 import net.server.Server;
 import provider.Data;
 import provider.DataProvider;
@@ -164,6 +170,7 @@ public class CashShop {
             Map<Integer, CashItem> loadedItems = new HashMap<>();
             List<Integer> onSaleItems = new ArrayList<>();
             for (Data item : etc.getData("Commodity.img").getChildren()) {
+                Log.d("IMPORT CASH", item.getName());
                 int sn = DataTool.getIntConvert("SN", item);
                 int itemId = DataTool.getIntConvert("ItemId", item);
                 int price = DataTool.getIntConvert("Price", item, 0);
@@ -181,6 +188,7 @@ public class CashShop {
 
             Map<Integer, List<Integer>> loadedPackages = new HashMap<>();
             for (Data cashPackage : etc.getData("CashPackage.img").getChildren()) {
+                Log.d("IMPORT CASH", cashPackage.getName());
                 List<Integer> cPackage = new ArrayList<>();
 
                 for (Data item : cashPackage.getChildByPath("SN").getChildren()) {
@@ -192,13 +200,26 @@ public class CashShop {
             CashItemFactory.packages = loadedPackages;
 
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT * FROM specialcashitems");
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    loadedSpecialItems.add(new SpecialCashItem(rs.getInt("sn"), rs.getInt("modifier"), rs.getByte("info")));
+            String query = "SELECT * FROM specialcashitems";
+            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+                 Cursor cursor = con.rawQuery(query, null)) {
+                if (cursor != null) {
+                    if (cursor.moveToFirst()) {
+                        do {
+                            int snIdx = cursor.getColumnIndex("sn");
+                            int modifierIdx = cursor.getColumnIndex("modifier");
+                            int infoIdx = cursor.getColumnIndex("info");
+                            if (snIdx != -1 && modifierIdx != -1 && infoIdx != -1) {
+                                int sn = cursor.getInt(snIdx);
+                                int modifier = cursor.getInt(modifierIdx);
+                                byte info = (byte) cursor.getInt(infoIdx);
+
+                                loadedSpecialItems.add(new SpecialCashItem(sn, modifier, info));
+                            }
+                        } while (cursor.moveToNext());
+                    }
                 }
-            } catch (SQLException ex) {
+            } catch (SQLiteException ex) {
                 ex.printStackTrace();
             }
             CashItemFactory.specialcashitems = loadedSpecialItems;
@@ -483,14 +504,15 @@ public class CashShop {
         notes--;
     }
 
-    public void save(Connection con) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement("UPDATE `accounts` SET `nxCredit` = ?, `maplePoint` = ?, `nxPrepaid` = ? WHERE `id` = ?")) {
-            ps.setInt(1, nxCredit);
-            ps.setInt(2, maplePoint);
-            ps.setInt(3, nxPrepaid);
-            ps.setInt(4, accountId);
-            ps.executeUpdate();
-        }
+    public void save(SQLiteDatabase con) throws SQLiteException {
+        ContentValues values = new ContentValues();
+        values.put("nxCredit", nxCredit);
+        values.put("maplePoint", maplePoint);
+        values.put("nxPrepaid", nxPrepaid);
+
+        String whereClause = "id = ?";
+        String[] whereArgs = { String.valueOf(accountId) };
+        con.update("accounts", values, whereClause, whereArgs);
 
         List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
 
@@ -501,19 +523,15 @@ public class CashShop {
 
         factory.saveItems(itemsWithType, accountId, con);
 
-        try (PreparedStatement ps = con.prepareStatement("DELETE FROM `wishlists` WHERE `charid` = ?")) {
-            ps.setInt(1, characterId);
-            ps.executeUpdate();
-        }
+        String wishlistsWhereClause = "charid = ?";
+        String[] wishlistsWhereArgs = { String.valueOf(characterId) };
+        con.delete("wishlists", wishlistsWhereClause, wishlistsWhereArgs);
 
-        try (PreparedStatement ps = con.prepareStatement("INSERT INTO `wishlists` VALUES (DEFAULT, ?, ?)")) {
-            ps.setInt(1, characterId);
-
-            for (int sn : wishList) {
-                // TODO: batch insert
-                ps.setInt(2, sn);
-                ps.executeUpdate();
-            }
+        for (int sn : wishList) {
+            ContentValues wishlistsValues = new ContentValues();
+            wishlistsValues.put("charid", characterId);
+            wishlistsValues.put("sn", sn);
+            con.insert("wishlists", null, wishlistsValues);
         }
     }
 

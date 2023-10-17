@@ -23,6 +23,7 @@
 */
 package client.processor.npc;
 
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.Inventory;
@@ -304,7 +305,7 @@ public class FredrickProcessor {
                     } else {
                         chr.message("An unknown error has occured.");
                     }
-                } catch (SQLException ex) {
+                } catch (SQLiteException ex) {
                     ex.printStackTrace();
                 }
             } finally {

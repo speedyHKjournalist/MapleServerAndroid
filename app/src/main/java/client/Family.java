@@ -21,6 +21,10 @@
  */
 package client;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import net.server.world.World;
@@ -189,77 +193,101 @@ public class Family {
         }
     }
 
-    public static void loadAllFamilies(Connection con) {
+    public static void loadAllFamilies(SQLiteDatabase con) {
         List<Pair<Pair<Integer, Integer>, FamilyEntry>> unmatchedJuniors = new ArrayList<>(200); // <<world, seniorid> familyEntry>
-        try (PreparedStatement psEntries = con.prepareStatement("SELECT * FROM family_character")) {
-            ResultSet rsEntries = psEntries.executeQuery();
-            while (rsEntries.next()) { // can be optimized
-                int cid = rsEntries.getInt("cid");
-                String name = null;
-                int level = -1;
-                int jobID = -1;
-                int world = -1;
-                try (PreparedStatement ps = con.prepareStatement("SELECT world, name, level, job FROM characters WHERE id = ?")) {
-                    ps.setInt(1, cid);
-                    ResultSet rs = ps.executeQuery();
-                    if (rs.next()) {
-                        world = rs.getInt("world");
-                        name = rs.getString("name");
-                        level = rs.getInt("level");
-                        jobID = rs.getInt("job");
-                    } else {
-                        log.error("Could not load character information of chrId {} in loadAllFamilies(). (RECORD DOES NOT EXIST)", cid);
-                        continue;
-                    }
-                } catch (SQLException e) {
-                    log.error("Could not load character information of chrId {} in loadAllFamilies(). (SQL ERROR)", cid, e);
-                    continue;
-                }
-                int familyid = rsEntries.getInt("familyid");
-                int seniorid = rsEntries.getInt("seniorid");
-                int reputation = rsEntries.getInt("reputation");
-                int todaysRep = rsEntries.getInt("todaysrep");
-                int totalRep = rsEntries.getInt("totalreputation");
-                int repsToSenior = rsEntries.getInt("reptosenior");
-                String precepts = rsEntries.getString("precepts");
-                //Timestamp lastResetTime = rsEntries.getTimestamp("lastresettime"); //taken care of by FamilyDailyResetTask
-                World wserv = Server.getInstance().getWorld(world);
-                if (wserv == null) {
-                    continue;
-                }
-                Family family = wserv.getFamily(familyid);
-                if (family == null) {
-                    family = new Family(familyid, world);
-                    Server.getInstance().getWorld(world).addFamily(familyid, family);
-                }
-                FamilyEntry familyEntry = new FamilyEntry(family, cid, name, level, Job.getById(jobID));
-                family.addEntry(familyEntry);
-                if (seniorid <= 0) {
-                    family.setLeader(familyEntry);
-                    family.setMessage(precepts, false);
-                }
-                FamilyEntry senior = family.getEntryByID(seniorid);
-                if (senior != null) {
-                    familyEntry.setSenior(family.getEntryByID(seniorid), false);
-                } else {
-                    if (seniorid > 0) {
-                        unmatchedJuniors.add(new Pair<>(new Pair<>(world, seniorid), familyEntry));
-                    }
-                }
-                familyEntry.setReputation(reputation);
-                familyEntry.setTodaysRep(todaysRep);
-                familyEntry.setTotalReputation(totalRep);
-                familyEntry.setRepsToSenior(repsToSenior);
-                //load used entitlements
-                try (PreparedStatement ps = con.prepareStatement("SELECT entitlementid FROM family_entitlement WHERE charid = ?")) {
-                    ps.setInt(1, familyEntry.getChrId());
-                    ResultSet rs = ps.executeQuery();
-                    while (rs.next()) {
-                        familyEntry.setEntitlementUsed(rs.getInt("entitlementid"));
+        try (Cursor entriesCursor = con.rawQuery("SELECT * FROM family_character", null)) {
+            if (entriesCursor != null) {
+                while (entriesCursor.moveToNext()) { // can be optimized
+                    int cidIdx = entriesCursor.getColumnIndex("cid");
+                    if (cidIdx != -1) {
+                        int cid = entriesCursor.getInt(cidIdx);
+                        String name = "";
+                        int level = -1;
+                        int jobID = -1;
+                        int world = -1;
+                        try (Cursor characterCursor = con.rawQuery("SELECT world, name, level, job FROM characters WHERE id = ?", new String[]{String.valueOf(cid)})) {
+                            if (characterCursor != null && characterCursor.moveToFirst()) {
+                                int worldIdx = characterCursor.getColumnIndex("world");
+                                int nameIdx = characterCursor.getColumnIndex("name");
+                                int levelIdx = characterCursor.getColumnIndex("level");
+                                int jobIdx = characterCursor.getColumnIndex("job");
+
+                                if (worldIdx != -1 && nameIdx != -1 && levelIdx != -1 && jobIdx != -1) {
+                                    world = characterCursor.getInt(worldIdx);
+                                    name = characterCursor.getString(nameIdx);
+                                    level = characterCursor.getInt(levelIdx);
+                                    jobID = characterCursor.getInt(jobIdx);
+                                }
+                            } else {
+                                log.error("Could not load character information of chrId {} in loadAllFamilies(). (RECORD DOES NOT EXIST)", cid);
+                                continue;
+                            }
+                        } catch (SQLiteException e) {
+                            log.error("Could not load character information of chrId {} in loadAllFamilies(). (SQL ERROR)", cid, e);
+                            continue;
+                        }
+                        int familyidIdx = entriesCursor.getColumnIndex("familyid");
+                        int senioridIdx = entriesCursor.getColumnIndex("seniorid");
+                        int reputationIdx = entriesCursor.getColumnIndex("reputation");
+                        int todaysRepIdx = entriesCursor.getColumnIndex("todaysrep");
+                        int totalRepIdx = entriesCursor.getColumnIndex("totalreputation");
+                        int repsToSeniorIdx = entriesCursor.getColumnIndex("repsToSenior");
+                        int preceptsIdx = entriesCursor.getColumnIndex("precepts");
+
+                        if (familyidIdx != -1 && senioridIdx != -1 && reputationIdx != -1 && todaysRepIdx != -1 && totalRepIdx != -1 && repsToSeniorIdx != -1 && preceptsIdx!= -1) {
+                            int familyid = entriesCursor.getInt(familyidIdx);
+                            int seniorid = entriesCursor.getInt(senioridIdx);
+                            int reputation = entriesCursor.getInt(reputationIdx);
+                            int todaysRep = entriesCursor.getInt(todaysRepIdx);
+                            int totalRep = entriesCursor.getInt(totalRepIdx);
+                            int repsToSenior = entriesCursor.getInt(repsToSeniorIdx);
+                            String precepts = entriesCursor.getString(preceptsIdx);
+                            //Timestamp lastResetTime = rsEntries.getTimestamp("lastresettime"); //taken care of by FamilyDailyResetTask
+                            World wserv = Server.getInstance().getWorld(world);
+                            if (wserv == null) {
+                                continue;
+                            }
+                            Family family = wserv.getFamily(familyid);
+                            if (family == null) {
+                                family = new Family(familyid, world);
+                                Server.getInstance().getWorld(world).addFamily(familyid, family);
+                            }
+                            FamilyEntry familyEntry = new FamilyEntry(family, cid, name, level, Job.getById(jobID));
+                            family.addEntry(familyEntry);
+                            if (seniorid <= 0) {
+                                family.setLeader(familyEntry);
+                                family.setMessage(precepts, false);
+                            }
+                            FamilyEntry senior = family.getEntryByID(seniorid);
+                            if (senior != null) {
+                                familyEntry.setSenior(family.getEntryByID(seniorid), false);
+                            } else {
+                                if (seniorid > 0) {
+                                    unmatchedJuniors.add(new Pair<>(new Pair<>(world, seniorid), familyEntry));
+                                }
+                            }
+                            familyEntry.setReputation(reputation);
+                            familyEntry.setTodaysRep(todaysRep);
+                            familyEntry.setTotalReputation(totalRep);
+                            familyEntry.setRepsToSenior(repsToSenior);
+                            //load used entitlements
+                            String[] selectionArgs = { String.valueOf(familyEntry.getChrId()) };
+                            try (Cursor cursor =  con.rawQuery("SELECT entitlementid FROM family_entitlement WHERE charid = ?", selectionArgs)) {
+                                if (cursor != null) {
+                                    while (cursor.moveToNext()) {
+                                        int entitlementidIdx = cursor.getColumnIndex("entitlementid");
+                                        if (entitlementidIdx != -1) {
+                                            int entitlementId = cursor.getInt(entitlementidIdx);
+                                            familyEntry.setEntitlementUsed(entitlementId);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Could not get family_character entries", e);
         }
         // link missing ones (out of order)
@@ -283,8 +311,8 @@ public class Family {
     }
 
     public void saveAllMembersRep() { //was used for autosave task, but character autosave should be enough
-        try (Connection con = DatabaseConnection.getConnection()) {
-            con.setAutoCommit(false);
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            con.beginTransaction();
             boolean success = true;
             for (FamilyEntry entry : members.values()) {
                 success = entry.saveReputation(con);
@@ -293,15 +321,15 @@ public class Family {
                 }
             }
             if (!success) {
-                con.rollback();
                 log.error("Family rep autosave failed for family {}", getID());
             }
-            con.setAutoCommit(true);
+            con.setTransactionSuccessful();
             //reset repChanged after successful save
             for (FamilyEntry entry : members.values()) {
                 entry.savedSuccessfully();
             }
-        } catch (SQLException e) {
+            con.endTransaction();
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB while saving all members rep", e);
         }
     }

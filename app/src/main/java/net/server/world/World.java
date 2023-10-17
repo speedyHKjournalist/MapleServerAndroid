@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package net.server.world;
 
+import android.content.Context;
 import client.BuddyList;
 import client.BuddyList.BuddyAddResult;
 import client.BuddyList.BuddyOperation;
@@ -83,6 +84,7 @@ public class World {
     private int exprate;
     private int droprate;
     private int bossdroprate;
+    private final Context context;
     private int mesorate;
     private int questrate;
     private int travelrate;
@@ -161,7 +163,8 @@ public class World {
     private ScheduledFuture<?> timeoutSchedule;
     private ScheduledFuture<?> hpDecSchedule;
 
-    public World(int world, int flag, String eventmsg, int exprate, int droprate, int bossdroprate, int mesorate, int questrate, int travelrate, int fishingrate) {
+    public World(int world, int flag, String eventmsg, int exprate, int droprate, int bossdroprate, int mesorate, int questrate, int travelrate, int fishingrate, Context context) {
+        this.context = context;
         this.id = world;
         this.flag = flag;
         this.eventmsg = eventmsg;
@@ -206,8 +209,8 @@ public class World {
 
         if (YamlConfig.config.server.USE_FAMILY_SYSTEM) {
             long timeLeft = Server.getTimeLeftForNextDay();
-            FamilyDailyResetTask.resetEntitlementUsage(this);
-            tman.register(new FamilyDailyResetTask(this), DAYS.toMillis(1), timeLeft);
+            FamilyDailyResetTask.resetEntitlementUsage(this, this.context);
+            tman.register(new FamilyDailyResetTask(this, this.context), DAYS.toMillis(1), timeLeft);
         }
     }
 

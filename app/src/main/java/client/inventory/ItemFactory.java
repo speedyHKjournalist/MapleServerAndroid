@@ -20,6 +20,12 @@
  */
 package client.inventory;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import database.MapleDBHelper;
+import net.server.Server;
 import tools.DatabaseConnection;
 import tools.Pair;
 
@@ -64,7 +70,7 @@ public enum ItemFactory {
         return value;
     }
 
-    public List<Pair<Item, InventoryType>> loadItems(int id, boolean login) throws SQLException {
+    public List<Pair<Item, InventoryType>> loadItems(int id, boolean login) throws SQLiteException {
         if (value != 6) {
             return loadItemsCommon(id, login);
         } else {
@@ -72,11 +78,11 @@ public enum ItemFactory {
         }
     }
 
-    public void saveItems(List<Pair<Item, InventoryType>> items, int id, Connection con) throws SQLException {
+    public void saveItems(List<Pair<Item, InventoryType>> items, int id, SQLiteDatabase con) throws SQLiteException {
         saveItems(items, null, id, con);
     }
 
-    public void saveItems(List<Pair<Item, InventoryType>> items, List<Short> bundlesList, int id, Connection con) throws SQLException {
+    public void saveItems(List<Pair<Item, InventoryType>> items, List<Short> bundlesList, int id, SQLiteDatabase con) throws SQLiteException {
         // thanks Arufonsu, MedicOP, BHB for pointing a "synchronized" bottleneck here
 
         if (value != 6) {
@@ -86,39 +92,71 @@ public enum ItemFactory {
         }
     }
 
-    private static Equip loadEquipFromResultSet(ResultSet rs) throws SQLException {
-        Equip equip = new Equip(rs.getInt("itemid"), (short) rs.getInt("position"));
-        equip.setOwner(rs.getString("owner"));
-        equip.setQuantity((short) rs.getInt("quantity"));
-        equip.setAcc((short) rs.getInt("acc"));
-        equip.setAvoid((short) rs.getInt("avoid"));
-        equip.setDex((short) rs.getInt("dex"));
-        equip.setHands((short) rs.getInt("hands"));
-        equip.setHp((short) rs.getInt("hp"));
-        equip.setInt((short) rs.getInt("int"));
-        equip.setJump((short) rs.getInt("jump"));
-        equip.setVicious((short) rs.getInt("vicious"));
-        equip.setFlag((short) rs.getInt("flag"));
-        equip.setLuk((short) rs.getInt("luk"));
-        equip.setMatk((short) rs.getInt("matk"));
-        equip.setMdef((short) rs.getInt("mdef"));
-        equip.setMp((short) rs.getInt("mp"));
-        equip.setSpeed((short) rs.getInt("speed"));
-        equip.setStr((short) rs.getInt("str"));
-        equip.setWatk((short) rs.getInt("watk"));
-        equip.setWdef((short) rs.getInt("wdef"));
-        equip.setUpgradeSlots((byte) rs.getInt("upgradeslots"));
-        equip.setLevel(rs.getByte("level"));
-        equip.setItemExp(rs.getInt("itemexp"));
-        equip.setItemLevel(rs.getByte("itemlevel"));
-        equip.setExpiration(rs.getLong("expiration"));
-        equip.setGiftFrom(rs.getString("giftFrom"));
-        equip.setRingId(rs.getInt("ringid"));
+    private static Equip loadEquipFromResultSet(Cursor cursor) throws SQLiteException {
+        int itemidIndex = cursor.getColumnIndex("itemid");
+        int positionIndex = cursor.getColumnIndex("position");
+        int ownerIndex = cursor.getColumnIndex("owner");
+        int quantityIndex = cursor.getColumnIndex("quantity");
+        int accIndex = cursor.getColumnIndex("acc");
+        int avoidIndex = cursor.getColumnIndex("avoid");
+        int dexIndex = cursor.getColumnIndex("dex");
+        int handsIndex = cursor.getColumnIndex("hands");
+        int hpIndex = cursor.getColumnIndex("hp");
+        int intIndex = cursor.getColumnIndex("int");
+        int jumpIndex = cursor.getColumnIndex("jump");
+        int viciousIndex = cursor.getColumnIndex("vicious");
+        int flagIndex = cursor.getColumnIndex("flag");
+        int lukIndex = cursor.getColumnIndex("luk");
+        int matkIndex = cursor.getColumnIndex("matk");
+        int mdefIndex = cursor.getColumnIndex("mdef");
+        int mpIndex = cursor.getColumnIndex("mp");
+        int speedIndex = cursor.getColumnIndex("speed");
+        int strIndex = cursor.getColumnIndex("str");
+        int watkIndex = cursor.getColumnIndex("watk");
+        int wdefIndex = cursor.getColumnIndex("wdef");
+        int upgradeSlotsIndex = cursor.getColumnIndex("upgradeslots");
+        int levelIndex = cursor.getColumnIndex("level");
+        int itemExpIndex = cursor.getColumnIndex("itemexp");
+        int itemLevelIndex = cursor.getColumnIndex("itemlevel");
+        int expirationIndex = cursor.getColumnIndex("expiration");
+        int giftFromIndex = cursor.getColumnIndex("giftFrom");
+        int ringIdIndex = cursor.getColumnIndex("ringid");
+
+        int itemid = itemidIndex != -1 ? cursor.getInt(itemidIndex) : 0;
+        short position = (short) (positionIndex != -1 ? cursor.getInt(positionIndex) : 0);
+
+        Equip equip = new Equip(itemid, position);
+        equip.setOwner(ownerIndex != -1 ? cursor.getString(ownerIndex) : null);
+        equip.setQuantity((short) (quantityIndex != -1 ? cursor.getInt(quantityIndex) : 0));
+        equip.setAcc((short) (accIndex != -1 ? cursor.getInt(accIndex) : 0));
+        equip.setAvoid((short) (avoidIndex != -1 ? cursor.getInt(avoidIndex) : 0));
+        equip.setDex((short) (dexIndex != -1 ? cursor.getInt(dexIndex) : 0));
+        equip.setHands((short) (handsIndex != -1 ? cursor.getInt(handsIndex) : 0));
+        equip.setHp((short) (hpIndex != -1 ? cursor.getInt(hpIndex) : 0));
+        equip.setInt((short) (intIndex != -1 ? cursor.getInt(intIndex) : 0));
+        equip.setJump((short) (jumpIndex != -1 ? cursor.getInt(jumpIndex) : 0));
+        equip.setVicious((short) (viciousIndex != -1 ? cursor.getInt(viciousIndex) : 0));
+        equip.setFlag((short) (flagIndex != -1 ? cursor.getInt(flagIndex) : 0));
+        equip.setLuk((short) (lukIndex != -1 ? cursor.getInt(lukIndex) : 0));
+        equip.setMatk((short) (matkIndex != -1 ? cursor.getInt(matkIndex) : 0));
+        equip.setMdef((short) (mdefIndex != -1 ? cursor.getInt(mdefIndex) : 0));
+        equip.setMp((short) (mpIndex != -1 ? cursor.getInt(mpIndex) : 0));
+        equip.setSpeed((short) (speedIndex != -1 ? cursor.getInt(speedIndex) : 0));
+        equip.setStr((short) (strIndex != -1 ? cursor.getInt(strIndex) : 0));
+        equip.setWatk((short) (watkIndex != -1 ? cursor.getInt(watkIndex) : 0));
+        equip.setWdef((short) (wdefIndex != -1 ? cursor.getInt(wdefIndex) : 0));
+        equip.setUpgradeSlots((byte) (upgradeSlotsIndex != -1 ? cursor.getInt(upgradeSlotsIndex) : 0));
+        equip.setLevel((byte) (levelIndex != -1 ? cursor.getInt(levelIndex) : 0));
+        equip.setItemExp(itemExpIndex != -1 ? cursor.getInt(itemExpIndex) : 0);
+        equip.setItemLevel((byte) (itemLevelIndex != -1 ? cursor.getInt(itemLevelIndex) : 0));
+        equip.setExpiration(expirationIndex != -1 ? cursor.getLong(expirationIndex) : 0);
+        equip.setGiftFrom(giftFromIndex != -1 ? cursor.getString(giftFromIndex) : null);
+        equip.setRingId(ringIdIndex != -1 ? cursor.getInt(ringIdIndex) : 0);
 
         return equip;
     }
 
-    public static List<Pair<Item, Integer>> loadEquippedItems(int id, boolean isAccount, boolean login) throws SQLException {
+    public static List<Pair<Item, Integer>> loadEquippedItems(int id, boolean isAccount, boolean login) throws SQLiteException {
         List<Pair<Item, Integer>> items = new ArrayList<>();
 
         StringBuilder query = new StringBuilder();
@@ -132,214 +170,270 @@ public enum ItemFactory {
         query.append("` = ?");
         query.append(login ? " AND `inventorytype` = " + InventoryType.EQUIPPED.getType() : "");
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement(query.toString())) {
-                ps.setInt(1, id);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        Integer cid = rs.getInt("characterid");
-                        items.add(new Pair<>(loadEquipFromResultSet(rs), cid));
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+            String[] selectionArgs = {String.valueOf(id)};
+            try (Cursor cursor = con.rawQuery(query.toString(), selectionArgs)) {
+                while (cursor.moveToNext()) {
+                    int characteridIdx = cursor.getColumnIndex("characterid");
+                    if (characteridIdx != -1) {
+                        Integer cid = cursor.getInt(characteridIdx);
+                        items.add(new Pair<>(loadEquipFromResultSet(cursor), cid));
                     }
                 }
             }
+        } catch (SQLiteException e) {
+            e.printStackTrace();
         }
-
         return items;
     }
 
-    private List<Pair<Item, InventoryType>> loadItemsCommon(int id, boolean login) throws SQLException {
+    private List<Pair<Item, InventoryType>> loadItemsCommon(int id, boolean login) throws SQLiteException {
         List<Pair<Item, InventoryType>> items = new ArrayList<>();
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            StringBuilder query = new StringBuilder();
-            query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-            query.append(account ? "accountid" : "characterid").append("` = ?");
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
+        query.append(account ? "accountid" : "characterid").append("` = ?");
 
-            if (login) {
-                query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
-            }
+        if (login) {
+            query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
+        }
+        String[] selectionArgs = {String.valueOf(value), String.valueOf(id)};
 
-            try (PreparedStatement ps = con.prepareStatement(query.toString())) {
-                ps.setInt(1, value);
-                ps.setInt(2, id);
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase db = mapledb.getWritableDatabase();
+             Cursor cursor = db.rawQuery(query.toString(), selectionArgs)) {
+            while (cursor.moveToNext()) {
+                int inventorytypeIdx = cursor.getColumnIndex("inventorytype");
+                if (inventorytypeIdx != -1) {
+                    InventoryType mit = InventoryType.getByType((byte) cursor.getShort(inventorytypeIdx));
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        InventoryType mit = InventoryType.getByType(rs.getByte("inventorytype"));
-
-                        if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
-                            items.add(new Pair<>(loadEquipFromResultSet(rs), mit));
-                        } else {
-                            int petid = rs.getInt("petid");
-                            if (rs.wasNull()) {
+                    int petid = -1;
+                    if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
+                        items.add(new Pair<>(loadEquipFromResultSet(cursor), mit));
+                    } else {
+                        int petidIdx = cursor.getColumnIndex("petid");
+                        if (petidIdx != -1) {
+                            petid = cursor.getInt(petidIdx);
+                            if (petid == 0) {
                                 petid = -1;
                             }
+                        }
 
-                            Item item = new Item(rs.getInt("itemid"), (byte) rs.getInt("position"), (short) rs.getInt("quantity"), petid);
-                            item.setOwner(rs.getString("owner"));
-                            item.setExpiration(rs.getLong("expiration"));
-                            item.setGiftFrom(rs.getString("giftFrom"));
-                            item.setFlag((short) rs.getInt("flag"));
+                        int itemidIdx = cursor.getColumnIndex("itemid");
+                        int positionIdx = cursor.getColumnIndex("position");
+                        int quantityIdx = cursor.getColumnIndex("quantity");
+
+                        int ownerIdx = cursor.getColumnIndex("owner");
+                        int expirationIdx = cursor.getColumnIndex("expiration");
+                        int giftFromIdx = cursor.getColumnIndex("giftFrom");
+                        int flagIdx = cursor.getColumnIndex("flag");
+
+                        if (itemidIdx != -1 &&
+                                positionIdx != -1 &&
+                                quantityIdx != -1 &&
+                                ownerIdx != -1 &&
+                                expirationIdx != -1 &&
+                                giftFromIdx != -1 &&
+                                flagIdx != -1) {
+                            Item item = new Item(
+                                    cursor.getInt(itemidIdx),
+                                    (byte) cursor.getShort(positionIdx),
+                                    cursor.getShort(quantityIdx),
+                                    petid
+                            );
+
+                            item.setOwner(cursor.getString(ownerIdx));
+                            item.setExpiration(cursor.getLong(expirationIdx));
+                            item.setGiftFrom(cursor.getString(giftFromIdx));
+                            item.setFlag(cursor.getShort(flagIdx));
                             items.add(new Pair<>(item, mit));
                         }
                     }
                 }
             }
         }
+
         return items;
     }
 
-    private void saveItemsCommon(List<Pair<Item, InventoryType>> items, int id, Connection con) throws SQLException {
+    private void saveItemsCommon(List<Pair<Item, InventoryType>> items, int id, SQLiteDatabase con) throws SQLiteException {
         Lock lock = locks[id % lockCount];
         lock.lock();
         try {
-            StringBuilder query = new StringBuilder();
-            query.append("DELETE `inventoryitems`, `inventoryequipment` FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-            query.append(account ? "accountid" : "characterid").append("` = ?");
+            con.beginTransaction();
+            String query = "DELETE FROM inventoryitems " +
+                    "WHERE inventoryitemid IN (SELECT inventoryitemid " +
+                    "FROM inventoryequipment " +
+                    "WHERE type = ? AND " + (account ? "accountid" : "characterid") + " = ?);";
+            con.execSQL(query, new String[] { String.valueOf(value), String.valueOf(id) });
 
-            try (PreparedStatement ps = con.prepareStatement(query.toString())) {
-                ps.setInt(1, value);
-                ps.setInt(2, id);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement psItem = con.prepareStatement("INSERT INTO `inventoryitems` VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            try {
                 if (!items.isEmpty()) {
                     for (Pair<Item, InventoryType> pair : items) {
                         Item item = pair.getLeft();
                         InventoryType mit = pair.getRight();
-                        psItem.setInt(1, value);
-                        psItem.setString(2, account ? null : String.valueOf(id));
-                        psItem.setString(3, account ? String.valueOf(id) : null);
-                        psItem.setInt(4, item.getItemId());
-                        psItem.setInt(5, mit.getType());
-                        psItem.setInt(6, item.getPosition());
-                        psItem.setInt(7, item.getQuantity());
-                        psItem.setString(8, item.getOwner());
-                        psItem.setInt(9, item.getPetId());      // thanks Daddy Egg for alerting a case of unique petid constraint breach getting raised
-                        psItem.setInt(10, item.getFlag());
-                        psItem.setLong(11, item.getExpiration());
-                        psItem.setString(12, item.getGiftFrom());
-                        psItem.executeUpdate();
+                        ContentValues itemValues = new ContentValues();
+                        itemValues.put("type", value);
+                        itemValues.put("characterid", account ? null : String.valueOf(id));
+                        itemValues.put("accountid", account ? String.valueOf(id) : null);
+                        itemValues.put("itemid", item.getItemId());
+                        itemValues.put("inventorytype", mit.getType());
+                        itemValues.put("position", item.getPosition());
+                        itemValues.put("quantity", item.getQuantity());
+                        itemValues.put("owner", item.getOwner());
+                        itemValues.put("petid", item.getPetId());
+                        itemValues.put("flag", item.getFlag());
+                        itemValues.put("expiration", item.getExpiration());
+                        itemValues.put("giftFrom", item.getGiftFrom());
+
+                        long newRowId = con.insert("inventoryitems", null, itemValues);
 
                         if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
-                            try (PreparedStatement psEquip = con.prepareStatement("INSERT INTO `inventoryequipment` VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-                                try (ResultSet rs = psItem.getGeneratedKeys()) {
-                                    if (!rs.next()) {
-                                        throw new RuntimeException("Inserting item failed.");
-                                    }
-
-                                    psEquip.setInt(1, rs.getInt(1));
-                                }
-
-                                Equip equip = (Equip) item;
-                                psEquip.setInt(2, equip.getUpgradeSlots());
-                                psEquip.setInt(3, equip.getLevel());
-                                psEquip.setInt(4, equip.getStr());
-                                psEquip.setInt(5, equip.getDex());
-                                psEquip.setInt(6, equip.getInt());
-                                psEquip.setInt(7, equip.getLuk());
-                                psEquip.setInt(8, equip.getHp());
-                                psEquip.setInt(9, equip.getMp());
-                                psEquip.setInt(10, equip.getWatk());
-                                psEquip.setInt(11, equip.getMatk());
-                                psEquip.setInt(12, equip.getWdef());
-                                psEquip.setInt(13, equip.getMdef());
-                                psEquip.setInt(14, equip.getAcc());
-                                psEquip.setInt(15, equip.getAvoid());
-                                psEquip.setInt(16, equip.getHands());
-                                psEquip.setInt(17, equip.getSpeed());
-                                psEquip.setInt(18, equip.getJump());
-                                psEquip.setInt(19, 0);
-                                psEquip.setInt(20, equip.getVicious());
-                                psEquip.setInt(21, equip.getItemLevel());
-                                psEquip.setInt(22, equip.getItemExp());
-                                psEquip.setInt(23, equip.getRingId());
-                                psEquip.executeUpdate();
+                            ContentValues equipValues = new ContentValues();
+                            if (newRowId != -1) {
+                                equipValues.put("inventoryitemid", newRowId);
+                            } else {
+                                throw new RuntimeException("Inserting item failed.");
                             }
+
+                            Equip equip = (Equip) item;
+                            equipValues.put("upgradeslots", equip.getUpgradeSlots());
+                            equipValues.put("level", equip.getLevel());
+                            equipValues.put("str", equip.getStr());
+                            equipValues.put("dex", equip.getDex());
+                            equipValues.put("int", equip.getInt());
+                            equipValues.put("luk", equip.getLuk());
+                            equipValues.put("hp", equip.getHp());
+                            equipValues.put("mp", equip.getMp());
+                            equipValues.put("watk", equip.getWatk());
+                            equipValues.put("matk", equip.getMatk());
+                            equipValues.put("wdef", equip.getWdef());
+                            equipValues.put("mdef", equip.getMdef());
+                            equipValues.put("acc", equip.getAcc());
+                            equipValues.put("avoid", equip.getAvoid());
+                            equipValues.put("hands", equip.getHands());
+                            equipValues.put("speed", equip.getSpeed());
+                            equipValues.put("jump", equip.getJump());
+                            equipValues.put("locked", 0);
+                            equipValues.put("vicious", equip.getVicious());
+                            equipValues.put("itemlevel", equip.getItemLevel());
+                            equipValues.put("itemexp", equip.getItemExp());
+                            equipValues.put("ringid", equip.getRingId());
+
+                            con.insert("inventoryequipment", null, equipValues);
                         }
                     }
                 }
+            } catch (SQLiteException e) {
+                throw new RuntimeException(e);
             }
+            con.setTransactionSuccessful();
         } finally {
+            con.endTransaction();
             lock.unlock();
         }
     }
 
-    private List<Pair<Item, InventoryType>> loadItemsMerchant(int id, boolean login) throws SQLException {
+    private List<Pair<Item, InventoryType>> loadItemsMerchant(int id, boolean login) throws SQLiteException {
         List<Pair<Item, InventoryType>> items = new ArrayList<>();
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
+        query.append(account ? "accountid" : "characterid").append("` = ?");
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            StringBuilder query = new StringBuilder();
-            query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-            query.append(account ? "accountid" : "characterid").append("` = ?");
+        if (login) {
+            query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
+        }
+        String[] selectionArgs = { String.valueOf(value), String.valueOf(id) };
 
-            if (login) {
-                query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
-            }
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase db = mapledb.getWritableDatabase();
+             Cursor cursor = db.rawQuery(query.toString(), selectionArgs)) {
 
-            try (PreparedStatement ps = con.prepareStatement(query.toString())) {
-                ps.setInt(1, value);
-                ps.setInt(2, id);
+            while (cursor.moveToNext()) {
+                short bundles = 0;
+                int inventoryitemidIdx = cursor.getColumnIndex("inventoryitemid");
+                if (inventoryitemidIdx != -1) {
+                    Cursor cursor2 = db.rawQuery("SELECT bundles FROM inventorymerchant WHERE inventoryitemid = ?", new String[]{String.valueOf(cursor.getInt(inventoryitemidIdx))});
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        short bundles = 0;
-                        try (PreparedStatement psBundle = con.prepareStatement("SELECT `bundles` FROM `inventorymerchant` WHERE `inventoryitemid` = ?")) {
-                            psBundle.setInt(1, rs.getInt("inventoryitemid"));
-
-                            try (ResultSet rs2 = psBundle.executeQuery()) {
-                                if (rs2.next()) {
-                                    bundles = rs2.getShort("bundles");
-                                }
-                            }
+                    if (cursor2.moveToNext()) {
+                        int bundlesIdx = cursor2.getColumnIndex("bundles");
+                        if (bundlesIdx != -1) {
+                            bundles = cursor2.getShort(bundlesIdx);
                         }
-
-                        InventoryType mit = InventoryType.getByType(rs.getByte("inventorytype"));
+                    }
+                    int inventorytypeIdx = cursor.getColumnIndex("inventorytype");
+                    if (inventorytypeIdx != -1) {
+                        InventoryType mit = InventoryType.getByType((byte) cursor.getInt(inventorytypeIdx));
 
                         if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
-                            items.add(new Pair<>(loadEquipFromResultSet(rs), mit));
+                            items.add(new Pair<>(loadEquipFromResultSet(cursor), mit));
                         } else {
                             if (bundles > 0) {
-                                int petid = rs.getInt("petid");
-                                if (rs.wasNull()) {
-                                    petid = -1;
-                                }
+                                int petidIdx = cursor.getColumnIndex("petid");
+                                int itemidIdx = cursor.getColumnIndex("itemid");
+                                int positionIdx = cursor.getColumnIndex("position");
+                                int quantityIdx = cursor.getColumnIndex("quantity");
+                                int ownerIdx = cursor.getColumnIndex("owner");
+                                int expirationIdx = cursor.getColumnIndex("expiration");
+                                int giftFromIdx = cursor.getColumnIndex("giftFrom");
+                                int flagIdx = cursor.getColumnIndex("flag");
 
-                                Item item = new Item(rs.getInt("itemid"), (byte) rs.getInt("position"), (short) (bundles * rs.getInt("quantity")), petid);
-                                item.setOwner(rs.getString("owner"));
-                                item.setExpiration(rs.getLong("expiration"));
-                                item.setGiftFrom(rs.getString("giftFrom"));
-                                item.setFlag((short) rs.getInt("flag"));
-                                items.add(new Pair<>(item, mit));
+                                int petid = cursor.getInt(petidIdx);
+                                if (petidIdx != -1 &&
+                                        itemidIdx != -1 &&
+                                        positionIdx != -1 &&
+                                        quantityIdx != -1 &&
+                                        ownerIdx != -1 &&
+                                        expirationIdx != -1 &&
+                                        giftFromIdx != -1 &&
+                                        flagIdx != -1) {
+                                    if (cursor.isNull(petidIdx)) {
+                                        petid = -1;
+                                    }
+
+                                    Item item = new Item(cursor.getInt(itemidIdx),
+                                            (byte) cursor.getInt(positionIdx),
+                                            (short) (bundles * cursor.getInt(quantityIdx)),
+                                            petid);
+                                    item.setOwner(cursor.getString(ownerIdx));
+                                    item.setExpiration(cursor.getLong(expirationIdx));
+                                    item.setGiftFrom(cursor.getString(giftFromIdx));
+                                    item.setFlag((short) cursor.getInt(flagIdx));
+                                    items.add(new Pair<>(item, mit));
+                                }
                             }
                         }
                     }
+                    cursor2.close();
                 }
             }
         }
         return items;
     }
 
-    private void saveItemsMerchant(List<Pair<Item, InventoryType>> items, List<Short> bundlesList, int id, Connection con) throws SQLException {
+    private void saveItemsMerchant(List<Pair<Item, InventoryType>> items, List<Short> bundlesList, int id, SQLiteDatabase con) throws SQLiteException {
         Lock lock = locks[id % lockCount];
         lock.lock();
         try {
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM `inventorymerchant` WHERE `characterid` = ?")) {
-                ps.setInt(1, id);
-                ps.executeUpdate();
-            }
+            con.beginTransaction();
+            String deleteQuery = "DELETE FROM inventorymerchant WHERE characterid = ?";
+            con.execSQL(deleteQuery, new String[] { String.valueOf(id) });
 
             StringBuilder query = new StringBuilder();
             query.append("DELETE `inventoryitems`, `inventoryequipment` FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
             query.append(account ? "accountid" : "characterid").append("` = ?");
 
-            try (PreparedStatement ps = con.prepareStatement(query.toString())) {
-                ps.setInt(1, value);
-                ps.setInt(2, id);
-                ps.executeUpdate();
-            }
+            String columnName = account ? "accountid" : "characterid";
+            String[] selectionArgs = { String.valueOf(value), String.valueOf(id) };
+            String delQuery = "DELETE FROM inventoryitems " +
+                    "WHERE inventoryitemid IN " +
+                    "(SELECT inventoryitems.inventoryitemid " +
+                    "FROM inventoryitems " +
+                    "LEFT JOIN inventoryequipment ON inventoryitems.inventoryitemid = inventoryequipment.inventoryitemid " +
+                    "WHERE inventoryitems.type = ? " +
+                    "AND " + columnName + " = ?)";
+            con.execSQL(delQuery, selectionArgs);
 
             int i = 0;
             for (Pair<Item, InventoryType> pair : items) {
@@ -348,74 +442,76 @@ public enum ItemFactory {
                 final InventoryType mit = pair.getRight();
                 i++;
 
-                final int genKey;
+                int genKey = 0;
                 // Item
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO `inventoryitems` VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setInt(1, value);
-                    ps.setString(2, account ? null : String.valueOf(id));
-                    ps.setString(3, account ? String.valueOf(id) : null);
-                    ps.setInt(4, item.getItemId());
-                    ps.setInt(5, mit.getType());
-                    ps.setInt(6, item.getPosition());
-                    ps.setInt(7, item.getQuantity());
-                    ps.setString(8, item.getOwner());
-                    ps.setInt(9, item.getPetId());
-                    ps.setInt(10, item.getFlag());
-                    ps.setLong(11, item.getExpiration());
-                    ps.setString(12, item.getGiftFrom());
-                    ps.executeUpdate();
+                ContentValues values = new ContentValues();
+                values.put("type", value);
+                values.put("characterid", account ? null : id);
+                values.put("accountid", account ? id : null);
+                values.put("itemid", item.getItemId());
+                values.put("inventorytype", mit.getType());
+                values.put("position", item.getPosition());
+                values.put("quantity", item.getQuantity());
+                values.put("owner", item.getOwner());
+                values.put("petid", item.getPetId());
+                values.put("flag", item.getFlag());
+                values.put("expiration", item.getExpiration());
+                values.put("giftFrom", item.getGiftFrom());
+                long rowId = con.insert("inventoryitems", null, values);
 
-                    try (ResultSet rs = ps.getGeneratedKeys()) {
-                        if (!rs.next()) {
-                            throw new RuntimeException("Inserting item failed.");
-                        }
-
-                        genKey = rs.getInt(1);
-                    }
+                if (rowId == -1) {
+                    throw new RuntimeException("Inserting data into inventoryitems failed.");
+                } else {
+                    genKey = (int) rowId; // Assuming genKey is an int
                 }
 
+                ContentValues values1 = new ContentValues();
+                values1.put("inventoryitemid", genKey);
+                values1.put("characterid", id);
+                values1.put("bundles", bundles);
                 // Merchant
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO `inventorymerchant` VALUES (DEFAULT, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setInt(1, genKey);
-                    ps.setInt(2, id);
-                    ps.setInt(3, bundles);
-                    ps.executeUpdate();
+                rowId = con.insert("inventorymerchant", null, values1);
+                if (rowId == -1) {
+                    throw new RuntimeException("Inserting data into inventorymerchant failed.");
                 }
 
+                ContentValues values2 = new ContentValues();
+                values2.put("inventoryitemid", genKey);
+
+                Equip equip = (Equip) item;
+                values2.put("upgradeslots", equip.getUpgradeSlots());
+                values2.put("level", equip.getLevel());
+                values2.put("str", equip.getStr());
+                values2.put("dex", equip.getDex());
+                values2.put("int", equip.getInt()); // Note: "int" is a reserved keyword in SQLite, so use backticks in your table schema
+                values2.put("luk", equip.getLuk());
+                values2.put("hp", equip.getHp());
+                values2.put("mp", equip.getMp());
+                values2.put("watk", equip.getWatk());
+                values2.put("matk", equip.getMatk());
+                values2.put("wdef", equip.getWdef());
+                values2.put("mdef", equip.getMdef());
+                values2.put("acc", equip.getAcc());
+                values2.put("avoid", equip.getAvoid());
+                values2.put("hands", equip.getHands());
+                values2.put("speed", equip.getSpeed());
+                values2.put("jump", equip.getJump());
+                values2.put("vicious", equip.getVicious());
+                values2.put("itemlevel", equip.getItemLevel());
+                values2.put("itemexp", equip.getItemExp());
+                values2.put("ringid", equip.getRingId());
                 // Equipment
                 if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
-                    try (PreparedStatement ps = con.prepareStatement("INSERT INTO `inventoryequipment` VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-                        ps.setInt(1, genKey);
-
-                        Equip equip = (Equip) item;
-                        ps.setInt(2, equip.getUpgradeSlots());
-                        ps.setInt(3, equip.getLevel());
-                        ps.setInt(4, equip.getStr());
-                        ps.setInt(5, equip.getDex());
-                        ps.setInt(6, equip.getInt());
-                        ps.setInt(7, equip.getLuk());
-                        ps.setInt(8, equip.getHp());
-                        ps.setInt(9, equip.getMp());
-                        ps.setInt(10, equip.getWatk());
-                        ps.setInt(11, equip.getMatk());
-                        ps.setInt(12, equip.getWdef());
-                        ps.setInt(13, equip.getMdef());
-                        ps.setInt(14, equip.getAcc());
-                        ps.setInt(15, equip.getAvoid());
-                        ps.setInt(16, equip.getHands());
-                        ps.setInt(17, equip.getSpeed());
-                        ps.setInt(18, equip.getJump());
-                        ps.setInt(19, 0);
-                        ps.setInt(20, equip.getVicious());
-                        ps.setInt(21, equip.getItemLevel());
-                        ps.setInt(22, equip.getItemExp());
-                        ps.setInt(23, equip.getRingId());
-                        ps.executeUpdate();
+                    rowId = con.insert("inventoryequipment", null, values);
+                    if (rowId == -1) {
+                        throw new RuntimeException("Inserting data into inventoryequipment failed.");
                     }
                 }
             }
+            con.setTransactionSuccessful();
         } finally {
             lock.unlock();
+            con.endTransaction();
         }
     }
 }

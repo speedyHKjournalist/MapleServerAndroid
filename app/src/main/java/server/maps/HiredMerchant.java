@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server.maps;
 
+import android.database.sqlite.SQLiteDatabase;
 import client.Character;
 import client.Client;
 import client.inventory.Inventory;
@@ -31,6 +32,7 @@ import client.inventory.manipulator.InventoryManipulator;
 import client.inventory.manipulator.KarmaManipulator;
 import client.processor.npc.FredrickProcessor;
 import config.YamlConfig;
+import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import server.ItemInformationProvider;
@@ -672,7 +674,7 @@ public class HiredMerchant extends AbstractMapObject {
             }
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
             ItemFactory.MERCHANT.saveItems(itemsWithType, bundles, this.ownerId, con);
         }
 

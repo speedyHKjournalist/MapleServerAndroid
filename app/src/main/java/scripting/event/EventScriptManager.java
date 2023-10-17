@@ -21,12 +21,11 @@
  */
 package scripting.event;
 
+import com.whl.quickjs.wrapper.JSCallFunction;
+import com.whl.quickjs.wrapper.JSObject;
 import net.server.channel.Channel;
 import org.slf4j.LoggerFactory;
 import scripting.AbstractScriptManager;
-import scripting.SynchronizedInvocable;
-
-import javax.script.Invocable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,12 +45,12 @@ public class EventScriptManager extends AbstractScriptManager {
 
     private static class EventEntry {
 
-        public EventEntry(Invocable iv, EventManager em) {
+        public EventEntry(JSObject iv, EventManager em) {
             this.iv = iv;
             this.em = em;
         }
 
-        public Invocable iv;
+        public JSObject iv;
         public EventManager em;
     }
 
@@ -81,7 +80,7 @@ public class EventScriptManager extends AbstractScriptManager {
     public final void init() {
         for (EventEntry entry : events.values()) {
             try {
-                entry.iv.invokeFunction("init", (Object) null);
+                entry.iv.getJSFunction("init").call();
             } catch (Exception ex) {
                 log.error("Error on script: {}", entry.em.getName(), ex);
             }
@@ -105,9 +104,9 @@ public class EventScriptManager extends AbstractScriptManager {
 
     private EventEntry initializeEventEntry(String script, Channel channel) {
         QuickJSContext engine = getInvocableScriptEngine("event/" + script + ".js");
-        Invocable iv = SynchronizedInvocable.of((Invocable) engine);
+        JSObject iv = engine.getGlobalObject();
         EventManager eventManager = new EventManager(channel, iv, script);
-        //engine.put(INJECTED_VARIABLE_NAME, eventManager);
+//        engine.put(INJECTED_VARIABLE_NAME, eventManager);
         return new EventEntry(iv, eventManager);
     }
 

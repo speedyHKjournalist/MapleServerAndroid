@@ -19,6 +19,10 @@
 */
 package client;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import org.slf4j.Logger;
@@ -587,26 +591,31 @@ public class FamilyEntry {
         if (!repChanged) {
             return true;
         }
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
             return saveReputation(con);
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB while saving reputation", e);
             return false;
         }
     }
 
-    public boolean saveReputation(Connection con) {
+    public boolean saveReputation(SQLiteDatabase con) {
         if (!repChanged) {
             return true;
         }
-        try (PreparedStatement ps = con.prepareStatement("UPDATE family_character SET reputation = ?, todaysrep = ?, totalreputation = ?, reptosenior = ? WHERE cid = ?")) {
-            ps.setInt(1, getReputation());
-            ps.setInt(2, getTodaysRep());
-            ps.setInt(3, getTotalReputation());
-            ps.setInt(4, getRepsToSenior());
-            ps.setInt(5, getChrId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put("reputation", getReputation());
+            values.put("todaysrep", getTodaysRep());
+            values.put("totalreputation", getTotalReputation());
+            values.put("reptosenior", getRepsToSenior());
+
+            String whereClause = "cid = ?";
+            String[] whereArgs = { String.valueOf(getChrId()) };
+
+            con.update("family_character", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             log.error("Failed to autosave rep to 'family_character' for chrId {}", getChrId(), e);
             return false;
         }

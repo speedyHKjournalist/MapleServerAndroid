@@ -1,5 +1,6 @@
 package net.netty;
 
+import android.content.Context;
 import client.Client;
 import io.netty.channel.socket.SocketChannel;
 import net.PacketProcessor;
@@ -13,10 +14,12 @@ public class ChannelServerInitializer extends ServerChannelInitializer {
 
     private final int world;
     private final int channel;
+    private Context context;
 
-    public ChannelServerInitializer(int world, int channel) {
+    public ChannelServerInitializer(int world, int channel, Context context) {
         this.world = world;
         this.channel = channel;
+        this.context = context;
     }
 
     @Override
@@ -27,7 +30,7 @@ public class ChannelServerInitializer extends ServerChannelInitializer {
         PacketProcessor packetProcessor = PacketProcessor.getChannelServerProcessor(world, channel);
         final long clientSessionId = sessionId.getAndIncrement();
         final String remoteAddress = getRemoteAddress(socketChannel);
-        final Client client = Client.createChannelClient(clientSessionId, remoteAddress, packetProcessor, world, channel);
+        final Client client = Client.createChannelClient(clientSessionId, remoteAddress, packetProcessor, world, channel, this.context);
 
         if (Server.getInstance().getChannel(world, channel) == null) {
             SessionCoordinator.getInstance().closeSession(client, true);

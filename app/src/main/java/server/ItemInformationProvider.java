@@ -21,6 +21,9 @@
  */
 package server;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.*;
 import client.autoban.AutobanFactory;
@@ -32,6 +35,7 @@ import constants.inventory.ItemConstants;
 import constants.skills.Assassin;
 import constants.skills.Gunslinger;
 import constants.skills.NightWalker;
+import database.MapleDBHelper;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1512,13 +1516,26 @@ public class ItemInformationProvider {
     }
 
     private void loadCardIdData() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT cardid, mobid FROM monstercarddata");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                monsterBookID.put(rs.getInt(1), rs.getInt(2));
+        Map<Integer, Integer> monsterBookID = new HashMap<>();
+        String monsterCardDataTable = "monstercarddata";
+        String[] columns = { "cardid", "mobid" };
+
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+             Cursor cursor = con.query(monsterCardDataTable, columns, null, null, null, null, null)) {
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int cardidIdx = cursor.getColumnIndex("cardid");
+                        int mobidIdx = cursor.getColumnIndex("mobid");
+                        if (cardidIdx != -1 && mobidIdx != -1) {
+                            int cardId = cursor.getInt(cardidIdx);
+                            int mobId = cursor.getInt(mobidIdx);
+                            monsterBookID.put(cardId, mobId);
+                        }
+                    } while (cursor.moveToNext());
+                }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

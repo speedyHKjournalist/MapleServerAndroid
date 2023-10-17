@@ -21,12 +21,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package client;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.inventory.InventoryType;
 import com.whl.quickjs.wrapper.QuickJSContext;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.id.MapId;
+import database.MapleDBHelper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -132,33 +137,35 @@ public class Client extends ChannelInboundHandlerAdapter {
     private long lastNpcClick;
     private long lastPacket = System.currentTimeMillis();
     private int lang = 0;
+    private Context context;
 
     public enum Type {
         LOGIN,
         CHANNEL
     }
 
-    public Client(Type type, long sessionId, String remoteAddress, PacketProcessor packetProcessor, int world, int channel) {
+    public Client(Type type, long sessionId, String remoteAddress, PacketProcessor packetProcessor, int world, int channel, Context context) {
         this.type = type;
         this.sessionId = sessionId;
         this.remoteAddress = remoteAddress;
         this.packetProcessor = packetProcessor;
         this.world = world;
         this.channel = channel;
+        this.context = context;
     }
 
     public static Client createLoginClient(long sessionId, String remoteAddress, PacketProcessor packetProcessor,
-                                           int world, int channel) {
-        return new Client(Type.LOGIN, sessionId, remoteAddress, packetProcessor, world, channel);
+                                           int world, int channel, Context context) {
+        return new Client(Type.LOGIN, sessionId, remoteAddress, packetProcessor, world, channel, context);
     }
 
     public static Client createChannelClient(long sessionId, String remoteAddress, PacketProcessor packetProcessor,
-                                             int world, int channel) {
-        return new Client(Type.CHANNEL, sessionId, remoteAddress, packetProcessor, world, channel);
+                                             int world, int channel, Context context) {
+        return new Client(Type.CHANNEL, sessionId, remoteAddress, packetProcessor, world, channel, context);
     }
 
-    public static Client createMock() {
-        return new Client(null, -1, null, null, -123, -123);
+    public static Client createMock(Context context) {
+        return new Client(null, -1, null, null, -123, -123, context);
     }
 
     @Override
@@ -352,16 +359,19 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public boolean hasBannedIP() {
         boolean ret = false;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM ipbans WHERE ? LIKE CONCAT(ip, '%')")) {
-            ps.setString(1, remoteAddress);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                if (rs.getInt(1) > 0) {
-                    ret = true;
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getReadableDatabase()) {
+            String query = "SELECT COUNT(*) FROM ipbans WHERE ? LIKE ip || '%'";
+
+            try (Cursor cursor = con.rawQuery(query, new String[]{remoteAddress})) {
+                if (cursor.moveToFirst()) {
+                    int count = cursor.getInt(0);
+                    if (count > 0) {
+                        ret = true;
+                    }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return ret;
@@ -438,24 +448,22 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
         sql.append(")");
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql.toString())) {
-            i = 0;
-            for (String mac : macs) {
-                ps.setString(++i, mac);
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                if (rs.getInt(1) > 0) {
-                    ret = true;
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getReadableDatabase()) {
+            try (Cursor cursor = con.rawQuery(sql.toString(), macs.toArray(new String[0]))) {
+                if (cursor.moveToFirst()) {
+                    int count = cursor.getInt(0);
+                    if (count > 0) {
+                        ret = true;
+                    }
                 }
             }
-        } catch (Exception e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
-
         return ret;
     }
+
 
     private void loadHWIDIfNescessary() throws SQLException {
         if (hwid == null) {
@@ -631,50 +639,67 @@ public class Client extends ChannelInboundHandlerAdapter {
             return 6;   // thanks Survival_Project for finding out an issue with AUTOMATIC_REGISTER here
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id, password, gender, banned, pin, pic, characterslots, tos, language FROM accounts WHERE name = ?")) {
-            ps.setString(1, login);
+        String[] columns = {"id", "password", "gender", "banned", "pin", "pic", "characterslots", "tos", "language"};
+        String selection = "name = ?";
+        String[] selectionArgs = {login};
 
-            try (ResultSet rs = ps.executeQuery()) {
-                accId = -2;
-                if (rs.next()) {
-                    accId = rs.getInt("id");
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
+             SQLiteDatabase con = mapledb.getWritableDatabase();
+             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
+
+            accId = -2;
+            if (cursor.moveToFirst()) {
+                int idIdx = cursor.getColumnIndex("id");
+                if (idIdx != -1) {
+                    accId = cursor.getInt(idIdx);
                     if (accId <= 0) {
                         log.warn("Tried to log in with accId {}", accId);
                         return 15;
                     }
-
-                    boolean banned = (rs.getByte("banned") == 1);
-                    gmlevel = 0;
-                    pin = rs.getString("pin");
-                    pic = rs.getString("pic");
-                    gender = rs.getByte("gender");
-                    characterSlots = rs.getByte("characterslots");
-                    lang = rs.getInt("language");
-                    String passhash = rs.getString("password");
-                    byte tos = rs.getByte("tos");
-
-                    if (banned) {
-                        return 3;
-                    }
-
-                    if (getLoginState() > LOGIN_NOTLOGGEDIN) { // already loggedin
-                        loggedIn = false;
-                        loginok = 7;
-                    } else if (passhash.charAt(0) == '$' && passhash.charAt(1) == '2' && BCrypt.checkpw(pwd, passhash)) {
-                        loginok = (tos == 0) ? 23 : 0;
-                    } else if (pwd.equals(passhash) || checkHash(passhash, "SHA-1", pwd) || checkHash(passhash, "SHA-512", pwd)) {
-                        // thanks GabrielSin for detecting some no-bcrypt inconsistencies here
-                        loginok = (tos == 0) ? (!YamlConfig.config.server.BCRYPT_MIGRATION ? 23 : -23) : (!YamlConfig.config.server.BCRYPT_MIGRATION ? 0 : -10); // migrate to bcrypt
-                    } else {
-                        loggedIn = false;
-                        loginok = 4;
-                    }
-                } else {
-                    accId = -3;
                 }
+
+                int bannedIdx = cursor.getColumnIndex("banned");
+                int pinIdx = cursor.getColumnIndex("pin");
+                int picIdx = cursor.getColumnIndex("pic");
+                int genderIdx = cursor.getColumnIndex("gender");
+                int characterslotsIdx = cursor.getColumnIndex("characterslots");
+                int languageIdx = cursor.getColumnIndex("language");
+                int passwordIdx = cursor.getColumnIndex("password");
+                int tosIdx = cursor.getColumnIndex("tos");
+
+                int banned = 1;
+                String passhash = "";
+                byte tos = 0;
+                if (bannedIdx != -1 && pinIdx != -1 && picIdx != -1 && genderIdx != -1 && characterslotsIdx != -1 && languageIdx != -1 && passwordIdx != -1 && tosIdx != -1) {
+                    banned = cursor.getInt(bannedIdx);
+                    gmlevel = 0;
+                    pin = cursor.getString(pinIdx);
+                    pic = cursor.getString(picIdx);
+                    gender = (byte) cursor.getInt(genderIdx);
+                    characterSlots = (byte) cursor.getInt(characterslotsIdx);
+                    lang = cursor.getInt(languageIdx);
+                    passhash = cursor.getString(passwordIdx);
+                    tos = (byte) cursor.getInt(tosIdx);
+                }
+                if (banned == 1) {
+                    return 3;
+                }
+                if (getLoginState() > LOGIN_NOTLOGGEDIN) { // already loggedin
+                    loggedIn = false;
+                    loginok = 7;
+                } else if (passhash.charAt(0) == '$' && passhash.charAt(1) == '2' && BCrypt.checkpw(pwd, passhash)) {
+                    loginok = (tos == 0) ? 23 : 0;
+                } else if (pwd.equals(passhash) || checkHash(passhash, "SHA-1", pwd) || checkHash(passhash, "SHA-512", pwd)) {
+                    // thanks GabrielSin for detecting some no-bcrypt inconsistencies here
+                    loginok = (tos == 0) ? (!YamlConfig.config.server.BCRYPT_MIGRATION ? 23 : -23) : (!YamlConfig.config.server.BCRYPT_MIGRATION ? 0 : -10); // migrate to bcrypt
+                } else {
+                    loggedIn = false;
+                    loginok = 4;
+                }
+            } else {
+                accId = -3;
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -712,37 +737,33 @@ public class Client extends ChannelInboundHandlerAdapter {
     public Calendar getTempBanCalendarFromDB() {
         final Calendar lTempban = Calendar.getInstance();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `tempban` FROM accounts WHERE id = ?")) {
-            ps.setInt(1, getAccID());
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getReadableDatabase();
+             Cursor cursor = con.rawQuery("SELECT `tempban` FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
 
-            final Timestamp tempban;
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
+            if (cursor.moveToFirst()) {
+                int tempbanIdx = cursor.getColumnIndex("tempban");
+                if (tempbanIdx != -1) {
+                    long tempbanTimestamp = cursor.getLong(tempbanIdx);
+                    Calendar tempbanCalendar = Calendar.getInstance();
+                    tempbanCalendar.setTimeInMillis(tempbanTimestamp);
+                    int year = tempbanCalendar.get(Calendar.YEAR);
+                    int month = tempbanCalendar.get(Calendar.MONTH);
+                    int dayOfMonth = tempbanCalendar.get(Calendar.DAY_OF_MONTH);
+                    int hour = tempbanCalendar.get(Calendar.HOUR_OF_DAY);
+                    int minute = tempbanCalendar.get(Calendar.MINUTE);
+                    int second = tempbanCalendar.get(Calendar.SECOND);
 
-                tempban = rs.getTimestamp("tempban");
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis(tempban.getTime());
-
-                int year = calendar.get(Calendar.YEAR);
-                int month = calendar.get(Calendar.MONTH);
-                int dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH);
-                int hour = calendar.get(Calendar.HOUR_OF_DAY);
-                int minute = calendar.get(Calendar.MINUTE);
-                int second = calendar.get(Calendar.SECOND);
-
-                LocalDateTime tempbanLocal = LocalDateTime.of(year, month + 1, dayOfMonth, hour, minute, second);
-                if (tempbanLocal.equals(DefaultDates.getTempban())) {
-                    return null;
+                    LocalDateTime tempbanLocal = LocalDateTime.of(year, month + 1, dayOfMonth, hour, minute, second);
+                    if (tempbanLocal.equals(DefaultDates.getTempban())) {
+                        return null;
+                    }
+                    lTempban.setTimeInMillis(tempbanTimestamp);
+                    tempBanCalendar = lTempban;
+                    return lTempban;
                 }
             }
-
-            lTempban.setTimeInMillis(tempban.getTime());
-            tempBanCalendar = lTempban;
-            return lTempban;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -819,15 +840,14 @@ public class Client extends ChannelInboundHandlerAdapter {
             SessionCoordinator.getInstance().updateOnlineClient(this);
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET loggedin = ?, lastlogin = ? WHERE id = ?")) {
-            // using sql currenttime here could potentially break the login, thanks Arnah for pointing this out
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+            ContentValues values = new ContentValues();
+            values.put("loggedin", newState);
+            values.put("lastlogin", Server.getInstance().getCurrentTime());
 
-            ps.setInt(1, newState);
-            ps.setTimestamp(2, new Timestamp(Server.getInstance().getCurrentTime()));
-            ps.setInt(3, getAccID());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+            con.update("accounts", values, "id = ?", new String[]{String.valueOf(getAccID())});
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -842,45 +862,48 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public int getLoginState() {  // 0 = LOGIN_NOTLOGGEDIN, 1= LOGIN_SERVER_TRANSITION, 2 = LOGIN_LOGGEDIN
-        try (Connection con = DatabaseConnection.getConnection()) {
-            int state;
-            try (PreparedStatement ps = con.prepareStatement("SELECT loggedin, lastlogin, birthday FROM accounts WHERE id = ?")) {
-                ps.setInt(1, getAccID());
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT loggedin, lastlogin, birthday FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
+            int state = 0;
+            if (cursor.moveToFirst()) {
+                birthday = Calendar.getInstance();
+                int birthdayIdx = cursor.getColumnIndex("birthday");
+                if (birthdayIdx != -1) {
+                    long birthdayMillis = cursor.getLong(birthdayIdx);
+                    birthday.setTimeInMillis(birthdayMillis);
+                }
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        throw new RuntimeException("getLoginState - Client AccID: " + getAccID());
-                    }
-
-                    birthday = Calendar.getInstance();
-                    try {
-                        birthday.setTime(rs.getDate("birthday"));
-                    } catch (SQLException e) {
-                    }
-
-                    state = rs.getInt("loggedin");
-                    if (state == LOGIN_SERVER_TRANSITION) {
-                        if (rs.getTimestamp("lastlogin").getTime() + 30000 < Server.getInstance().getCurrentTime()) {
+                int loggedinIdx = cursor.getColumnIndex("loggedin");
+                if (loggedinIdx != -1) {
+                    state = cursor.getInt(loggedinIdx);
+                }
+                if (state == LOGIN_SERVER_TRANSITION) {
+                    int lastloginIdx = cursor.getColumnIndex("lastlogin");
+                    if (lastloginIdx != -1) {
+                        long lastLoginMillis = cursor.getLong(lastloginIdx);
+                        if (lastLoginMillis + 30000 < Server.getInstance().getCurrentTime()) {
                             int accountId = accId;
                             state = LOGIN_NOTLOGGEDIN;
-                            updateLoginState(Client.LOGIN_NOTLOGGEDIN);   // ACCID = 0, issue found thanks to Tochi & K u ssss o & Thora & Omo Oppa
+                            updateLoginState(Client.LOGIN_NOTLOGGEDIN);
                             this.setAccID(accountId);
                         }
                     }
                 }
+            } else {
+                throw new RuntimeException("getLoginState - Client AccID: " + getAccID());
             }
+
             if (state == LOGIN_LOGGEDIN) {
                 loggedIn = true;
             } else if (state == LOGIN_SERVER_TRANSITION) {
-                try (PreparedStatement ps2 = con.prepareStatement("UPDATE accounts SET loggedin = 0 WHERE id = ?")) {
-                    ps2.setInt(1, getAccID());
-                    ps2.executeUpdate();
-                }
+                String[] whereArgs = {String.valueOf(getAccID())};
+                con.execSQL("UPDATE accounts SET loggedin = 0 WHERE id = ?", whereArgs);
             } else {
                 loggedIn = false;
             }
             return state;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             loggedIn = false;
             e.printStackTrace();
             throw new RuntimeException("login state");
@@ -1211,24 +1234,23 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         boolean disconnect = false;
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT `tos` FROM accounts WHERE id = ?")) {
-                ps.setInt(1, accId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        if (rs.getByte("tos") == 1) {
-                            disconnect = true;
-                        }
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
+             SQLiteDatabase con = mapledb.getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT tos FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+            int tosIdx = cursor.getColumnIndex("tos");
+            if (tosIdx != -1) {
+                if (cursor.moveToFirst()) {
+                    int tosValue = cursor.getInt(tosIdx);
+                    if (tosValue == 1) {
+                        disconnect = true;
                     }
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET tos = 1 WHERE id = ?")) {
-                ps.setInt(1, accId);
-                ps.executeUpdate();
-            }
-        } catch (SQLException e) {
+            ContentValues values = new ContentValues();
+            values.put("tos", 1);
+            con.update("accounts", values, "id = ?", new String[]{String.valueOf(accId)});
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return disconnect;
@@ -1415,12 +1437,11 @@ public class Client extends ChannelInboundHandlerAdapter {
     public void setGender(byte m) {
         this.gender = m;
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET gender = ? WHERE id = ?")) {
-            ps.setByte(1, gender);
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            ContentValues values = new ContentValues();
+            values.put("gender", gender);
+            con.update("accounts", values, "id = ?", new String[]{String.valueOf(accId)});
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

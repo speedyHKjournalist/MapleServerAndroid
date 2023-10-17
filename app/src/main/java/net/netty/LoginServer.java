@@ -1,16 +1,17 @@
 package net.netty;
 
+import android.content.Context;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import net.server.Server;
 
 public class LoginServer extends AbstractServer {
     public static final int WORLD_ID = -1;
     public static final int CHANNEL_ID = -1;
     private Channel channel;
-
     public LoginServer(int port) {
         super(port);
     }
@@ -22,7 +23,7 @@ public class LoginServer extends AbstractServer {
         ServerBootstrap bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new LoginServerInitializer());
+                .childHandler(new LoginServerInitializer(Server.getInstance().getContext()));
 
         this.channel = bootstrap.bind(port).syncUninterruptibly().channel();
     }

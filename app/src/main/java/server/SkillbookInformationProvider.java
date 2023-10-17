@@ -19,7 +19,14 @@
 */
 package server;
 
+import android.content.res.AssetManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.util.Log;
 import client.Character;
+import database.MapleDBHelper;
+import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -27,9 +34,11 @@ import provider.DataProvider;
 import provider.DataProviderFactory;
 import provider.DataTool;
 import provider.wz.WZFiles;
+import provider.wz.XMLWZFile;
 import tools.DatabaseConnection;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -127,6 +136,7 @@ public class SkillbookInformationProvider {
 
         final Map<Integer, SkillBookEntry> loadedSkillbooks = new HashMap<>();
         for (Data questData : actData.getChildren()) {
+            Log.d("IMPORT QUEST", questData.getName());
             for (Data questStatusData : questData.getChildren()) {
                 for (Data questNodeData : questStatusData.getChildren()) {
                     String actNodeName = questNodeData.getName();
@@ -169,36 +179,38 @@ public class SkillbookInformationProvider {
     private static Map<Integer, SkillBookEntry> fetchSkillbooksFromReactors() {
         Map<Integer, SkillBookEntry> loadedSkillbooks = new HashMap<>();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT itemid FROM reactordrops WHERE itemid >= ? AND itemid < ?;")) {
-            ps.setInt(1, SKILLBOOK_MIN_ITEMID);
-            ps.setInt(2, SKILLBOOK_MAX_ITEMID);
+        String[] columns = { "itemid" };
+        String selection = "itemid >= ? AND itemid < ?";
+        String[] selectionArgs = { String.valueOf(SKILLBOOK_MIN_ITEMID), String.valueOf(SKILLBOOK_MAX_ITEMID) };
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.isBeforeFirst()) {
-                    while (rs.next()) {
-                        loadedSkillbooks.put(rs.getInt("itemid"), SkillBookEntry.REACTOR);
-                    }
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+             Cursor cursor = con.query("reactordrops", columns, selection, selectionArgs, null, null, null)) {
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int itemidIdx = cursor.getColumnIndex("itemid");
+                        if (itemidIdx!= -1) {
+                            int itemId = cursor.getInt(itemidIdx);
+                            loadedSkillbooks.put(itemId, SkillBookEntry.REACTOR);
+                        }
+                    } while (cursor.moveToNext());
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 
         return loadedSkillbooks;
     }
 
-    private static void listFiles(String directoryName, ArrayList<Path> files) {
-        Path directory = Paths.get(directoryName);
-
-        // get all the files from a directory
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
-            for (Path path : stream) {
-
-                if (Files.isRegularFile(path)) {
-                    files.add(path);
-                } else if (Files.isDirectory(path)) {
-                    listFiles(path.toAbsolutePath().toString(), files);
+    private static void listFiles(String directoryName, ArrayList<String> files, AssetManager assetManager) {
+        try {
+            String[] stream = assetManager.list(directoryName);
+            for (String fileName : stream) {
+                if (XMLWZFile.isDirectory(fileName, assetManager)) {
+                    listFiles(directoryName + "/" + fileName, files, assetManager);
+                } else {
+                    files.add(directoryName + "/" + fileName);
                 }
             }
         } catch (IOException e) {
@@ -207,9 +219,9 @@ public class SkillbookInformationProvider {
         }
     }
 
-	private static List<Path> listFilesFromDirectoryRecursively(String directory) {
-		ArrayList<Path> files = new ArrayList<>();
-		listFiles(directory, files);
+	private static List<String> listFilesFromDirectoryRecursively(String directory, AssetManager assetManager) {
+		ArrayList<String> files = new ArrayList<>();
+		listFiles(directory, files, assetManager);
 
 		return files;
 	}
@@ -227,31 +239,29 @@ public class SkillbookInformationProvider {
         return skillbookIds;
     }
 
-    private static String readFileToString(Path file, String encoding) throws IOException {
-        Scanner scanner = new Scanner(file, encoding);
+    private static String readFileToString(String file, String encoding, AssetManager assetManager) throws IOException {
         String text = "";
-        try (scanner) {
-           
-           text = scanner.useDelimiter("\\A").next();
-            
+        try (InputStream is = assetManager.open(file);
+             Scanner scanner = new Scanner(is, encoding)) {
+            text = scanner.useDelimiter("\\A").next();
         } catch (NoSuchElementException e) {
         }
 
         return text;
     }
 
-    private static Map<Integer, SkillBookEntry> fileSearchMatchingData(Path file) {
+    private static Map<Integer, SkillBookEntry> fileSearchMatchingData(String file, AssetManager assetManager) {
         Map<Integer, SkillBookEntry> scriptFileSkillbooks = new HashMap<>();
 
         try {
-            String fileContent = readFileToString(file, "UTF-8");
+            String fileContent = readFileToString(file, "UTF-8", assetManager);
 
             Set<Integer> skillbookIds = findMatchingSkillbookIdsOnFile(fileContent);
             for (Integer skillbookId : skillbookIds) {
                 scriptFileSkillbooks.put(skillbookId, SkillBookEntry.SCRIPT);
             }
         } catch (IOException ioe) {
-            log.error("Failed to read file:{}", file.getFileName(), ioe);
+            log.error("Failed to read file:{}", file, ioe);
         }
 
         return scriptFileSkillbooks;
@@ -259,10 +269,11 @@ public class SkillbookInformationProvider {
 
     private static Map<Integer, SkillBookEntry> fetchSkillbooksFromScripts() {
         Map<Integer, SkillBookEntry> scriptSkillbooks = new HashMap<>();
-
-        for (Path file : listFilesFromDirectoryRecursively("./scripts")) {
-            if (file.getFileName().endsWith(".js")) {
-                scriptSkillbooks.putAll(fileSearchMatchingData(file));
+        AssetManager assetManager = Server.getInstance().getContext().getAssets();
+        for (String file : listFilesFromDirectoryRecursively("scripts", assetManager)) {
+            Log.d("IMPORT SCRIPTS", file);
+            if (file.endsWith(".js")) {
+                scriptSkillbooks.putAll(fileSearchMatchingData(file, assetManager));
             }
         }
 

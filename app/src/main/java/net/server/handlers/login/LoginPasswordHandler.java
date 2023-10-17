@@ -21,9 +21,14 @@
  */
 package net.server.handlers.login;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Client;
 import client.DefaultDates;
 import config.YamlConfig;
+import database.MapleDBHelper;
 import net.PacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
@@ -73,19 +78,17 @@ public final class LoginPasswordHandler implements PacketHandler {
 
 
         if (YamlConfig.config.server.AUTOMATIC_REGISTER && loginok == 5) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("INSERT INTO accounts (name, password, birthday, tempban) VALUES (?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS)) { //Jayd: Added birthday, tempban
-                ps.setString(1, login);
-                ps.setString(2, YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(12)) : hashpwSHA512(pwd));
-                ps.setDate(3, Date.valueOf(DefaultDates.getBirthday().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))));
-                ps.setTimestamp(4, Timestamp.valueOf(DefaultDates.getTempban().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-                ps.executeUpdate();
+            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+                 SQLiteDatabase con = mapledb.getWritableDatabase()) { //Jayd: Added birthday, tempban
+                ContentValues values = new ContentValues();
+                values.put("name", login);
+                values.put("password", YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(12)) : hashpwSHA512(pwd));
+                values.put("birthday", DefaultDates.getBirthday().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                values.put("tempban", DefaultDates.getTempban().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                long accountId = con.insert("accounts", null, values);
 
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    rs.next();
-                    c.setAccID(rs.getInt(1));
-                }
-            } catch (SQLException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
+                c.setAccID((int) accountId);
+            } catch (SQLiteException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
                 c.setAccID(-1);
                 e.printStackTrace();
             } finally {
@@ -94,12 +97,14 @@ public final class LoginPasswordHandler implements PacketHandler {
         }
 
         if (YamlConfig.config.server.BCRYPT_MIGRATION && (loginok <= -10)) { // -10 means migration to bcrypt, -23 means TOS wasn't accepted
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("UPDATE accounts SET password = ? WHERE name = ?;")) {
-                ps.setString(1, BCrypt.hashpw(pwd, BCrypt.gensalt(12)));
-                ps.setString(2, login);
-                ps.executeUpdate();
-            } catch (SQLException e) {
+            String newPasswordHash = BCrypt.hashpw(pwd, BCrypt.gensalt(12));
+            String updateQuery = "UPDATE accounts SET password = ? WHERE name = ?";
+            String[] whereArgs = {newPasswordHash, login};
+
+            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+                 SQLiteDatabase con = mapledb.getWritableDatabase();
+                 Cursor cursor = con.rawQuery(updateQuery, whereArgs)) {
+            } catch (SQLiteException e) {
                 e.printStackTrace();
             } finally {
                 loginok = (loginok == -10) ? 0 : 23;

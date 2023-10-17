@@ -25,9 +25,7 @@ import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.MBeanServerFactory;
+import android.os.Handler;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -40,7 +38,7 @@ public class TimerManager implements TimerManagerMBean {
     private static final Logger log = LoggerFactory.getLogger(TimerManager.class);
     private static final TimerManager instance = new TimerManager();
 
-    private static MBeanServer mBeanServer;
+    private Handler handler;
 
     public static TimerManager getInstance() {
         return instance;
@@ -49,12 +47,7 @@ public class TimerManager implements TimerManagerMBean {
     private ScheduledThreadPoolExecutor ses;
 
     private TimerManager() {
-        mBeanServer = MBeanServerFactory.createMBeanServer();
-        try {
-            mBeanServer.registerMBean(this, new ObjectName("server:type=TimerManger"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        handler = new Handler();
     }
 
     public void start() {

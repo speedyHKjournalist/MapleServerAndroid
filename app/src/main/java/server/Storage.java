@@ -18,11 +18,17 @@
  */
 package server;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Client;
 import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.ItemFactory;
 import constants.game.GameConstants;
+import database.MapleDBHelper;
+import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -64,12 +70,16 @@ public class Storage {
         this.meso = meso;
     }
 
-    private static Storage create(int id, int world) throws SQLException {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO storages (accountid, world, slots, meso) VALUES (?, ?, 4, 0)")) {
-            ps.setInt(1, id);
-            ps.setInt(2, world);
-            ps.executeUpdate();
+    private static Storage create(int id, int world) throws SQLiteException {
+        ContentValues values = new ContentValues();
+        values.put("accountid", id);
+        values.put("world", world);
+        values.put("slots", 4);
+        values.put("meso", 0);
+
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+            con.insert("storages", null, values);
         }
 
         return loadOrCreateFromDB(id, world);
@@ -77,27 +87,35 @@ public class Storage {
 
     public static Storage loadOrCreateFromDB(int id, int world) {
         Storage ret;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT storageid, slots, meso FROM storages WHERE accountid = ? AND world = ?")) {
-            ps.setInt(1, id);
-            ps.setInt(2, world);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ret = new Storage(rs.getInt("storageid"), (byte) rs.getInt("slots"), rs.getInt("meso"));
-                    for (Pair<Item, InventoryType> item : ItemFactory.STORAGE.loadItems(ret.id, false)) {
+        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+             SQLiteDatabase con = mapledb.getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT storageid, slots, meso FROM storages WHERE accountid = ? " +
+                     "AND world = ?", new String[] { String.valueOf(id), String.valueOf(world) })) {
+
+            if (cursor.moveToNext()) {
+                int storageidIdx = cursor.getColumnIndex("storageid");
+                int slotsIdx = cursor.getColumnIndex("slots");
+                int mesoIdx = cursor.getColumnIndex("meso");
+                if (storageidIdx != -1 && slotsIdx != -1 && mesoIdx != -1) {
+                    ret = new Storage(cursor.getInt(storageidIdx), (byte) cursor.getInt(slotsIdx), cursor.getInt(mesoIdx));
+
+                    List<Pair<Item, InventoryType>> items = ItemFactory.STORAGE.loadItems(ret.id, false);
+
+                    for (Pair<Item, InventoryType> item : items) {
                         ret.items.add(item.getLeft());
                     }
-                } else {
-                    ret = create(id, world);
+                    return ret;
                 }
+            } else {
+                ret = create(id, world);
+                return ret;
             }
-
-            return ret;
-        } catch (SQLException ex) { // exceptions leading to deploy null storages found thanks to Jefe
-            log.error("SQL error occurred when trying to load storage for accId {}, world {}", id, GameConstants.WORLD_NAMES[world], ex);
+        } catch (SQLiteException ex) {
+            log.error("SQL error occurred when trying to load storage for accId " + id + ", world " + GameConstants.WORLD_NAMES[world], ex);
             throw new RuntimeException(ex);
         }
+        return null;
     }
 
     public byte getSlots() {
@@ -124,23 +142,21 @@ public class Storage {
         }
     }
 
-    public void saveToDB(Connection con) {
+    public void saveToDB(SQLiteDatabase con) {
         try {
-            try (PreparedStatement ps = con.prepareStatement("UPDATE storages SET slots = ?, meso = ? WHERE storageid = ?")) {
-                ps.setInt(1, slots);
-                ps.setInt(2, meso);
-                ps.setInt(3, id);
-                ps.executeUpdate();
-            }
-            List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
+            ContentValues storageValues = new ContentValues();
+            storageValues.put("slots", slots);
+            storageValues.put("meso", meso);
+            String[] storageWhereArgs = { String.valueOf(id) };
+            con.update("storages", storageValues, "storageid = ?", storageWhereArgs);
 
+            List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
             List<Item> list = getItems();
             for (Item item : list) {
                 itemsWithType.add(new Pair<>(item, item.getInventoryType()));
             }
-
             ItemFactory.STORAGE.saveItems(itemsWithType, id, con);
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
     }
