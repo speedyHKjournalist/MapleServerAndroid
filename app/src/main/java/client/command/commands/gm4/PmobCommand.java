@@ -23,6 +23,9 @@
 */
 package client.command.commands.gm4;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -67,22 +70,22 @@ public class PmobCommand extends Command {
             mob.setRx0(xpos + 50);
             mob.setRx1(xpos - 50);
             mob.setFh(fh);
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("INSERT INTO plife ( life, f, fh, cy, rx0, rx1, type, x, y, world, map, mobtime, hide ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")) {
-                ps.setInt(1, mobId);
-                ps.setInt(2, 0);
-                ps.setInt(3, fh);
-                ps.setInt(4, ypos);
-                ps.setInt(5, xpos + 50);
-                ps.setInt(6, xpos - 50);
-                ps.setString(7, "m");
-                ps.setInt(8, xpos);
-                ps.setInt(9, ypos);
-                ps.setInt(10, player.getWorld());
-                ps.setInt(11, mapId);
-                ps.setInt(12, mobTime);
-                ps.setInt(13, 0);
-                ps.executeUpdate();
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                ContentValues values = new ContentValues();
+                values.put("life", mobId);
+                values.put("f", 0);
+                values.put("fh", fh);
+                values.put("cy", ypos);
+                values.put("rx0", xpos + 50);
+                values.put("rx1", xpos - 50);
+                values.put("type", "m");
+                values.put("x", xpos);
+                values.put("y", ypos);
+                values.put("world", player.getWorld());
+                values.put("map", mapId);
+                values.put("mobtime", mobTime);
+                values.put("hide", 0);
+                con.insert("plife", null, values);
 
                 for (Channel ch : player.getWorldServer().getChannels()) {
                     MapleMap map = ch.getMapFactory().getMap(mapId);
@@ -91,7 +94,7 @@ public class PmobCommand extends Command {
                 }
 
                 player.yellowMessage("Pmob created.");
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 e.printStackTrace();
                 player.dropMessage(5, "Failed to store pmob in the database.");
             }

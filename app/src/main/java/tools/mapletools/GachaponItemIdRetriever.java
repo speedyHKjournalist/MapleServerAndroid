@@ -1,5 +1,9 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,7 +31,7 @@ import java.util.regex.Pattern;
 public class GachaponItemIdRetriever {
     private static final Path INPUT_FILE = ToolConstants.getInputFile("gachapon_items.txt");
     private static final Path OUTPUT_DIRECTORY = ToolConstants.getOutputFile("gachapons");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
     private static final Pattern pattern = Pattern.compile("(\\d*)%");
     private static final int[] scrollsChances = new int[]{10, 15, 30, 60, 65, 70, 100};
     private static final Map<GachaponScroll, List<Integer>> scrollItemids = new HashMap<>();
@@ -46,23 +50,32 @@ public class GachaponItemIdRetriever {
         list.add(id);
     }
 
-    private static void loadHandbookUseNames() throws SQLException {
-        PreparedStatement ps = con.prepareStatement("SELECT * FROM `handbook` WHERE `id` >= 2040000 AND `id` < 2050000 ORDER BY `id` ASC;");
-        ResultSet rs = ps.executeQuery();
+    private static void loadHandbookUseNames() throws SQLiteException {
+        Cursor cursor = con.rawQuery("SELECT * FROM `handbook` WHERE `id` >= 2040000 AND `id` < 2050000 ORDER BY `id` ASC;", null);
 
-        while (rs.next()) {
-            Integer id = rs.getInt("id");
-            String name = rs.getString("name");
+        if (cursor != null) {
+            try {
+                while (cursor.moveToNext()) {
+                    int idIdx = cursor.getColumnIndex("id");
+                    int nameIdx = cursor.getColumnIndex("name");
+                    if (idIdx != -1 && nameIdx != -1) {
+                        int id = cursor.getInt(idIdx);
+                        String name = cursor.getString(nameIdx);
 
-            if (isUpgradeScroll(name)) {
-                String description = rs.getString("description");
-                insertGachaponScrollItemid(id, name, description, false);
-                insertGachaponScrollItemid(id, name, description, true);
+                        if (isUpgradeScroll(name)) {
+                            int descriptionIdx = cursor.getColumnIndex("description");
+                            if (descriptionIdx != -1) {
+                                String description = cursor.getString(descriptionIdx);
+                                insertGachaponScrollItemid(id, name, description, false);
+                                insertGachaponScrollItemid(id, name, description, true);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                cursor.close();
             }
         }
-
-        rs.close();
-        ps.close();
 
         /*
         for (Entry<GachaponScroll, List<Integer>> e : scrollItemids.entrySet()) {
@@ -210,22 +223,24 @@ public class GachaponItemIdRetriever {
         return name.matches("^(([D|d]ark )?[S|s]croll for).*");
     }
 
-    private static void fetchLineOnMapleHandbook(String line, String rarity) throws SQLException {
+    private static void fetchLineOnMapleHandbook(String line, String rarity) throws SQLiteException {
         String str = "";
         if (!isUpgradeScroll(line)) {
-            PreparedStatement ps = con.prepareStatement("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;");
-            ps.setString(1, line);
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                int id = rs.getInt("id");
-
-                str += Integer.toString(id);
-                str += " ";
+            Cursor cursor = con.rawQuery("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;", new String[]{line});
+            if (cursor != null) {
+                try {
+                    while (cursor.moveToNext()) {
+                        int idIdx = cursor.getColumnIndex("id");
+                        if (idIdx != -1) {
+                            int id = cursor.getInt(idIdx);
+                            str += Integer.toString(id);
+                            str += " ";
+                        }
+                    }
+                } finally {
+                    cursor.close();
+                }
             }
-
-            rs.close();
-            ps.close();
         } else {
             str += getGachaponScrollResults(line, false);
             if (str.isEmpty()) {
@@ -248,7 +263,7 @@ public class GachaponItemIdRetriever {
         printWriter.println(str);
     }
 
-    private static void fetchDataOnMapleHandbook() throws SQLException {
+    private static void fetchDataOnMapleHandbook() throws SQLiteException {
         String line;
         try (BufferedReader bufferedReader = Files.newBufferedReader(INPUT_FILE)) {
             int skip = 0;
@@ -317,7 +332,7 @@ public class GachaponItemIdRetriever {
         try (con) {
             loadHandbookUseNames();
             fetchDataOnMapleHandbook();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Error: invalid SQL syntax");
             System.out.println(e.getMessage());
         }

@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scripting.portal;
 
 import client.Client;
-import com.whl.quickjs.wrapper.QuickJSContext;
+
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class PortalScriptManager extends AbstractScriptManager {
             return script;
         }
 
-        QuickJSContext engine = getInvocableScriptEngine(scriptPath);
+        ScriptEngine engine = getInvocableScriptEngine(scriptPath);
         if (!(engine instanceof Invocable iv)) {
             return null;
         }

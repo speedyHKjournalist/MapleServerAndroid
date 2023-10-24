@@ -1,5 +1,10 @@
 package tools.mapletools;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import tools.Pair;
 
 import java.io.BufferedReader;
@@ -26,7 +31,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class CodeCouponGenerator {
     private static final Path INPUT_FILE = ToolConstants.getInputFile("CouponCodes.img.xml");
     private static final int INITIAL_STRING_LENGTH = 250;
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static final List<CodeCouponDescriptor> activeCoupons = new ArrayList<>();
     private static final Set<String> usedCodes = new HashSet<>();
@@ -218,21 +223,25 @@ public class CodeCouponGenerator {
         return newCode;
     }
 
-    private static List<Integer> getGeneratedKeys(PreparedStatement ps) throws SQLException {
+    private static List<Integer> getGeneratedKeys(SQLiteDatabase ps) throws SQLiteException {
         if (generatedKeys == null) {
             generatedKeys = new ArrayList<>();
 
-            ResultSet rs = ps.getGeneratedKeys();
-            while (rs.next()) {
-                generatedKeys.add(rs.getInt(1));
+            Cursor cursor = ps.rawQuery("SELECT last_insert_rowid() AS id", null);
+
+            if (cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex("id");
+                do {
+                    generatedKeys.add(cursor.getInt(columnIndex));
+                } while (cursor.moveToNext());
             }
-            rs.close();
+            cursor.close();
         }
 
         return generatedKeys;
     }
 
-    private static void commitCodeCouponDescription(CodeCouponDescriptor recipe) throws SQLException {
+    private static void commitCodeCouponDescription(CodeCouponDescriptor recipe) throws SQLiteException {
         if (recipe.quantity < 1) {
             return;
         }
@@ -240,77 +249,85 @@ public class CodeCouponGenerator {
         System.out.println("  Generating coupon '" + recipe.name + "'");
         generatedKeys = null;
 
-        PreparedStatement ps = con.prepareStatement("INSERT IGNORE INTO `nxcode` (`code`, `expiration`) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
-        ps.setLong(2, currentTime + HOURS.toMillis(recipe.duration));
+        ContentValues values = new ContentValues();
+        long expiration = currentTime + HOURS.toMillis(recipe.duration);
+        values.put("expiration", expiration);
 
         for (int i = 0; i < recipe.quantity; i++) {
-            ps.setString(1, generateCouponCode());
-            ps.addBatch();
+            values.put("code", generateCouponCode());
+            con.insertWithOnConflict("nxcode", null, values, SQLiteDatabase.CONFLICT_IGNORE);
         }
-        ps.executeBatch();
+        List<Integer> keys = getGeneratedKeys(con);
 
-        PreparedStatement ps2 = con.prepareStatement("INSERT IGNORE INTO `nxcode_items` (`codeid`, `type`, `item`, `quantity`) VALUES (?, ?, ?, ?)");
+        SQLiteStatement ps2 = con.compileStatement("INSERT INTO `nxcode_items` (`codeid`, `type`, `item`, `quantity`) VALUES (?, ?, ?, ?)");
+        con.beginTransaction();
+
         if (!recipe.itemList.isEmpty()) {
-            ps2.setInt(2, 5);
-            List<Integer> keys = getGeneratedKeys(ps);
-
             for (Pair<Integer, Integer> p : recipe.itemList) {
-                ps2.setInt(3, p.getLeft());
-                ps2.setInt(4, p.getRight());
+                ps2.bindLong(2, 5);
+                ps2.bindLong(3, p.getLeft());
+                ps2.bindLong(4, p.getRight());
 
                 for (Integer codeid : keys) {
-                    ps2.setInt(1, codeid);
-                    ps2.addBatch();
+                    ps2.bindLong(1, codeid);
+                    ps2.execute();
+                    ps2.clearBindings();
                 }
             }
         }
 
-        ps2.setInt(3, 0);
+
         if (recipe.nxCredit > 0) {
-            ps2.setInt(2, 0);
-            ps2.setInt(4, recipe.nxCredit);
-            List<Integer> keys = getGeneratedKeys(ps);
+            ps2.bindLong(3, 0);
+            ps2.bindLong(2, 0);
+            ps2.bindLong(4, recipe.nxCredit);
 
             for (Integer codeid : keys) {
-                ps2.setInt(1, codeid);
-                ps2.addBatch();
+                ps2.bindLong(1, codeid);
+                ps2.execute();
+                ps2.clearBindings();
             }
         }
 
         if (recipe.maplePoint > 0) {
-            ps2.setInt(2, 1);
-            ps2.setInt(4, recipe.maplePoint);
-            List<Integer> keys = getGeneratedKeys(ps);
+            ps2.bindLong(3, 0);
+            ps2.bindLong(2, 1);
+            ps2.bindLong(4, recipe.maplePoint);
 
             for (Integer codeid : keys) {
-                ps2.setInt(1, codeid);
-                ps2.addBatch();
+                ps2.bindLong(1, codeid);
+                ps2.execute();
+                ps2.clearBindings();
             }
         }
 
         if (recipe.nxPrepaid > 0) {
-            ps2.setInt(2, 2);
-            ps2.setInt(4, recipe.nxPrepaid);
-            List<Integer> keys = getGeneratedKeys(ps);
+            ps2.bindLong(3, 0);
+            ps2.bindLong(2, 2);
+            ps2.bindLong(4, recipe.nxPrepaid);
 
             for (Integer codeid : keys) {
-                ps2.setInt(1, codeid);
-                ps2.addBatch();
+                ps2.bindLong(1, codeid);
+                ps2.execute();
+                ps2.clearBindings();
             }
         }
-
-        ps2.executeBatch();
         ps2.close();
-        ps.close();
+        con.setTransactionSuccessful();
+        con.endTransaction();
     }
 
-    private static void loadUsedCouponCodes() throws SQLException {
-        PreparedStatement ps = con.prepareStatement("SELECT code FROM nxcode", Statement.RETURN_GENERATED_KEYS);
-        ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            usedCodes.add(rs.getString("code"));
+    private static void loadUsedCouponCodes() throws SQLiteException {
+        Cursor ps = con.rawQuery("SELECT code FROM nxcode", null);
+        if (ps != null && ps.moveToFirst()) {
+            do {
+                int codeIdx = ps.getColumnIndex("code");
+                if (codeIdx != -1) {
+                    String code = ps.getString(codeIdx);
+                    usedCodes.add(code);
+                }
+            } while (ps.moveToNext());
         }
-        rs.close();
         ps.close();
     }
 
@@ -339,7 +356,7 @@ public class CodeCouponGenerator {
             System.out.println();
             System.out.println("Done.");
 
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

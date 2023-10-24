@@ -1,5 +1,9 @@
 package tools.mapletools;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 
 import java.io.BufferedReader;
@@ -20,7 +24,7 @@ import java.sql.SQLException;
  */
 public class MobBookIndexer {
     private static final Path INPUT_FILE = WZFiles.STRING.getFile().resolve("MonsterBook.img.xml");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static BufferedReader bufferedReader = null;
     private static byte status = 0;
@@ -77,24 +81,28 @@ public class MobBookIndexer {
             PreparedStatement ps, ps2;
             ResultSet rs;
 
-            ps = con.prepareStatement("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;");
-            ps.setInt(1, mobId);
-            rs = ps.executeQuery();
+            Cursor cursor1 = con.rawQuery("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;",
+                    new String[]{String.valueOf(mobId)});
 
-            while (rs.next()) {
-                int itemId = rs.getInt("itemid");
-                if (isCard(itemId)) {
-                    ps2 = con.prepareStatement("INSERT INTO `monstercardwz` (`cardid`, `mobid`) VALUES (?, ?)");
-                    ps2.setInt(1, itemId);
-                    ps2.setInt(2, mobId);
-
-                    ps2.executeUpdate();
+            if (cursor1 != null) {
+                try {
+                    while (cursor1.moveToNext()) {
+                        int itemidIdx = cursor1.getColumnIndex("itemid");
+                        if (itemidIdx != -1) {
+                            int itemId = cursor1.getInt(itemidIdx);
+                            if (isCard(itemId)) {
+                                ContentValues values = new ContentValues();
+                                values.put("cardid", itemId);
+                                values.put("mobid", mobId);
+                                con.insert("monstercardwz", null, values);
+                            }
+                        }
+                    }
+                } finally {
+                    cursor1.close();
                 }
             }
-
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -131,16 +139,13 @@ public class MobBookIndexer {
 			bufferedReader = br;
 			String line = null;
 
-			PreparedStatement ps = con.prepareStatement("DROP TABLE IF EXISTS monstercardwz;");
-			ps.execute();
+            con.execSQL("DROP TABLE IF EXISTS monstercardwz;");
 
-            ps = con.prepareStatement("CREATE TABLE `monstercardwz` ("
-                    + "`id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-                    + "`cardid` int(10) NOT NULL DEFAULT '-1',"
-                    + "`mobid` int(10) NOT NULL DEFAULT '-1',"
-                    + "PRIMARY KEY (`id`)"
-                    + ");");
-            ps.execute();
+            con.execSQL("CREATE TABLE monstercardwz (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "cardid INTEGER NOT NULL DEFAULT -1," +
+                    "mobid INTEGER NOT NULL DEFAULT -1" +
+                    ");");
 
 			while ((line = bufferedReader.readLine()) != null) {
 				translateToken(line);
@@ -149,7 +154,7 @@ public class MobBookIndexer {
 			System.out.println("Unable to open file '" + INPUT_FILE + "'");
 		} catch (IOException ex) {
 			System.out.println("Error reading file '" + INPUT_FILE + "'");
-		} catch (SQLException e) {
+		} catch (SQLiteException e) {
 			System.out.println("Warning: Could not establish connection to database to change card chance rate.");
 			System.out.println(e.getMessage());
 			e.printStackTrace();

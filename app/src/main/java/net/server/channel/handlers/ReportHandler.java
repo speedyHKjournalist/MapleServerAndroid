@@ -21,6 +21,9 @@
  */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import net.AbstractPacketHandler;
@@ -82,17 +85,19 @@ public final class ReportHandler extends AbstractPacketHandler {
     }
 
     private void addReport(int reporterid, int victimid, int reason, String description, String chatlog) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO reports (`reporttime`, `reporterid`, `victimid`, `reason`, `chatlog`, `description`) VALUES (?, ?, ?, ?, ?, ?)")) {
-            ps.setTimestamp(1, new Timestamp(Instant.now().toEpochMilli()));
-            ps.setInt(2, reporterid);
-            ps.setInt(3, victimid);
-            ps.setInt(4, reason);
-            ps.setString(5, chatlog);
-            ps.setString(6, description);
-            ps.executeUpdate();
-        } catch (SQLException ex) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("reporttime", System.currentTimeMillis());
+            values.put("reporterid", reporterid);
+            values.put("victimid", victimid);
+            values.put("reason", reason);
+            values.put("chatlog", chatlog);
+            values.put("description", description);
+            con.insert("reports", null, values);
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
+
+
     }
 }

@@ -21,6 +21,10 @@
 */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.Ring;
@@ -149,43 +153,50 @@ public final class RingActionHandler extends AbstractPacketHandler {
     }
 
     private static void eraseEngagementOffline(int characterId) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             eraseEngagementOffline(characterId, con);
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
 
-    private static void eraseEngagementOffline(int characterId, Connection con) throws SQLException {
-        try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET marriageItemId=-1, partnerId=-1 WHERE id=?")) {
-            ps.setInt(1, characterId);
-            ps.executeUpdate();
-        }
+    private static void eraseEngagementOffline(int characterId, SQLiteDatabase con) throws SQLiteException {
+        ContentValues values = new ContentValues();
+        values.put("marriageItemId", -1);
+        values.put("partnerId", -1);
+
+        String whereClause = "id = ?";
+        String[] whereArgs = {String.valueOf(characterId)};
+
+        con.update("characters", values, whereClause, whereArgs);
     }
 
     private static void breakEngagementOffline(int characterId) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT marriageItemId FROM characters WHERE id=?")) {
-            ps.setInt(1, characterId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int marriageItemId = rs.getInt("marriageItemId");
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        con.beginTransaction();
+        try (Cursor cursor = con.rawQuery("SELECT marriageItemId FROM characters WHERE id=?", new String[]{String.valueOf(characterId)})) {
+            if (cursor.moveToFirst()) {
+                int marriageItemIdIdx = cursor.getColumnIndex("marriageItemId");
+                if (marriageItemIdIdx != -1) {
+                    int marriageItemId = cursor.getInt(marriageItemIdIdx);
 
                     if (marriageItemId > 0) {
-                        try (PreparedStatement ps2 = con.prepareStatement("UPDATE inventoryitems SET expiration=0 WHERE itemid=? AND characterid=?")) {
-                            ps2.setInt(1, marriageItemId);
-                            ps2.setInt(2, characterId);
+                        ContentValues values = new ContentValues();
+                        values.put("expiration", 0);
 
-                            ps2.executeUpdate();
-                        }
+                        String whereClause = "itemid = ? AND characterid = ?";
+                        String[] whereArgs = {String.valueOf(marriageItemId), String.valueOf(characterId)};
+
+                        con.update("inventoryitems", values, whereClause, whereArgs);
                     }
                 }
             }
-
             eraseEngagementOffline(characterId, con);
-        } catch (SQLException ex) {
+            con.setTransactionSuccessful();
+        } catch (SQLiteException ex) {
             log.error("Error updating offline breakup", ex);
+        } finally {
+            con.endTransaction();
         }
     }
 

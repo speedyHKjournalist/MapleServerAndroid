@@ -21,6 +21,9 @@
  */
 package scripting.portal;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Client;
 import scripting.AbstractPlayerInteraction;
 import scripting.map.MapScriptManager;
@@ -51,18 +54,18 @@ public class PortalPlayerInteraction extends AbstractPlayerInteraction {
     }
 
     public boolean hasLevel30Character() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `level` FROM `characters` WHERE accountid = ?")) {
-            ps.setInt(1, getPlayer().getAccountID());
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT `level` FROM `characters` WHERE accountid = ?", new String[]{String.valueOf(getPlayer().getAccountID())})) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.getInt("level") >= 30) {
+            if (ps != null) {
+                while (ps.moveToNext()) {
+                    int levelIdx = ps.getColumnIndex("level");
+                    if (ps.getInt(levelIdx) >= 30) {
                         return true;
                     }
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 

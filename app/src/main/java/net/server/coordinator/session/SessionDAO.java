@@ -1,5 +1,9 @@
 package net.server.coordinator.session;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
@@ -14,24 +18,22 @@ public class SessionDAO {
 
     public static void deleteExpiredHwidAccounts() {
         final String query = "DELETE FROM hwidaccounts WHERE expiresat < CURRENT_TIMESTAMP";
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(query)) {
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+             con.rawQuery(query, null);
+        } catch (SQLiteException e) {
             log.warn("Failed to delete expired hwidaccounts", e);
         }
     }
 
-    public static List<Hwid> getHwidsForAccount(Connection con, int accountId) throws SQLException {
+    public static List<Hwid> getHwidsForAccount(SQLiteDatabase con, int accountId) throws SQLiteException {
         final List<Hwid> hwids = new ArrayList<>();
 
         final String query = "SELECT hwid FROM hwidaccounts WHERE accountid = ?";
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, accountId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    hwids.add(new Hwid(rs.getString("hwid")));
+        try (Cursor ps = con.rawQuery(query, new String[] { String.valueOf(accountId) })) {
+            while (ps.moveToNext()) {
+                int hwidIdx = ps.getColumnIndex("hwid");
+                if (hwidIdx != -1) {
+                    hwids.add(new Hwid(ps.getString(hwidIdx)));
                 }
             }
         }
@@ -39,33 +41,35 @@ public class SessionDAO {
         return hwids;
     }
 
-    public static void registerAccountAccess(Connection con, int accountId, Hwid hwid, Instant expiry)
-            throws SQLException {
+    public static void registerAccountAccess(SQLiteDatabase con, int accountId, Hwid hwid, Instant expiry)
+            throws SQLiteException {
         if (hwid == null) {
             throw new IllegalArgumentException("Hwid must not be null");
         }
 
         final String query = "INSERT INTO hwidaccounts (accountid, hwid, expiresat) VALUES (?, ?, ?)";
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, accountId);
-            ps.setString(2, hwid.hwid());
-            ps.setTimestamp(3, new Timestamp(Timestamp.from(expiry).getTime()));
-
-            ps.executeUpdate();
-        }
+        String tableName = "hwidaccounts";
+        ContentValues values = new ContentValues();
+        values.put("accountid", accountId);
+        values.put("hwid", hwid.hwid());
+        values.put("expiresat", expiry.toString());
+        con.insert(tableName, null, values);
     }
 
-    public static List<HwidRelevance> getHwidRelevance(Connection con, int accountId) throws SQLException {
+    public static List<HwidRelevance> getHwidRelevance(SQLiteDatabase con, int accountId) throws SQLiteException {
         final List<HwidRelevance> hwidRelevances = new ArrayList<>();
 
-        final String query = "SELECT * FROM hwidaccounts WHERE accountid = ?";
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, accountId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String hwid = rs.getString("hwid");
-                    int relevance = rs.getInt("relevance");
+        String tableName = "hwidaccounts";
+        String[] columns = { "hwid", "relevance" };
+        String selection = "accountid = ?";
+        String[] selectionArgs = { String.valueOf(accountId) };
+        try (Cursor cursor = con.query(tableName, columns, selection, selectionArgs, null, null, null)) {
+            while (cursor.moveToNext()) {
+                int hwidIdx = cursor.getColumnIndex("hwid");
+                int relevanceIdx = cursor.getColumnIndex("relevance");
+                if (hwidIdx != -1 && relevanceIdx != -1) {
+                    String hwid = cursor.getString(hwidIdx);
+                    int relevance = cursor.getInt(relevanceIdx);
                     hwidRelevances.add(new HwidRelevance(hwid, relevance));
                 }
             }
@@ -74,16 +78,14 @@ public class SessionDAO {
         return hwidRelevances;
     }
 
-    public static void updateAccountAccess(Connection con, Hwid hwid, int accountId, Instant expiry, int loginRelevance)
-            throws SQLException {
-        final String query = "UPDATE hwidaccounts SET relevance = ?, expiresat = ? WHERE accountid = ? AND hwid LIKE ?";
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, loginRelevance);
-            ps.setTimestamp(2, new Timestamp(Timestamp.from(expiry).getTime()));
-            ps.setInt(3, accountId);
-            ps.setString(4, hwid.hwid());
-
-            ps.executeUpdate();
-        }
+    public static void updateAccountAccess(SQLiteDatabase con, Hwid hwid, int accountId, Instant expiry, int loginRelevance)
+            throws SQLiteException {
+        String tableName = "hwidaccounts";
+        ContentValues values = new ContentValues();
+        values.put("relevance", loginRelevance);
+        values.put("expiresat", Timestamp.from(expiry).getTime());
+        String whereClause = "accountid = ? AND hwid LIKE ?";
+        String[] whereArgs = { String.valueOf(accountId), hwid.hwid() };
+        con.update(tableName, values, whereClause, whereArgs);
     }
 }

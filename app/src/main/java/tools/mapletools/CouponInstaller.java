@@ -1,5 +1,8 @@
 package tools.mapletools;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 
 import java.io.BufferedReader;
@@ -21,7 +24,7 @@ import java.sql.SQLException;
 public class CouponInstaller {
     private static final Path COUPON_INPUT_FILE_1 = WZFiles.ITEM.getFile().resolve("Cash/0521.img.xml");
     private static final Path COUPON_INPUT_FILE_2 = WZFiles.ITEM.getFile().resolve("Cash/0536.img.xml");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
     private static BufferedReader bufferedReader = null;
     private static byte status = 0;
     private static int itemId = -1;
@@ -140,17 +143,16 @@ public class CouponInstaller {
             if (time != null) {
                 processHourTimeString(time);
 
-                PreparedStatement ps = con.prepareStatement("INSERT INTO nxcoupons (couponid, rate, activeday, starthour, endhour) VALUES (?, ?, ?, ?, ?)");
-                ps.setInt(1, itemId);
-                ps.setInt(2, itemMultiplier);
-                ps.setInt(3, activeDay);
-                ps.setInt(4, startHour);
-                ps.setInt(5, endHour);
-                ps.execute();
+                ContentValues values = new ContentValues();
+                values.put("couponid", itemId);
+                values.put("rate", itemMultiplier);
+                values.put("activeday", activeDay);
+                values.put("starthour", startHour);
+                values.put("endhour", endHour);
 
-                ps.close();
+                con.insertOrThrow("nxcoupons", null, values);
             }
-        } catch (SQLException | IOException e) {
+        } catch (SQLiteException | IOException e) {
             e.printStackTrace();
         }
     }
@@ -217,31 +219,23 @@ public class CouponInstaller {
 
     private static void installCouponsTable() {
         try {
-            PreparedStatement ps = con.prepareStatement("DROP TABLE IF EXISTS `nxcoupons`;");
-            ps.execute();
-            ps.close();
+            con.execSQL("DROP TABLE IF EXISTS `nxcoupons`;");
 
-            ps = con.prepareStatement(
-                    """
-                            CREATE TABLE IF NOT EXISTS `nxcoupons` (
-                              `id` int(11) NOT NULL AUTO_INCREMENT,
-                              `couponid` int(11) NOT NULL DEFAULT '0',
-                              `rate` int(11) NOT NULL DEFAULT '0',
-                              `activeday` int(11) NOT NULL DEFAULT '0',
-                              `starthour` int(11) NOT NULL DEFAULT '0',
-                              `endhour` int(11) NOT NULL DEFAULT '0',
-                              PRIMARY KEY (`id`)
-                            ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1;"""
-            );
-
-            ps.execute();
-            ps.close();
+            String createTableQuery = "CREATE TABLE IF NOT EXISTS nxcoupons ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "couponid INTEGER NOT NULL DEFAULT 0,"
+                    + "rate INTEGER NOT NULL DEFAULT 0,"
+                    + "activeday INTEGER NOT NULL DEFAULT 0,"
+                    + "starthour INTEGER NOT NULL DEFAULT 0,"
+                    + "endhour INTEGER NOT NULL DEFAULT 0"
+                    + ");";
+            con.execSQL(createTableQuery);
 
             installRateCoupons(COUPON_INPUT_FILE_1);
             installRateCoupons(COUPON_INPUT_FILE_2);
 
             con.close();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to change card chance rate.");
             System.out.println(e.getMessage());
         } catch (Exception e) {

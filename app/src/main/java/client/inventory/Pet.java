@@ -21,6 +21,9 @@
 */
 package client.inventory;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.inventory.manipulator.CashIdGenerator;
 import constants.game.ExpTable;
@@ -76,81 +79,85 @@ public class Pet extends Item {
 
     public static Pet loadFromDb(int itemid, short position, int petid) {
         Pet ret = new Pet(itemid, position, petid);
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT name, level, closeness, fullness, summoned, flag FROM pets WHERE petid = ?")) { // Get the pet details...
-            ps.setInt(1, petid);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT name, level, closeness, fullness, summoned, flag FROM pets WHERE petid = ?", new String[]{String.valueOf(petid)})) { // Get the pet details...
+            if (cursor.moveToFirst()) {
+                int nameIdx = cursor.getColumnIndex("name");
+                int closenessIdx = cursor.getColumnIndex("closeness");
+                int levelIdx = cursor.getColumnIndex("level");
+                int fullnessIdx = cursor.getColumnIndex("fullness");
+                int summonedIdx = cursor.getColumnIndex("summoned");
+                int flagIdx = cursor.getColumnIndex("flag");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                ret.setName(rs.getString("name"));
-                ret.setTameness(Math.min(rs.getInt("closeness"), 30000));
-                ret.setLevel((byte) Math.min(rs.getByte("level"), 30));
-                ret.setFullness(Math.min(rs.getInt("fullness"), 100));
-                ret.setSummoned(rs.getInt("summoned") == 1);
-                ret.setPetAttribute(rs.getInt("flag"));
+                if (nameIdx != -1 && closenessIdx >= 0 && levelIdx >= 0 && fullnessIdx >= 0 && summonedIdx >= 0 && flagIdx >= 0) {
+                    ret.setName(cursor.getString(nameIdx));
+                    ret.setTameness(Math.min(cursor.getInt(closenessIdx), 30000));
+                    ret.setLevel((byte) Math.min((byte) cursor.getInt(levelIdx), 30));
+                    ret.setFullness(Math.min(cursor.getInt(fullnessIdx), 100));
+                    ret.setSummoned(cursor.getInt(summonedIdx) == 1);
+                    ret.setPetAttribute(cursor.getInt(flagIdx));
+                }
             }
             return ret;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return null;
         }
     }
 
     public static void deleteFromDb(Character owner, int petid) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM pets WHERE `petid` = ?")) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("DELETE FROM pets WHERE `petid` = ?", new String[]{String.valueOf(petid)})) {
             // thanks Vcoc for detecting petignores remaining after deletion
-            ps.setInt(1, petid);
-
             owner.resetExcluded(petid);
             CashIdGenerator.freeCashId(petid);
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
     }
 
     public void saveToDb() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, summoned = ?, flag = ? WHERE petid = ?")) {
-            ps.setString(1, getName());
-            ps.setInt(2, getLevel());
-            ps.setInt(3, getTameness());
-            ps.setInt(4, getFullness());
-            ps.setInt(5, isSummoned() ? 1 : 0);
-            ps.setInt(6, getPetAttribute());
-            ps.setInt(7, getUniqueId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+             con.rawQuery("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, summoned = ?, flag = ? WHERE petid = ?", new String[]{
+                     getName(),
+                     String.valueOf(getLevel()),
+                     String.valueOf(getTameness()),
+                     String.valueOf(getFullness()),
+                     isSummoned() ? "1" : "0",
+                     String.valueOf(getPetAttribute()),
+                     String.valueOf(getUniqueId())
+             });
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
 
     public static int createPet(int itemid) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, 1, 0, 100, 0, 0)")) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int ret = CashIdGenerator.generateCashId();
-            ps.setInt(1, ret);
-            ps.setString(2, ItemInformationProvider.getInstance().getName(itemid));
-            ps.executeUpdate();
+             con.rawQuery("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, 1, 0, 100, 0, 0)", new String[]{
+                     String.valueOf(ret),
+                     ItemInformationProvider.getInstance().getName(itemid)
+             });
             return ret;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return -1;
         }
     }
 
     public static int createPet(int itemid, byte level, int tameness, int fullness) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, ?, ?, ?, 0, 0)")) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int ret = CashIdGenerator.generateCashId();
-            ps.setInt(1, ret);
-            ps.setString(2, ItemInformationProvider.getInstance().getName(itemid));
-            ps.setByte(3, level);
-            ps.setInt(4, tameness);
-            ps.setInt(5, fullness);
-            ps.executeUpdate();
+            con.rawQuery("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, ?, ?, ?, 0, 0)", new String[]{
+                    String.valueOf(ret),
+                    ItemInformationProvider.getInstance().getName(itemid),
+                    String.valueOf(level),
+                    String.valueOf(tameness),
+                    String.valueOf(fullness)
+            });
             return ret;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return -1;
         }

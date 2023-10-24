@@ -21,6 +21,9 @@
  */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.Family;
@@ -129,25 +132,27 @@ public final class AcceptFamilyHandler extends AbstractPacketHandler {
     }
 
     private static void insertNewFamilyRecord(int characterID, int familyID, int seniorID, boolean updateChar) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO family_character (cid, familyid, seniorid) VALUES (?, ?, ?)")) {
-                ps.setInt(1, characterID);
-                ps.setInt(2, familyID);
-                ps.setInt(3, seniorID);
-                ps.executeUpdate();
-            } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try {
+                ContentValues values = new ContentValues();
+                values.put("cid", characterID);
+                values.put("familyid", familyID);
+                values.put("seniorid", seniorID);
+                con.insert("family_character", null, values);
+            } catch (SQLiteException e) {
                 log.error("Could not save new family record for chrId {}", characterID, e);
             }
             if (updateChar) {
-                try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET familyid = ? WHERE id = ?")) {
-                    ps.setInt(1, familyID);
-                    ps.setInt(2, characterID);
-                    ps.executeUpdate();
-                } catch (SQLException e) {
+                try {ContentValues values = new ContentValues();
+                    values.put("familyid", familyID);
+                    String whereClause = "id = ?";
+                    String[] whereArgs = {String.valueOf(characterID)};
+                    con.update("characters", values, whereClause, whereArgs);
+                } catch (SQLiteException e) {
                     log.error("Could not update 'characters' 'familyid' record for chrId {}", characterID, e);
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB while inserting new family record", e);
         }
     }

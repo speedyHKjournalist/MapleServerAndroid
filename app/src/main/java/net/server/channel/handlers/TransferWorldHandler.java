@@ -20,6 +20,9 @@
 
 package net.server.channel.handlers;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import config.YamlConfig;
@@ -56,21 +59,21 @@ public final class TransferWorldHandler extends AbstractPacketHandler {
             c.sendPacket(PacketCreator.sendWorldTransferRules(worldTransferError, c));
             return;
         }
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT completionTime FROM worldtransfers WHERE characterid=?")) {
-            ps.setInt(1, chr.getId());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Timestamp completedTimestamp = rs.getTimestamp("completionTime");
-                if (completedTimestamp == null) { //has pending world transfer
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT completionTime FROM worldtransfers WHERE characterid=?",
+                     new String[]{ String.valueOf(chr.getId()) })) {
+            while (cursor.moveToNext()) {
+                int completionTimeIdx = cursor.getColumnIndex("completionTime");
+                long completionTime = cursor.getLong(completionTimeIdx);
+                if (completionTime == 0) { //has pending world transfer
                     c.sendPacket(PacketCreator.sendWorldTransferRules(6, c));
                     return;
-                } else if (completedTimestamp.getTime() + YamlConfig.config.server.WORLD_TRANSFER_COOLDOWN > System.currentTimeMillis()) {
+                } else if (completionTime + YamlConfig.config.server.WORLD_TRANSFER_COOLDOWN > System.currentTimeMillis()) {
                     c.sendPacket(PacketCreator.sendWorldTransferRules(7, c));
                     return;
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return;
         }

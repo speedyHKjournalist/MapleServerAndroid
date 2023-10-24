@@ -20,6 +20,9 @@
 
 package net.server.channel.handlers;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import config.YamlConfig;
@@ -61,21 +64,24 @@ public final class TransferNameHandler extends AbstractPacketHandler {
             return;
         }
         //sql queries
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT completionTime FROM namechanges WHERE characterid=?")) { //double check, just in case
-            ps.setInt(1, chr.getId());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Timestamp completedTimestamp = rs.getTimestamp("completionTime");
-                if (completedTimestamp == null) { //has pending name request
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT completionTime FROM namechanges WHERE characterid=?", new String[]{String.valueOf(chr.getId())})) { //double check, just in case
+            while (cursor.moveToNext()) {
+                int completionTimeIdx = cursor.getColumnIndex("completionTime");
+                long completedTimestamp = cursor.getLong(completionTimeIdx);
+                long currentTime = System.currentTimeMillis();
+
+                if (completedTimestamp == 0) { // has a pending name request
+                    // Send the appropriate response to the client (implement this method accordingly).
                     c.sendPacket(PacketCreator.sendNameTransferRules(1));
                     return;
-                } else if (completedTimestamp.getTime() + YamlConfig.config.server.NAME_CHANGE_COOLDOWN > System.currentTimeMillis()) {
+                } else if (completedTimestamp + YamlConfig.config.server.NAME_CHANGE_COOLDOWN > currentTime) {
+                    // Send the appropriate response to the client (implement this method accordingly).
                     c.sendPacket(PacketCreator.sendNameTransferRules(3));
                     return;
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return;
         }

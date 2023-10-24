@@ -1,5 +1,8 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 import tools.Pair;
 
@@ -25,7 +28,7 @@ import java.util.*;
  */
 public class CashDropFetcher {
     private static final Path OUTPUT_FILE = ToolConstants.getOutputFile("cash_drop_report.txt");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
     private static final int INITIAL_STRING_LENGTH = 50;
     private static final int ITEM_FILE_NAME_SIZE = 13;
 
@@ -211,47 +214,47 @@ public class CashDropFetcher {
         return (dropdata ? "dropperid" : "reactorid");
     }
 
-    private static void filterNxDropsOnDB(boolean dropdata) throws SQLException {
+    private static void filterNxDropsOnDB(boolean dropdata) throws SQLiteException {
         nxDrops.clear();
 
-        PreparedStatement ps = con.prepareStatement("SELECT DISTINCT itemid FROM " + getDropTableName(dropdata));
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-            int itemid = rs.getInt("itemid");
-
-            if (nxItems.contains(itemid)) {
-                nxDrops.add(itemid);
-            }
+        Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + getDropTableName(dropdata), null);
+        if (cursor.moveToFirst()) {
+            do {
+                int itemidIdx = cursor.getColumnIndex("itemid");
+                if (itemidIdx != -1) {
+                    int itemid = cursor.getInt(itemidIdx);
+                    if (nxItems.contains(itemid)) {
+                        nxDrops.add(itemid);
+                    }
+                }
+            } while (cursor.moveToNext());
         }
-
-        rs.close();
-        ps.close();
+        cursor.close();
     }
 
-    private static List<Pair<Integer, Integer>> getNxDropsEntries(boolean dropdata) throws SQLException {
+    private static List<Pair<Integer, Integer>> getNxDropsEntries(boolean dropdata) throws SQLiteException {
         List<Pair<Integer, Integer>> entries = new ArrayList<>();
 
         List<Integer> sortedNxDrops = new ArrayList<>(nxDrops);
         Collections.sort(sortedNxDrops);
 
         for (Integer nx : sortedNxDrops) {
-            PreparedStatement ps = con.prepareStatement("SELECT " + getDropElementName(dropdata) + " FROM " + getDropTableName(dropdata) + " WHERE itemid = ?");
-            ps.setInt(1, nx);
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                entries.add(new Pair<>(nx, rs.getInt(getDropElementName(dropdata))));
+            Cursor cursor = con.rawQuery("SELECT " + getDropElementName(dropdata) + " FROM " + getDropTableName(dropdata) + " WHERE itemid = ?", new String[]{String.valueOf(nx)});
+            if (cursor.moveToFirst()) {
+                do {
+                    int dropdataIdx = cursor.getColumnIndex(getDropElementName(dropdata));
+                    if (dropdataIdx != -1) {
+                        entries.add(new Pair<>(nx, cursor.getInt(dropdataIdx)));
+                    }
+                } while (cursor.moveToNext());
             }
-
-            rs.close();
-            ps.close();
+            cursor.close();
         }
 
         return entries;
     }
 
-    private static void reportNxDropResults(boolean dropdata) throws SQLException {
+    private static void reportNxDropResults(boolean dropdata) throws SQLiteException {
         filterNxDropsOnDB(dropdata);
 
         if (!nxDrops.isEmpty()) {
@@ -326,7 +329,7 @@ public class CashDropFetcher {
              */
 
             System.out.println("Done!");
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to report quest data.");
             System.out.println(e.getMessage());
         } catch (Exception e) {

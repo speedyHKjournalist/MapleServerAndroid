@@ -19,6 +19,9 @@
 */
 package net.server.channel.handlers;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.Item;
@@ -129,18 +132,19 @@ public final class NewYearCardHandler extends AbstractPacketHandler {
     }
 
     private static int getReceiverId(String receiver, int world) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT id, world FROM characters WHERE name LIKE ?")) {
-                ps.setString(1, receiver);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        if (rs.getInt("world") == world) {
-                            return rs.getInt("id");
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.rawQuery("SELECT id, world FROM characters WHERE name LIKE ?", new String[]{receiver})) {
+                if (cursor.moveToFirst()) {
+                    int worldIdx = cursor.getColumnIndex("world");
+                    int idIdx = cursor.getColumnIndex("id");
+                    if (worldIdx != -1) {
+                        if (cursor.getInt(worldIdx) == world) {
+                            return cursor.getInt(idIdx);
                         }
                     }
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 

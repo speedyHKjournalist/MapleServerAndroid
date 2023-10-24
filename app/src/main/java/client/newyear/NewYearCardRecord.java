@@ -19,6 +19,7 @@
 */
 package client.newyear;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -136,29 +137,22 @@ public class NewYearCardRecord {
     }
 
     public static void saveNewYearCard(NewYearCardRecord newyear) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO newyear VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-                ps.setInt(1, newyear.senderId);
-                ps.setString(2, newyear.senderName);
-                ps.setInt(3, newyear.receiverId);
-                ps.setString(4, newyear.receiverName);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                ContentValues values = new ContentValues();
+                values.put("senderId", newyear.senderId);
+                values.put("senderName", newyear.senderName);
+                values.put("receiverId", newyear.receiverId);
+                values.put("receiverName", newyear.receiverName);
+                values.put("stringContent", newyear.stringContent);
+                values.put("senderDiscardCard", newyear.senderDiscardCard ? 1 : 0);
+                values.put("receiverDiscardCard", newyear.receiverDiscardCard ? 1 : 0);
+                values.put("receiverReceivedCard", newyear.receiverReceivedCard ? 1 : 0);
+                values.put("dateSent", newyear.dateSent);
+                values.put("dateReceived", newyear.dateReceived);
 
-                ps.setString(5, newyear.stringContent);
-
-                ps.setBoolean(6, newyear.senderDiscardCard);
-                ps.setBoolean(7, newyear.receiverDiscardCard);
-                ps.setBoolean(8, newyear.receiverReceivedCard);
-
-                ps.setLong(9, newyear.dateSent);
-                ps.setLong(10, newyear.dateReceived);
-
-                ps.executeUpdate();
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    rs.next();
-                    newyear.id = rs.getInt(1);
-                }
-            }
-        } catch (SQLException sqle) {
+                long newRowId = con.insert("newyear", null, values);
+                newyear.id = (int) newRowId;
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -167,14 +161,16 @@ public class NewYearCardRecord {
         newyear.receiverReceivedCard = true;
         newyear.dateReceived = System.currentTimeMillis();
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("UPDATE newyear SET received=1, timereceived=? WHERE id=?")) {
-                ps.setLong(1, newyear.dateReceived);
-                ps.setInt(2, newyear.id);
+        ContentValues values = new ContentValues();
+        values.put("received", 1);
+        values.put("timereceived", newyear.dateReceived);
 
-                ps.executeUpdate();
-            }
-        } catch (SQLException sqle) {
+        String whereClause = "id = ?";
+        String[] whereArgs = {String.valueOf(newyear.id)};
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("newyear", values, whereClause, whereArgs);
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -185,20 +181,70 @@ public class NewYearCardRecord {
             return nyc;
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM newyear WHERE id = ?")) {
-                ps.setInt(1, cardid);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        NewYearCardRecord newyear = new NewYearCardRecord(rs.getInt("senderid"), rs.getString("sendername"), rs.getInt("receiverid"), rs.getString("receivername"), rs.getString("message"));
-                        newyear.setExtraNewYearCardRecord(rs.getInt("id"), rs.getBoolean("senderdiscard"), rs.getBoolean("receiverdiscard"), rs.getBoolean("received"), rs.getLong("timesent"), rs.getLong("timereceived"));
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String[] projection = {
+                    "senderid",
+                    "sendername",
+                    "receiverid",
+                    "receivername",
+                    "message",
+                    "senderdiscard",
+                    "receiverdiscard",
+                    "received",
+                    "timesent",
+                    "timereceived"
+            };
+
+            String selection = "id = ?";
+            String[] selectionArgs = {String.valueOf(cardid)};
+
+            try (Cursor cursor = con.query("newyear", projection, selection, selectionArgs, null, null, null)) {
+                if (cursor.moveToFirst()) {
+                    int senderidIdx = cursor.getColumnIndex("senderid");
+                    int sendernameIdx = cursor.getColumnIndex("sendername");
+                    int receiveridIdx = cursor.getColumnIndex("receiverid");
+                    int receivernameIdx = cursor.getColumnIndex("receivername");
+                    int messageIdx = cursor.getColumnIndex("message");
+                    int idIdx = cursor.getColumnIndex("id");
+                    int senderdiscardIdx = cursor.getColumnIndex("senderdiscard");
+                    int receiverdiscardIdx = cursor.getColumnIndex("receiverdiscard");
+                    int receivedIdx = cursor.getColumnIndex("received");
+                    int timesentIdx = cursor.getColumnIndex("timesent");
+                    int timereceivedIdx = cursor.getColumnIndex("timereceived");
+
+                    if (senderidIdx != -1 &&
+                            sendernameIdx != -1 &&
+                            receiveridIdx != -1 &&
+                            receivernameIdx != -1 &&
+                            messageIdx != -1 &&
+                            idIdx != -1 &&
+                            senderdiscardIdx != -1 &&
+                            receiverdiscardIdx != -1 &&
+                            receivedIdx != -1 &&
+                            timesentIdx != -1 &&
+                            timereceivedIdx != -1) {
+                        int senderid = cursor.getInt(senderidIdx);
+                        String sendername = cursor.getString(sendernameIdx);
+                        int receiverid = cursor.getInt(receiveridIdx);
+                        String receivername = cursor.getString(receivernameIdx);
+                        String message = cursor.getString(messageIdx);
+
+                        int id = cursor.getInt(idIdx);
+                        boolean senderdiscard = cursor.getInt(senderdiscardIdx) != 0;
+                        boolean receiverdiscard = cursor.getInt(receiverdiscardIdx) != 0;
+                        boolean received = cursor.getInt(receivedIdx) != 0;
+                        long timesent = cursor.getLong(timesentIdx);
+                        long timereceived = cursor.getLong(timereceivedIdx);
+
+                        NewYearCardRecord newyear = new NewYearCardRecord(senderid, sendername, receiverid, receivername, message);
+                        newyear.setExtraNewYearCardRecord(id, senderdiscard, receiverdiscard, received, timesent, timereceived);
 
                         Server.getInstance().setNewYearCard(newyear);
                         return newyear;
                     }
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 
@@ -206,20 +252,46 @@ public class NewYearCardRecord {
     }
 
     public static void loadPlayerNewYearCards(Character chr) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM newyear WHERE senderid = ? OR receiverid = ?")) {
-                ps.setInt(1, chr.getId());
-                ps.setInt(2, chr.getId());
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        NewYearCardRecord newyear = new NewYearCardRecord(rs.getInt("senderid"), rs.getString("sendername"), rs.getInt("receiverid"), rs.getString("receivername"), rs.getString("message"));
-                        newyear.setExtraNewYearCardRecord(rs.getInt("id"), rs.getBoolean("senderdiscard"), rs.getBoolean("receiverdiscard"), rs.getBoolean("received"), rs.getLong("timesent"), rs.getLong("timereceived"));
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String[] projection = {
+                    "senderid",
+                    "sendername",
+                    "receiverid",
+                    "receivername",
+                    "message",
+                    "id",
+                    "senderdiscard",
+                    "receiverdiscard",
+                    "received",
+                    "timesent",
+                    "timereceived"
+            };
 
-                        chr.addNewYearRecord(newyear);
-                    }
+            String selection = "senderid = ? OR receiverid = ?";
+            String[] selectionArgs = {String.valueOf(chr.getId()), String.valueOf(chr.getId())};
+
+            try (Cursor cursor = con.query("newyear", projection, selection, selectionArgs, null, null, null)) {
+                while (cursor.moveToNext()) {
+                    int senderid = cursor.getInt(cursor.getColumnIndex("senderid"));
+                    String sendername = cursor.getString(cursor.getColumnIndex("sendername"));
+                    int receiverid = cursor.getInt(cursor.getColumnIndex("receiverid"));
+                    String receivername = cursor.getString(cursor.getColumnIndex("receivername"));
+                    String message = cursor.getString(cursor.getColumnIndex("message"));
+
+                    int id = cursor.getInt(cursor.getColumnIndex("id"));
+                    boolean senderdiscard = cursor.getInt(cursor.getColumnIndex("senderdiscard")) != 0;
+                    boolean receiverdiscard = cursor.getInt(cursor.getColumnIndex("receiverdiscard")) != 0;
+                    boolean received = cursor.getInt(cursor.getColumnIndex("received")) != 0;
+                    long timesent = cursor.getLong(cursor.getColumnIndex("timesent"));
+                    long timereceived = cursor.getLong(cursor.getColumnIndex("timereceived"));
+
+                    NewYearCardRecord newyear = new NewYearCardRecord(senderid, sendername, receiverid, receivername, message);
+                    newyear.setExtraNewYearCardRecord(id, senderdiscard, receiverdiscard, received, timesent, timereceived);
+
+                    chr.addNewYearRecord(newyear);
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -280,12 +352,9 @@ public class NewYearCardRecord {
     private static void deleteNewYearCard(int id) {
         Server.getInstance().removeNewYearCard(id);
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM newyear WHERE id = ?")) {
-                ps.setInt(1, id);
-                ps.executeUpdate();
-            }
-        } catch (SQLException sqle) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.rawQuery("DELETE FROM newyear WHERE id = ?", new String[]{String.valueOf(id)});
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -296,12 +365,12 @@ public class NewYearCardRecord {
         /* not truly needed since it's going to be hard removed from the DB
         String actor = (send ? "sender" : "receiver");
         
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             try (PreparedStatement ps = con.prepareStatement("UPDATE newyear SET " + actor + "id = 1, received = 0 WHERE " + actor + "id = ?")) {
                 ps.setInt(1, cid);
                 ps.executeUpdate();
             }
-        } catch(SQLException sqle) {
+        } catch(SQLiteException sqle) {
             sqle.printStackTrace();
         }
         */

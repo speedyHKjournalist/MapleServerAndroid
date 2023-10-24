@@ -23,6 +23,9 @@
 */
 package client.command.commands.gm4;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -56,40 +59,52 @@ public class PmobRemoveCommand extends Command {
         int ypos = pos.y;
 
         List<Pair<Integer, Pair<Integer, Integer>>> toRemove = new LinkedList<>();
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             final PreparedStatement ps;
+            String select;
+            String[] selectionArgs;
             if (mobId > -1) {
-                String select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND life = ?";
-                ps = con.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-                ps.setInt(1, player.getWorld());
-                ps.setInt(2, mapId);
-                ps.setString(3, "m");
-                ps.setInt(4, mobId);
+                select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND life = ?";
+                selectionArgs = new String[]{
+                        String.valueOf(player.getWorld()),
+                        String.valueOf(mapId),
+                        "m",
+                        String.valueOf(mobId)
+                };
             } else {
-                String select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND x >= ? AND x <= ? AND y >= ? AND y <= ?";
-                ps = con.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-                ps.setInt(1, player.getWorld());
-                ps.setInt(2, mapId);
-                ps.setString(3, "m");
-                ps.setInt(4, xpos - 50);
-                ps.setInt(5, xpos + 50);
-                ps.setInt(6, ypos - 50);
-                ps.setInt(7, ypos + 50);
+                select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND x >= ? AND x <= ? AND y >= ? AND y <= ?";
+                selectionArgs = new String[]{
+                        String.valueOf(player.getWorld()),
+                        String.valueOf(mapId),
+                        "m",
+                        String.valueOf(xpos - 50),
+                        String.valueOf(xpos + 50),
+                        String.valueOf(ypos - 50),
+                        String.valueOf(ypos + 50)
+                };
             }
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (true) {
-                    rs.beforeFirst();
-                    if (!rs.next()) {
-                        break;
-                    }
+            try (Cursor cursor = con.rawQuery(select, selectionArgs)) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int lifeIdx = cursor.getColumnIndex("life");
+                        int xIdx = cursor.getColumnIndex("x");
+                        int yIdx = cursor.getColumnIndex("y");
 
-                    toRemove.add(new Pair<>(rs.getInt("life"), new Pair<>(rs.getInt("x"), rs.getInt("y"))));
-                    rs.deleteRow();
+                        int life = cursor.getInt(lifeIdx);
+                        int x = cursor.getInt(xIdx);
+                        int y = cursor.getInt(yIdx);
+
+                        toRemove.add(new Pair<>(life, new Pair<>(x, y)));
+
+                        // Delete the row
+                        int _idIdx = cursor.getColumnIndex("_id");
+                        long rowId = cursor.getLong(_idIdx);
+                        con.delete("plife", "_id=?", new String[]{String.valueOf(rowId)});
+                    } while (cursor.moveToNext());
                 }
             }
-            ps.close();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             player.dropMessage(5, "Failed to remove pmob from the database.");
         }

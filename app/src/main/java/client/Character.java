@@ -94,6 +94,7 @@ import java.util.Date;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -3267,20 +3268,18 @@ public class Character extends AbstractCharacterObject {
     public static Map<String, String> getCharacterFromDatabase(String name) {
         Map<String, String> character = new LinkedHashMap<>();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `id`, `accountid`, `name` FROM `characters` WHERE `name` = ?")) {
-            ps.setString(1, name);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT `id`, `accountid`, `name` FROM `characters` WHERE `name` = ?", new String[]{name})) {
+            if (ps.moveToFirst()) {
+                for (int i = 0; i < ps.getColumnCount(); i++) {
+                    String columnName = ps.getColumnName(i);
+                    String columnValue = ps.getString(i);
+                    character.put(columnName, columnValue);
                 }
-
-                for (int i = 1; i <= rs.getMetaData().getColumnCount(); i++) {
-                    character.put(rs.getMetaData().getColumnLabel(i), rs.getString(i));
-                }
+            } else {
+                return null;
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 
@@ -5042,15 +5041,14 @@ public class Character extends AbstractCharacterObject {
     }
 
     public static int getAccountIdByName(String name) {
-        final int id;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT accountid FROM characters WHERE name = ?")) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return -1;
+        int id = -1;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT accountid FROM characters WHERE name = ?", new String[]{name})) {
+            if (ps.moveToFirst()) {
+                int accountidIdx = ps.getColumnIndex("accountid");
+                if (accountidIdx != -1) {
+                    id = ps.getInt(accountidIdx);
                 }
-                id = rs.getInt("accountid");
             }
             return id;
         } catch (Exception e) {
@@ -5060,15 +5058,14 @@ public class Character extends AbstractCharacterObject {
     }
 
     public static int getIdByName(String name) {
-        final int id;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id FROM characters WHERE name = ?")) {
-            ps.setString(1, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return -1;
+        int id = -1;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT id FROM characters WHERE name = ?", new String[]{name})) {
+            if (ps.moveToFirst()) {
+                int idIdx = ps.getColumnIndex("id");
+                if (idIdx != -1) {
+                    id = ps.getInt(idIdx);
                 }
-                id = rs.getInt("id");
             }
             return id;
         } catch (Exception e) {
@@ -5078,15 +5075,14 @@ public class Character extends AbstractCharacterObject {
     }
 
     public static String getNameById(int id) {
-        final String name;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT name FROM characters WHERE id = ?")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
+        String name = null;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT name FROM characters WHERE id = ?", new String[]{String.valueOf(id)})) {
+            if (ps.moveToFirst()) {
+                int nameIdx = ps.getColumnIndex("name");
+                if (nameIdx != -1) {
+                    name = ps.getString(nameIdx);
                 }
-                name = rs.getString("name");
             }
             return name;
         } catch (Exception e) {
@@ -5260,16 +5256,17 @@ public class Character extends AbstractCharacterObject {
     public int getMerchantNetMeso() {
         int elapsedDays = 0;
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `timestamp` FROM `fredstorage` WHERE `cid` = ?")) {
-            ps.setInt(1, id);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT `timestamp` FROM `fredstorage` WHERE `cid` = ?",new String[]{String.valueOf(id)})) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    elapsedDays = FredrickProcessor.timestampElapsedDays(rs.getTimestamp(1), System.currentTimeMillis());
+            if (ps.moveToFirst()) {
+                int timestampIdx = ps.getColumnIndex("timestamp");
+                if (timestampIdx != -1) {
+                    long timestampMillis = ps.getLong(timestampIdx);
+                    elapsedDays = FredrickProcessor.timestampElapsedDays(new Timestamp(timestampMillis), System.currentTimeMillis());
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -5596,7 +5593,7 @@ public class Character extends AbstractCharacterObject {
             }
             try {
                 merchant.saveItems(false);
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 log.error("Error while saving {}'s Hired Merchant items.", name, e);
             }
         }
@@ -6005,12 +6002,14 @@ public class Character extends AbstractCharacterObject {
     public void hasGivenFame(Character to) {
         lastfametime = System.currentTimeMillis();
         lastmonthfameids.add(Integer.valueOf(to.getId()));
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO famelog (characterid, characterid_to) VALUES (?, ?)")) {
-            ps.setInt(1, getId());
-            ps.setInt(2, to.getId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+
+        ContentValues values = new ContentValues();
+        values.put("characterid", getId());
+        values.put("characterid_to", to.getId());
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.insert("famelog", null, values);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -6968,162 +6967,351 @@ public class Character extends AbstractCharacterObject {
         updateRemainingSp(remainingSp, GameConstants.getSkillBook(job.getId()));
     }
 
-    public static Character loadCharFromDB(final int charid, Client client, boolean channelserver) throws SQLException {
+    public static Character loadCharFromDB(final int charid, Client client, boolean channelserver) throws SQLiteException {
         Character ret = new Character(Server.getInstance().getContext());
         ret.client = client;
         ret.id = charid;
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            final int mountexp;
-            final int mountlevel;
-            final int mounttiredness;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            int mountexp = 0;
+            int mountlevel = 0;
+            int mounttiredness = 0;
             final World wserv;
 
             // Character info
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM characters WHERE id = ?")) {
-                ps.setInt(1, charid);
+            try (Cursor cursor = con.rawQuery("SELECT * FROM characters WHERE id = ?", new String[]{String.valueOf(charid)})) {
+                if (!cursor.moveToFirst()) {
+                    throw new RuntimeException("Loading char failed (not found)");
+                }
+                int nameIdx = cursor.getColumnIndex("name");
+                int levelIdx = cursor.getColumnIndex("level");
+                int fameIdx = cursor.getColumnIndex("fame");
+                int questFameIdx = cursor.getColumnIndex("fquest");
+                int strIdx = cursor.getColumnIndex("str");
+                int dexIdx = cursor.getColumnIndex("dex");
+                int intIdx = cursor.getColumnIndex("int");
+                int lukIdx = cursor.getColumnIndex("luk");
+                int expIdx = cursor.getColumnIndex("exp");
+                int gachaexpIdx = cursor.getColumnIndex("gachaexp");
+                int hpIdx = cursor.getColumnIndex("hp");
+                int maxHpIdx = cursor.getColumnIndex("maxhp");
+                int mpIdx = cursor.getColumnIndex("mp");
+                int maxMpIdx = cursor.getColumnIndex("maxmp");
+                int hpMpApUsedIdx = cursor.getColumnIndex("hpMpUsed");
+                int hasMerchantIdx = cursor.getColumnIndex("HasMerchant");
+                int remainingApIdx = cursor.getColumnIndex("ap");
+                int spIdx = cursor.getColumnIndex("sp");
+                int mesoIdx = cursor.getColumnIndex("meso");
+                int merchantMesoIdx = cursor.getColumnIndex("MerchantMesos");
+                int gmIdx = cursor.getColumnIndex("gm");
+                int skinColorIdx = cursor.getColumnIndex("skincolor");
+                int genderIdx = cursor.getColumnIndex("gender");
+                int jobIdx = cursor.getColumnIndex("job");
+                int finishedDojoTutorialIdx = cursor.getColumnIndex("finishedDojoTutorial");
+                int vanquisherKillsIdx = cursor.getColumnIndex("vanquisherKills");
+                int omokWinsIdx = cursor.getColumnIndex("omokwins");
+                int omokLossesIdx = cursor.getColumnIndex("omoklosses");
+                int omokTiesIdx = cursor.getColumnIndex("omokties");
+                int matchcardWinsIdx = cursor.getColumnIndex("matchcardwins");
+                int matchcardLossesIdx = cursor.getColumnIndex("matchcardlosses");
+                int matchcardTiesIdx = cursor.getColumnIndex("matchcardties");
+                int hairIdx = cursor.getColumnIndex("hair");
+                int faceIdx = cursor.getColumnIndex("face");
+                int accountidIdx = cursor.getColumnIndex("accountid");
+                int mapIdIdx = cursor.getColumnIndex("map");
+                int jailExpirationIdx = cursor.getColumnIndex("jailexpire");
+                int spawnPointIdx = cursor.getColumnIndex("spawnpoint");
+                int worldIdx = cursor.getColumnIndex("world");
+                int rankIdx = cursor.getColumnIndex("rank");
+                int rankMoveIdx = cursor.getColumnIndex("rankMove");
+                int jobRankIdx = cursor.getColumnIndex("jobRank");
+                int jobRankMoveIdx = cursor.getColumnIndex("jobRankMove");
+                int mountExpIdx = cursor.getColumnIndex("mountexp");
+                int mountLevelIdx = cursor.getColumnIndex("mountlevel");
+                int mountTirednessIdx = cursor.getColumnIndex("mounttiredness");
+                int guildIdIdx = cursor.getColumnIndex("guildid");
+                int guildRankIdx = cursor.getColumnIndex("guildrank");
+                int allianceRankIdx = cursor.getColumnIndex("allianceRank");
+                int familyIdIdx = cursor.getColumnIndex("familyId");
+                int bookCoverIdx = cursor.getColumnIndex("monsterbookcover");
+                int vanquisherStageIdx = cursor.getColumnIndex("vanquisherStage");
+                int ariantPointsIdx = cursor.getColumnIndex("ariantPoints");
+                int dojoPointsIdx = cursor.getColumnIndex("dojoPoints");
+                int lastDojoStageIdx = cursor.getColumnIndex("lastDojoStage");
+                int dataStringIdx = cursor.getColumnIndex("dataString");
+                int buddyCapacityIdx = cursor.getColumnIndex("buddyCapacity");
+                int lastExpGainTimeIdx = cursor.getColumnIndex("lastExpGainTime");
+                int partySearchIdx = cursor.getColumnIndex("partySearch");
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        throw new RuntimeException("Loading char failed (not found)");
-                    }
-
-                    ret.name = rs.getString("name");
-                    ret.level = rs.getInt("level");
-                    ret.fame = rs.getInt("fame");
-                    ret.quest_fame = rs.getInt("fquest");
-                    ret.str = rs.getInt("str");
-                    ret.dex = rs.getInt("dex");
-                    ret.int_ = rs.getInt("int");
-                    ret.luk = rs.getInt("luk");
-                    ret.exp.set(rs.getInt("exp"));
-                    ret.gachaexp.set(rs.getInt("gachaexp"));
-                    ret.hp = rs.getInt("hp");
-                    ret.setMaxHp(rs.getInt("maxhp"));
-                    ret.mp = rs.getInt("mp");
-                    ret.setMaxMp(rs.getInt("maxmp"));
-                    ret.hpMpApUsed = rs.getInt("hpMpUsed");
-                    ret.hasMerchant = rs.getInt("HasMerchant") == 1;
-                    ret.remainingAp = rs.getInt("ap");
-                    ret.loadCharSkillPoints(rs.getString("sp").split(","));
-                    ret.meso.set(rs.getInt("meso"));
-                    ret.merchantmeso = rs.getInt("MerchantMesos");
-                    ret.setGMLevel(rs.getInt("gm"));
-                    ret.skinColor = SkinColor.getById(rs.getInt("skincolor"));
-                    ret.gender = rs.getInt("gender");
-                    ret.job = Job.getById(rs.getInt("job"));
-                    ret.finishedDojoTutorial = rs.getInt("finishedDojoTutorial") == 1;
-                    ret.vanquisherKills = rs.getInt("vanquisherKills");
-                    ret.omokwins = rs.getInt("omokwins");
-                    ret.omoklosses = rs.getInt("omoklosses");
-                    ret.omokties = rs.getInt("omokties");
-                    ret.matchcardwins = rs.getInt("matchcardwins");
-                    ret.matchcardlosses = rs.getInt("matchcardlosses");
-                    ret.matchcardties = rs.getInt("matchcardties");
-                    ret.hair = rs.getInt("hair");
-                    ret.face = rs.getInt("face");
-                    ret.accountid = rs.getInt("accountid");
-                    ret.mapid = rs.getInt("map");
-                    ret.jailExpiration = rs.getLong("jailexpire");
-                    ret.initialSpawnPoint = rs.getInt("spawnpoint");
-                    ret.world = rs.getByte("world");
-                    ret.rank = rs.getInt("rank");
-                    ret.rankMove = rs.getInt("rankMove");
-                    ret.jobRank = rs.getInt("jobRank");
-                    ret.jobRankMove = rs.getInt("jobRankMove");
-                    mountexp = rs.getInt("mountexp");
-                    mountlevel = rs.getInt("mountlevel");
-                    mounttiredness = rs.getInt("mounttiredness");
-                    ret.guildid = rs.getInt("guildid");
-                    ret.guildRank = rs.getInt("guildrank");
-                    ret.allianceRank = rs.getInt("allianceRank");
-                    ret.familyId = rs.getInt("familyId");
-                    ret.bookCover = rs.getInt("monsterbookcover");
+                if (nameIdx != -1) {
+                    ret.name = cursor.getString(nameIdx);
+                }
+                if (levelIdx != -1) {
+                    ret.level = cursor.getInt(levelIdx);
+                }
+                if (fameIdx != -1) {
+                    ret.fame = cursor.getInt(fameIdx);
+                }
+                if (questFameIdx != -1) {
+                    ret.quest_fame = cursor.getInt(questFameIdx);
+                }
+                if (strIdx != -1) {
+                    ret.str = cursor.getInt(strIdx);
+                }
+                if (dexIdx != -1) {
+                    ret.dex = cursor.getInt(dexIdx);
+                }
+                if (intIdx != -1) {
+                    ret.int_ = cursor.getInt(intIdx);
+                }
+                if (lukIdx != -1) {
+                    ret.luk = cursor.getInt(lukIdx);
+                }
+                if (expIdx != -1) {
+                    ret.exp.set(cursor.getInt(expIdx));
+                }
+                if (gachaexpIdx != -1) {
+                    ret.gachaexp.set(cursor.getInt(gachaexpIdx));
+                }
+                if (hpIdx != -1) {
+                    ret.hp = cursor.getInt(hpIdx);
+                }
+                if (maxHpIdx != -1) {
+                    ret.setMaxHp(cursor.getInt(maxHpIdx));
+                }
+                if (mpIdx != -1) {
+                    ret.mp = cursor.getInt(mpIdx);
+                }
+                if (maxMpIdx != -1) {
+                    ret.setMaxMp(cursor.getInt(maxMpIdx));
+                }
+                if (hpMpApUsedIdx != -1) {
+                    ret.hpMpApUsed = cursor.getInt(hpMpApUsedIdx);
+                }
+                if (hasMerchantIdx != -1) {
+                    ret.hasMerchant = cursor.getInt(hasMerchantIdx) == 1;
+                }
+                if (remainingApIdx != -1) {
+                    ret.remainingAp = cursor.getInt(remainingApIdx);
+                }
+                if (spIdx != -1) {
+                    ret.loadCharSkillPoints(cursor.getString(spIdx).split(","));
+                }
+                if (mesoIdx != -1) {
+                    ret.meso.set(cursor.getInt(mesoIdx));
+                }
+                if (merchantMesoIdx != -1) {
+                    ret.merchantmeso = cursor.getInt(merchantMesoIdx);
+                }
+                if (gmIdx != -1) {
+                    ret.setGMLevel(cursor.getInt(gmIdx));
+                }
+                if (skinColorIdx != -1) {
+                    ret.skinColor = SkinColor.getById(cursor.getInt(skinColorIdx));
+                }
+                if (genderIdx != -1) {
+                    ret.gender = cursor.getInt(genderIdx);
+                }
+                if (jobIdx != -1) {
+                    ret.job = Job.getById(cursor.getInt(jobIdx));
+                }
+                if (finishedDojoTutorialIdx != -1) {
+                    ret.finishedDojoTutorial = cursor.getInt(finishedDojoTutorialIdx) == 1;
+                }
+                if (vanquisherKillsIdx != -1) {
+                    ret.vanquisherKills = cursor.getInt(vanquisherKillsIdx);
+                }
+                if (omokWinsIdx != -1) {
+                    ret.omokwins = cursor.getInt(omokWinsIdx);
+                }
+                if (omokLossesIdx != -1) {
+                    ret.omoklosses = cursor.getInt(omokLossesIdx);
+                }
+                if (omokTiesIdx != -1) {
+                    ret.omokties = cursor.getInt(omokTiesIdx);
+                }
+                if (matchcardWinsIdx != -1) {
+                    ret.matchcardwins = cursor.getInt(matchcardWinsIdx);
+                }
+                if (matchcardLossesIdx != -1) {
+                    ret.matchcardlosses = cursor.getInt(matchcardLossesIdx);
+                }
+                if (matchcardTiesIdx != -1) {
+                    ret.matchcardties = cursor.getInt(matchcardTiesIdx);
+                }
+                if (hairIdx != -1) {
+                    ret.hair = cursor.getInt(hairIdx);
+                }
+                if (faceIdx != -1) {
+                    ret.face = cursor.getInt(faceIdx);
+                }
+                if (accountidIdx != -1) {
+                    ret.accountid = cursor.getInt(accountidIdx);
+                }
+                if (mapIdIdx != -1) {
+                    ret.mapid = cursor.getInt(mapIdIdx);
+                }
+                if (jailExpirationIdx != -1) {
+                    ret.jailExpiration = cursor.getLong(jailExpirationIdx);
+                }
+                if (spawnPointIdx != -1) {
+                    ret.initialSpawnPoint = cursor.getInt(spawnPointIdx);
+                }
+                if (worldIdx != -1) {
+                    ret.world = (byte) cursor.getInt(worldIdx);
+                }
+                if (rankIdx != -1) {
+                    ret.rank = cursor.getInt(rankIdx);
+                }
+                if (rankMoveIdx != -1) {
+                    ret.rankMove = cursor.getInt(rankMoveIdx);
+                }
+                if (jobRankIdx != -1) {
+                    ret.jobRank = cursor.getInt(jobRankIdx);
+                }
+                if (jobRankMoveIdx != -1) {
+                    ret.jobRankMove = cursor.getInt(jobRankMoveIdx);
+                }
+                if (mountExpIdx != -1) {
+                    mountexp = cursor.getInt(mountExpIdx);
+                }
+                if (mountLevelIdx != -1) {
+                    mountlevel = (byte) cursor.getShort(mountLevelIdx);
+                }
+                if (mountTirednessIdx != -1) {
+                    mounttiredness = cursor.getInt(mountTirednessIdx);
+                }
+                if (guildIdIdx != -1) {
+                    ret.guildid = cursor.getInt(guildIdIdx);
+                }
+                if (guildRankIdx != -1) {
+                    ret.guildRank = cursor.getInt(guildRankIdx);
+                }
+                if (allianceRankIdx != -1) {
+                    ret.allianceRank = cursor.getInt(allianceRankIdx);
+                }
+                if (familyIdIdx != -1) {
+                    ret.familyId = cursor.getInt(familyIdIdx);
+                }
+                if (bookCoverIdx != -1) {
+                    ret.bookCover = cursor.getInt(bookCoverIdx);
+                }
                     ret.monsterbook = new MonsterBook();
                     ret.monsterbook.loadCards(charid);
-                    ret.vanquisherStage = rs.getInt("vanquisherStage");
-                    ret.ariantPoints = rs.getInt("ariantPoints");
-                    ret.dojoPoints = rs.getInt("dojoPoints");
-                    ret.dojoStage = rs.getInt("lastDojoStage");
-                    ret.dataString = rs.getString("dataString");
+                if (vanquisherStageIdx != -1) {
+                    ret.vanquisherStage = cursor.getInt(vanquisherStageIdx);
+                }
+                if (ariantPointsIdx != -1) {
+                    ret.ariantPoints = cursor.getInt(ariantPointsIdx);
+                }
+                if (dojoPointsIdx != -1) {
+                    ret.dojoPoints = cursor.getInt(dojoPointsIdx);
+                }
+                if (lastDojoStageIdx != -1) {
+                    ret.dojoStage = cursor.getInt(lastDojoStageIdx);
+                }
+                if (dataStringIdx != -1) {
+                    ret.dataString = cursor.getString(dataStringIdx);
+                }
                     ret.mgc = new GuildCharacter(ret);
-                    int buddyCapacity = rs.getInt("buddyCapacity");
+                if (buddyCapacityIdx != -1) {
+                    int buddyCapacity = cursor.getInt(buddyCapacityIdx);
                     ret.buddylist = new BuddyList(buddyCapacity);
-                    ret.lastExpGainTime = rs.getTimestamp("lastExpGainTime").getTime();
-                    ret.canRecvPartySearchInvite = rs.getBoolean("partySearch");
+                }
+                if (lastExpGainTimeIdx != -1) {
+                    ret.lastExpGainTime = cursor.getLong(lastExpGainTimeIdx);
+                }
+                if (partySearchIdx != -1) {
+                    ret.canRecvPartySearchInvite = (cursor.getInt(partySearchIdx) == 1);
+                }
 
-                    wserv = Server.getInstance().getWorld(ret.world);
+                wserv = Server.getInstance().getWorld(ret.world);
 
-                    ret.getInventory(InventoryType.EQUIP).setSlotLimit(rs.getByte("equipslots"));
-                    ret.getInventory(InventoryType.USE).setSlotLimit(rs.getByte("useslots"));
-                    ret.getInventory(InventoryType.SETUP).setSlotLimit(rs.getByte("setupslots"));
-                    ret.getInventory(InventoryType.ETC).setSlotLimit(rs.getByte("etcslots"));
+                int equipSlotsIdx = cursor.getColumnIndex("equipslots");
+                int useSlotsIdx = cursor.getColumnIndex("useslots");
+                int setupSlotsIdx = cursor.getColumnIndex("setupslots");
+                int etcSlotsIdx = cursor.getColumnIndex("etcslots");
 
-                    short sandboxCheck = 0x0;
-                    for (Pair<Item, InventoryType> item : ItemFactory.INVENTORY.loadItems(ret.id, !channelserver)) {
-                        sandboxCheck |= item.getLeft().getFlag();
+                if (equipSlotsIdx != -1) {
+                    ret.getInventory(InventoryType.EQUIP).setSlotLimit((byte) cursor.getShort(equipSlotsIdx));
+                }
+                if (useSlotsIdx != -1) {
+                    ret.getInventory(InventoryType.USE).setSlotLimit((byte) cursor.getShort(useSlotsIdx));
+                }
+                if (setupSlotsIdx != -1) {
+                    ret.getInventory(InventoryType.SETUP).setSlotLimit((byte) cursor.getShort(setupSlotsIdx));
+                }
+                if (etcSlotsIdx != -1) {
+                    ret.getInventory(InventoryType.ETC).setSlotLimit((byte) cursor.getShort(etcSlotsIdx));
+                }
 
-                        ret.getInventory(item.getRight()).addItemFromDB(item.getLeft());
-                        Item itemz = item.getLeft();
-                        if (itemz.getPetId() > -1) {
-                            Pet pet = itemz.getPet();
-                            if (pet != null && pet.isSummoned()) {
-                                ret.addPet(pet);
-                            }
-                            continue;
+                short sandboxCheck = 0x0;
+                for (Pair<Item, InventoryType> item : ItemFactory.INVENTORY.loadItems(ret.id, !channelserver)) {
+                    sandboxCheck |= item.getLeft().getFlag();
+
+                    ret.getInventory(item.getRight()).addItemFromDB(item.getLeft());
+                    Item itemz = item.getLeft();
+                    if (itemz.getPetId() > -1) {
+                        Pet pet = itemz.getPet();
+                        if (pet != null && pet.isSummoned()) {
+                            ret.addPet(pet);
                         }
+                        continue;
+                    }
 
-                        InventoryType mit = item.getRight();
-                        if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
-                            Equip equip = (Equip) item.getLeft();
-                            if (equip.getRingId() > -1) {
-                                Ring ring = Ring.loadFromDb(equip.getRingId());
-                                if (item.getRight().equals(InventoryType.EQUIPPED)) {
-                                    ring.equip();
-                                }
-
-                                ret.addPlayerRing(ring);
+                    InventoryType mit = item.getRight();
+                    if (mit.equals(InventoryType.EQUIP) || mit.equals(InventoryType.EQUIPPED)) {
+                        Equip equip = (Equip) item.getLeft();
+                        if (equip.getRingId() > -1) {
+                            Ring ring = Ring.loadFromDb(equip.getRingId());
+                            if (item.getRight().equals(InventoryType.EQUIPPED)) {
+                                ring.equip();
                             }
+
+                            ret.addPlayerRing(ring);
                         }
                     }
+                }
 
-                    if ((sandboxCheck & ItemConstants.SANDBOX) == ItemConstants.SANDBOX) {
-                        ret.setHasSandboxItem();
-                    }
+                if ((sandboxCheck & ItemConstants.SANDBOX) == ItemConstants.SANDBOX) {
+                    ret.setHasSandboxItem();
+                }
 
-                    ret.partnerId = rs.getInt("partnerId");
-                    ret.marriageItemid = rs.getInt("marriageItemId");
-                    if (ret.marriageItemid > 0 && ret.partnerId <= 0) {
-                        ret.marriageItemid = -1;
-                    } else if (ret.partnerId > 0 && wserv.getRelationshipId(ret.id) <= 0) {
-                        ret.marriageItemid = -1;
-                        ret.partnerId = -1;
-                    }
+                int partnerIdIdx = cursor.getColumnIndex("partnerId");
+                if (partnerIdIdx != -1) {
+                    ret.partnerId = cursor.getInt(partnerIdIdx);
+                }
+                int marriageItemIdIdx = cursor.getColumnIndex("marriageItemId");
+                if (marriageItemIdIdx != -1) {
+                    ret.marriageItemid = cursor.getInt(marriageItemIdIdx);
+                }
+                if (ret.marriageItemid > 0 && ret.partnerId <= 0) {
+                    ret.marriageItemid = -1;
+                } else if (ret.partnerId > 0 && wserv.getRelationshipId(ret.id) <= 0) {
+                    ret.marriageItemid = -1;
+                    ret.partnerId = -1;
+                }
 
-                    NewYearCardRecord.loadPlayerNewYearCards(ret);
+                NewYearCardRecord.loadPlayerNewYearCards(ret);
 
                     //PreparedStatement ps2, ps3;
                     //ResultSet rs2, rs3;
 
                     // Items excluded from pet loot
-                    try (PreparedStatement psPet = con.prepareStatement("SELECT petid FROM inventoryitems WHERE characterid = ? AND petid > -1")) {
-                        psPet.setInt(1, charid);
-
-                        try (ResultSet rsPet = psPet.executeQuery()) {
-                            while (rsPet.next()) {
-                                final int petId = rsPet.getInt("petid");
-
-                                try (PreparedStatement psItem = con.prepareStatement("SELECT itemid FROM petignores WHERE petid = ?")) {
-                                    psItem.setInt(1, petId);
-
-                                    ret.resetExcluded(petId);
-
-                                    try (ResultSet rsItem = psItem.executeQuery()) {
-                                        while (rsItem.next()) {
-                                            ret.addExcluded(petId, rsItem.getInt("itemid"));
-                                        }
+                    try (Cursor cursorPets = con.rawQuery("SELECT petid FROM inventoryitems WHERE characterid = ? AND petid > -1", new String[]{String.valueOf(charid)})) {
+                        while (cursorPets.moveToNext()) {
+                            int petidIdx = cursorPets.getColumnIndex("petid");
+                            if (petidIdx != -1) {
+                                int petId = cursorPets.getInt(petidIdx);
+                                Cursor cursorExcludedItems = con.rawQuery("SELECT itemid FROM petignores WHERE petid = ?", new String[]{String.valueOf(petId)});
+                                ret.resetExcluded(petId);
+                                while (cursorExcludedItems.moveToNext()) {
+                                    int itemidIdx = cursorExcludedItems.getColumnIndex("itemid");
+                                    if (itemidIdx != -1) {
+                                        ret.addExcluded(petId, cursorExcludedItems.getInt(itemidIdx));
                                     }
                                 }
+                                cursorExcludedItems.close();
                             }
                         }
                     }
@@ -7143,7 +7331,8 @@ public class Character extends AbstractCharacterObject {
                             ret.initialSpawnPoint = 0;
                         }
                         ret.setPosition(portal.getPosition());
-                        int partyid = rs.getInt("party");
+                        int partyIdx = cursor.getColumnIndex("party");
+                        int partyid = cursor.getInt(partyIdx);
                         Party party = wserv.getParty(partyid);
                         if (party != null) {
                             ret.mpc = party.getMemberById(ret.id);
@@ -7152,8 +7341,12 @@ public class Character extends AbstractCharacterObject {
                                 ret.party = party;
                             }
                         }
-                        int messengerid = rs.getInt("messengerid");
-                        int position = rs.getInt("messengerposition");
+                        int messengeridIdx = cursor.getColumnIndex("messengerid");
+                        int messengerpositionIdx = cursor.getColumnIndex("messengerposition");
+
+                        int messengerid = cursor.getInt(messengeridIdx);
+                        int position = cursor.getInt(messengerpositionIdx);
+
                         if (messengerid > 0 && position < 4 && position > -1) {
                             Messenger messenger = wserv.getMessenger(messengerid);
                             if (messenger != null) {
@@ -7162,26 +7355,13 @@ public class Character extends AbstractCharacterObject {
                             }
                         }
                         ret.loggedIn = true;
-                    }
                 }
             }
 
             // Teleport rocks
-            try (PreparedStatement ps = con.prepareStatement("SELECT mapid,vip FROM trocklocations WHERE characterid = ? LIMIT 15")) {
-                ps.setInt(1, charid);
-
-                try (ResultSet rs = ps.executeQuery()) {
+            try (Cursor ps = con.rawQuery("SELECT mapid,vip FROM trocklocations WHERE characterid = ? LIMIT 15", new String[]{String.valueOf(charid)})) {
                     byte vip = 0;
                     byte reg = 0;
-                    while (rs.next()) {
-                        if (rs.getInt("vip") == 1) {
-                            ret.viptrockmaps.add(rs.getInt("mapid"));
-                            vip++;
-                        } else {
-                            ret.trockmaps.add(rs.getInt("mapid"));
-                            reg++;
-                        }
-                    }
                     while (vip < 10) {
                         ret.viptrockmaps.add(MapId.NONE);
                         vip++;
@@ -7190,44 +7370,64 @@ public class Character extends AbstractCharacterObject {
                         ret.trockmaps.add(MapId.NONE);
                         reg++;
                     }
+
+                while (ps.moveToNext()) {
+                    int mapidIdx = ps.getColumnIndex("mapid");
+                    int vipIdx = ps.getColumnIndex("vip");
+                    if (mapidIdx != -1 && vipIdx != -1) {
+                        int mapid = ps.getInt(mapidIdx);
+                        int isVip = ps.getInt(vipIdx);
+
+                        if (isVip == 1) {
+                            ret.viptrockmaps.add(mapid);
+                            vip++;
+                        } else {
+                            ret.trockmaps.add(mapid);
+                            reg++;
+                        }
+                    }
                 }
             }
 
             // Account info
-            try (PreparedStatement ps = con.prepareStatement("SELECT name, characterslots, language FROM accounts WHERE id = ?", Statement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, ret.accountid);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        Client retClient = ret.getClient();
-
-                        retClient.setAccountName(rs.getString("name"));
-                        retClient.setCharacterSlots(rs.getByte("characterslots"));
-                        retClient.setLanguage(rs.getInt("language"));   // thanks Zein for noticing user language not overriding default once player is in-game
+            try (Cursor ps = con.rawQuery("SELECT name, characterslots, language FROM accounts WHERE id = ?", new String[]{String.valueOf(ret.accountid)})) {
+                if (ps.moveToFirst()) {
+                    Client retClient = ret.getClient();
+                    int nameIdx = ps.getColumnIndex("name");
+                    int characterslotsIdx = ps.getColumnIndex("characterslots");
+                    int languageIdx = ps.getColumnIndex("language");
+                    if (nameIdx != -1 && characterslotsIdx != -1 && languageIdx != -1) {
+                        retClient.setAccountName(ps.getString(nameIdx));
+                        retClient.setCharacterSlots((byte) ps.getInt(characterslotsIdx));
+                        retClient.setLanguage(ps.getInt(languageIdx));
                     }
                 }
             }
 
             // Area info
-            try (PreparedStatement ps = con.prepareStatement("SELECT `area`,`info` FROM area_info WHERE charid = ?")) {
-                ps.setInt(1, ret.id);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        ret.area_info.put(rs.getShort("area"), rs.getString("info"));
+            try (Cursor ps = con.rawQuery("SELECT `area`,`info` FROM area_info WHERE charid = ?", new String[]{String.valueOf(ret.id)})) {
+                while (ps.moveToNext()) {
+                    int areaIdx = ps.getColumnIndex("area");
+                    int infoIdx = ps.getColumnIndex("info");
+                    if (areaIdx != -1 && infoIdx != -1) {
+                        short area = ps.getShort(areaIdx);
+                        String info = ps.getString(infoIdx);
+                        ret.area_info.put(area, info);
                     }
                 }
             }
 
             // Event stats
-            try (PreparedStatement ps = con.prepareStatement("SELECT `name`,`info` FROM eventstats WHERE characterid = ?")) {
-                ps.setInt(1, ret.id);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String name = rs.getString("name");
-                        if (rs.getString("name").contentEquals("rescueGaga")) {
-                            ret.events.put(name, new RescueGaga(rs.getInt("info")));
+            try (Cursor ps = con.rawQuery("SELECT `name`,`info` FROM eventstats WHERE characterid = ?", new String[]{String.valueOf(ret.id)})) {
+                while (ps.moveToNext()) {
+                    int nameIdx = ps.getColumnIndex("name");
+                    if (nameIdx != -1) {
+                        String name = ps.getString(nameIdx);
+                        if (name.contentEquals("rescueGaga")) {
+                            int infoIdx = ps.getColumnIndex("info");
+                            if (infoIdx != -1) {
+                                ret.events.put(name, new RescueGaga(ps.getInt(infoIdx)));
+                            }
                         }
                     }
                 }
@@ -7237,14 +7437,13 @@ public class Character extends AbstractCharacterObject {
             ret.autoban = new AutobanManager(ret);
 
             // Blessing of the Fairy
-            try (PreparedStatement ps = con.prepareStatement("SELECT name, level FROM characters WHERE accountid = ? AND id != ? ORDER BY level DESC limit 1")) {
-                ps.setInt(1, ret.accountid);
-                ps.setInt(2, charid);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        ret.linkedName = rs.getString("name");
-                        ret.linkedLevel = rs.getInt("level");
+            try (Cursor ps = con.rawQuery("SELECT name, level FROM characters WHERE accountid = ? AND id != ? ORDER BY level DESC limit 1", new String[]{String.valueOf(ret.accountid), String.valueOf(charid)})) {
+                if (ps.moveToFirst()) {
+                    int nameIdx = ps.getColumnIndex("name");
+                    int levelIdx = ps.getColumnIndex("level");
+                    if (nameIdx != -1 && levelIdx != -1) {
+                        ret.linkedName = ps.getString(nameIdx);
+                        ret.linkedLevel = ps.getInt(levelIdx);
                     }
                 }
             }
@@ -7253,53 +7452,80 @@ public class Character extends AbstractCharacterObject {
                 final Map<Integer, QuestStatus> loadedQuestStatus = new LinkedHashMap<>();
 
                 // Quest status
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM queststatus WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
+                try (Cursor ps = con.rawQuery("SELECT * FROM queststatus WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int questIdx = ps.getColumnIndex("quest");
+                        int statusIdx = ps.getColumnIndex("status");
+                        if (questIdx != -1 && statusIdx != -1) {
+                            Quest q = Quest.getInstance(ps.getShort(questIdx));
+                            QuestStatus.Status statusType = QuestStatus.Status.getById(ps.getInt(statusIdx));
+                            QuestStatus status = new QuestStatus(q, statusType);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            Quest q = Quest.getInstance(rs.getShort("quest"));
-                            QuestStatus status = new QuestStatus(q, QuestStatus.Status.getById(rs.getInt("status")));
-                            long cTime = rs.getLong("time");
-                            if (cTime > -1) {
-                                status.setCompletionTime(SECONDS.toMillis(cTime));
+                            int timeIdx = ps.getColumnIndex("time");
+                            if (timeIdx != -1) {
+                                long cTime = ps.getLong(timeIdx);
+                                if (cTime > -1) {
+                                    status.setCompletionTime(TimeUnit.SECONDS.toMillis(cTime));
+                                }
+                            }
+                            int expiresIdx = ps.getColumnIndex("expires");
+                            if (expiresIdx != -1) {
+                                long eTime = ps.getLong(expiresIdx);
+                                if (eTime > 0) {
+                                    status.setExpirationTime(eTime);
+                                }
                             }
 
-                            long eTime = rs.getLong("expires");
-                            if (eTime > 0) {
-                                status.setExpirationTime(eTime);
+                            int forfeitedIdx = ps.getColumnIndex("forfeited");
+                            int completedIdx = ps.getColumnIndex("completed");
+                            if (forfeitedIdx != -1 && completedIdx != -1) {
+                                status.setForfeited(ps.getInt(forfeitedIdx));
+                                status.setCompleted(ps.getInt(completedIdx));
                             }
-
-                            status.setForfeited(rs.getInt("forfeited"));
-                            status.setCompleted(rs.getInt("completed"));
                             ret.quests.put(q.getId(), status);
-                            loadedQuestStatus.put(rs.getInt("queststatusid"), status);
+                            int queststatusidIdx = ps.getColumnIndex("queststatusid");
+                            if (queststatusidIdx != -1) {
+                                loadedQuestStatus.put(ps.getInt(queststatusidIdx), status);
+                            }
                         }
                     }
                 }
 
                 // Quest progress
                 // opportunity for improvement on questprogress/medalmaps calls to DB
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM questprogress WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
-                    try (ResultSet rsProgress = ps.executeQuery()) {
-                        while (rsProgress.next()) {
-                            QuestStatus status = loadedQuestStatus.get(rsProgress.getInt("queststatusid"));
+                try (Cursor ps = con.rawQuery("SELECT * FROM questprogress WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int queststatusidIdx = ps.getColumnIndex("queststatusid");
+                        if (queststatusidIdx != -1) {
+                            int questStatusId = ps.getInt(queststatusidIdx);
+                            QuestStatus status = loadedQuestStatus.get(questStatusId);
+
                             if (status != null) {
-                                status.setProgress(rsProgress.getInt("progressid"), rsProgress.getString("progress"));
+                                int progressidIdx = ps.getColumnIndex("progressid");
+                                int progressIdx = ps.getColumnIndex("progress");
+                                if (progressidIdx != -1 && progressIdx != -1) {
+                                    int progressId = ps.getInt(progressidIdx);
+                                    String progress = ps.getString(progressIdx);
+                                    status.setProgress(progressId, progress);
+                                }
                             }
                         }
                     }
                 }
 
                 // Medal map visit progress
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM medalmaps WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
-                    try (ResultSet rsMedalMaps = ps.executeQuery()) {
-                        while (rsMedalMaps.next()) {
-                            QuestStatus status = loadedQuestStatus.get(rsMedalMaps.getInt("queststatusid"));
+                try (Cursor ps = con.rawQuery("SELECT * FROM medalmaps WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int queststatusidIdx = ps.getColumnIndex("queststatusid");
+                        if (queststatusidIdx != -1) {
+                            int questStatusId = ps.getInt(queststatusidIdx);
+                            QuestStatus status = loadedQuestStatus.get(questStatusId);
+
                             if (status != null) {
-                                status.addMedalMap(rsMedalMaps.getInt("mapid"));
+                                int mapidIdx = ps.getColumnIndex("mapid");
+                                if (mapidIdx != -1) {
+                                    status.addMedalMap(ps.getInt(mapidIdx));
+                                }
                             }
                         }
                     }
@@ -7308,128 +7534,169 @@ public class Character extends AbstractCharacterObject {
                 loadedQuestStatus.clear();
 
                 // Skills
-                try (PreparedStatement ps = con.prepareStatement("SELECT skillid,skilllevel,masterlevel,expiration FROM skills WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
+                try (Cursor ps = con.rawQuery("SELECT skillid,skilllevel,masterlevel,expiration FROM skills WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int skillidIdx = ps.getColumnIndex("skillid");
+                        if (skillidIdx != -1) {
+                            int skillId = ps.getInt(skillidIdx);
+                            Skill pSkill = SkillFactory.getSkill(skillId);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            Skill pSkill = SkillFactory.getSkill(rs.getInt("skillid"));
-                            if (pSkill != null) { // edit reported by Shavit (=＾● ⋏ ●＾=), thanks Zein for noticing an NPE here
-                                ret.skills.put(pSkill, new SkillEntry(rs.getByte("skilllevel"), rs.getInt("masterlevel"), rs.getLong("expiration")));
+                            if (pSkill != null) {
+                                int skilllevelIdx = ps.getColumnIndex("skilllevel");
+                                int masterlevelIdx = ps.getColumnIndex("masterlevel");
+                                int expirationIdx = ps.getColumnIndex("expiration");
+                                if (skilllevelIdx != -1 && masterlevelIdx != -1 && expirationIdx != -1) {
+                                    byte skillLevel = (byte) ps.getInt(skilllevelIdx);
+                                    int masterLevel = ps.getInt(masterlevelIdx);
+                                    long expiration = ps.getLong(expirationIdx);
+
+                                    ret.skills.put(pSkill, new SkillEntry(skillLevel, masterLevel, expiration));
+                                }
                             }
                         }
                     }
                 }
 
                 // Cooldowns (load)
-                try (PreparedStatement ps = con.prepareStatement("SELECT SkillID,StartTime,length FROM cooldowns WHERE charid = ?")) {
-                    ps.setInt(1, ret.getId());
+                try (Cursor ps = con.rawQuery("SELECT SkillID,StartTime,length FROM cooldowns WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
+                    long curTime = Server.getInstance().getCurrentTime();
+                    while (ps.moveToNext()) {
+                        int SkillIDIdx = ps.getColumnIndex("SkillID");
+                        int lengthIdx = ps.getColumnIndex("length");
+                        int StartTimeIdx = ps.getColumnIndex("StartTime");
+                        if (SkillIDIdx != -1 && lengthIdx != -1 && StartTimeIdx != -1) {
+                            int skillId = ps.getInt(SkillIDIdx);
+                            long length = ps.getLong(lengthIdx);
+                            long startTime = ps.getLong(StartTimeIdx);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        long curTime = Server.getInstance().getCurrentTime();
-                        while (rs.next()) {
-                            final int skillid = rs.getInt("SkillID");
-                            final long length = rs.getLong("length"), startTime = rs.getLong("StartTime");
-                            if (skillid != 5221999 && (length + startTime < curTime)) {
+                            if (skillId != 5221999 && (length + startTime < curTime)) {
                                 continue;
                             }
-                            ret.giveCoolDowns(skillid, startTime, length);
+
+                            ret.giveCoolDowns(skillId, startTime, length);
                         }
                     }
                 }
 
                 // Cooldowns (delete)
-                try (PreparedStatement ps = con.prepareStatement("DELETE FROM cooldowns WHERE charid = ?")) {
-                    ps.setInt(1, ret.getId());
-                    ps.executeUpdate();
-                }
+                con.rawQuery("DELETE FROM cooldowns WHERE charid = ?", new String[]{String.valueOf(ret.getId())});
 
                 // Debuffs (load)
                 Map<Disease, Pair<Long, MobSkill>> loadedDiseases = new LinkedHashMap<>();
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM playerdiseases WHERE charid = ?")) {
-                    ps.setInt(1, ret.getId());
+                try (Cursor ps = con.rawQuery("SELECT * FROM playerdiseases WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
+                    while (ps.moveToNext()) {
+                        int diseaseIdx = ps.getColumnIndex("disease");
+                        if (diseaseIdx != -1) {
+                            final int diseaseOrdinal = ps.getInt(diseaseIdx);
+                            Disease disease = Disease.ordinal(diseaseOrdinal);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            final Disease disease = Disease.ordinal(rs.getInt("disease"));
                             if (disease == Disease.NULL) {
                                 continue;
                             }
 
-                            final int skillid = rs.getInt("mobskillid");
-                            final int skilllv = rs.getInt("mobskilllv");
-                            final long length = rs.getInt("length");
+                            int mobskillidIdx = ps.getColumnIndex("mobskillid");
+                            int mobskilllvIdx = ps.getColumnIndex("mobskilllv");
+                            int lengthIdx = ps.getColumnIndex("length");
+                            if (mobskillidIdx != -1 && mobskilllvIdx != -1 && lengthIdx != -1) {
+                                final int skillId = ps.getInt(mobskillidIdx);
+                                final int skillLevel = ps.getInt(mobskilllvIdx);
+                                final long length = ps.getInt(lengthIdx);
 
-                            MobSkillType type;
-                            if (MobSkillType.from(skillid).isPresent()) {
-                                type = MobSkillType.from(skillid).get();
-                            } else {
-                                throw new NoSuchElementException("No value present");
+                                MobSkillType type;
+                                if (MobSkillType.from(skillId).isPresent()) {
+                                    type = MobSkillType.from(skillId).get();
+                                } else {
+                                    throw new NoSuchElementException("No value present");
+                                }
+
+                                MobSkill ms = MobSkillFactory.getMobSkillOrThrow(type, skillLevel);
+                                loadedDiseases.put(disease, new Pair<>(length, ms));
                             }
-                            MobSkill ms = MobSkillFactory.getMobSkillOrThrow(type, skilllv);
-                            loadedDiseases.put(disease, new Pair<>(length, ms));
                         }
                     }
                 }
 
                 // Debuffs (delete)
-                try (PreparedStatement ps = con.prepareStatement("DELETE FROM playerdiseases WHERE charid = ?")) {
-                    ps.setInt(1, ret.getId());
-                    ps.executeUpdate();
-                }
+                con.rawQuery("DELETE FROM playerdiseases WHERE charid = ?", new String[]{String.valueOf(ret.getId())});
 
                 if (!loadedDiseases.isEmpty()) {
                     Server.getInstance().getPlayerBuffStorage().addDiseasesToStorage(ret.id, loadedDiseases);
                 }
 
                 // Skill macros
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM skillmacros WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
-
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            int position = rs.getInt("position");
-                            SkillMacro macro = new SkillMacro(rs.getInt("skill1"), rs.getInt("skill2"), rs.getInt("skill3"), rs.getString("name"), rs.getInt("shout"), position);
-                            ret.skillMacros[position] = macro;
+                try (Cursor ps = con.rawQuery("SELECT * FROM skillmacros WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int positionIdx = ps.getColumnIndex("position");
+                        if (positionIdx != -1) {
+                            int position = ps.getInt(positionIdx);
+                            int skill1Idx = ps.getColumnIndex("skill1");
+                            int skill2Idx = ps.getColumnIndex("skill2");
+                            int skill3Idx = ps.getColumnIndex("skill3");
+                            int nameIdx = ps.getColumnIndex("name");
+                            int shoutIdx = ps.getColumnIndex("shout");
+                            if (skill1Idx != -1 &&
+                                    skill2Idx != -1 &&
+                                    skill3Idx != -1 &&
+                                    nameIdx != -1 &&
+                                    shoutIdx != -1) {
+                                SkillMacro macro = new SkillMacro(
+                                        ps.getInt(skill1Idx),
+                                        ps.getInt(skill2Idx),
+                                        ps.getInt(skill3Idx),
+                                        ps.getString(nameIdx),
+                                        ps.getInt(shoutIdx),
+                                        position
+                                );
+                                ret.skillMacros[position] = macro;
+                            }
                         }
                     }
                 }
 
                 // Key config
-                try (PreparedStatement ps = con.prepareStatement("SELECT `key`,`type`,`action` FROM keymap WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
-
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            int key = rs.getInt("key");
-                            int type = rs.getInt("type");
-                            int action = rs.getInt("action");
+                try (Cursor ps = con.rawQuery("SELECT `key`,`type`,`action` FROM keymap WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int keyIdx = ps.getColumnIndex("key");
+                        int typeIdx = ps.getColumnIndex("type");
+                        int actionIdx = ps.getColumnIndex("action");
+                        if (keyIdx != -1 && typeIdx != -1 && actionIdx != -1) {
+                            int key = ps.getInt(keyIdx);
+                            int type = ps.getInt(typeIdx);
+                            int action = ps.getInt(actionIdx);
                             ret.keymap.put(key, new KeyBinding(type, action));
                         }
                     }
                 }
 
                 // Saved locations
-                try (PreparedStatement ps = con.prepareStatement("SELECT `locationtype`,`map`,`portal` FROM savedlocations WHERE characterid = ?")) {
-                    ps.setInt(1, charid);
+                try (Cursor ps = con.rawQuery("SELECT `locationtype`,`map`,`portal` FROM savedlocations WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                    while (ps.moveToNext()) {
+                        int locationtypeIdx = ps.getColumnIndex("locationtype");
+                        int mapIdx = ps.getColumnIndex("map");
+                        int portalIdx = ps.getColumnIndex("portal");
+                        if (locationtypeIdx != -1 &&
+                                mapIdx != -1 &&
+                                portalIdx != -1) {
+                            String locationType = ps.getString(locationtypeIdx);
+                            int mapId = ps.getInt(mapIdx);
+                            int portalId = ps.getInt(portalIdx);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            ret.savedLocations[SavedLocationType.valueOf(rs.getString("locationtype")).ordinal()] = new SavedLocation(rs.getInt("map"), rs.getInt("portal"));
+                            ret.savedLocations[SavedLocationType.valueOf(locationType).ordinal()] = new SavedLocation(mapId, portalId);
                         }
                     }
                 }
 
                 // Fame history
-                try (PreparedStatement ps = con.prepareStatement("SELECT `characterid_to`,`when` FROM famelog WHERE characterid = ? AND DATEDIFF(NOW(),`when`) < 30")) {
-                    ps.setInt(1, charid);
+                try (Cursor ps = con.rawQuery("SELECT `characterid_to`,`when` FROM famelog WHERE characterid = ? AND DATEDIFF(NOW(),`when`) < 30", new String[]{String.valueOf(charid)})) {
+                    ret.lastfametime = 0;
+                    ret.lastmonthfameids = new ArrayList<>(31);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        ret.lastfametime = 0;
-                        ret.lastmonthfameids = new ArrayList<>(31);
-                        while (rs.next()) {
-                            ret.lastfametime = Math.max(ret.lastfametime, rs.getTimestamp("when").getTime());
-                            ret.lastmonthfameids.add(rs.getInt("characterid_to"));
+                    while (ps.moveToNext()) {
+                        int whenIdx = ps.getColumnIndex("when");
+                        int characterid_toIdx = ps.getColumnIndex("characterid_to");
+                        if (whenIdx != -1 && characterid_toIdx != -1) {
+                            ret.lastfametime = Math.max(ret.lastfametime, ps.getLong(whenIdx));
+                            ret.lastmonthfameids.add(ps.getInt(characterid_toIdx));
                         }
                     }
                 }
@@ -7463,19 +7730,18 @@ public class Character extends AbstractCharacterObject {
             ret.maplemount.setActive(false);
 
             // Quickslot key config
-            try (final PreparedStatement pSelectQuickslotKeyMapped = con.prepareStatement("SELECT keymap FROM quickslotkeymapped WHERE accountid = ?;")) {
-                pSelectQuickslotKeyMapped.setInt(1, ret.getAccountID());
-
-                try (final ResultSet pResultSet = pSelectQuickslotKeyMapped.executeQuery()) {
-                    if (pResultSet.next()) {
-                        ret.m_aQuickslotLoaded = LongTool.LongToBytes(pResultSet.getLong(1));
+            try (final Cursor pSelectQuickslotKeyMapped = con.rawQuery("SELECT keymap FROM quickslotkeymapped WHERE accountid = ?;", new String[]{String.valueOf(ret.getAccountID())})) {
+                if (pSelectQuickslotKeyMapped.moveToFirst()) {
+                    int keymapIdx = pSelectQuickslotKeyMapped.getColumnIndex("keymap");
+                    if (keymapIdx != -1) {
+                        ret.m_aQuickslotLoaded = LongTool.LongToBytes(pSelectQuickslotKeyMapped.getLong(keymapIdx));
                         ret.m_pQuickslotKeyMapped = new QuickslotBinding(ret.m_aQuickslotLoaded);
                     }
                 }
             }
 
             return ret;
-        } catch (SQLException | RuntimeException e) {
+        } catch (RuntimeException e) {
             e.printStackTrace();
         }
         return null;
@@ -8163,14 +8429,15 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void saveGuildStatus() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET guildid = ?, guildrank = ?, allianceRank = ? WHERE id = ?")) {
-            ps.setInt(1, guildid);
-            ps.setInt(2, guildRank);
-            ps.setInt(3, allianceRank);
-            ps.setInt(4, id);
-            ps.executeUpdate();
-        } catch (SQLException se) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("guildid", guildid);
+            values.put("guildrank", guildRank);
+            values.put("allianceRank", allianceRank);
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(id)};
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -8909,12 +9176,13 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void setHasMerchant(boolean set) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET HasMerchant = ? WHERE id = ?")) {
-            ps.setInt(1, set ? 1 : 0);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("HasMerchant", set ? 1 : 0);
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(id)};
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         hasMerchant = set;
@@ -8923,12 +9191,13 @@ public class Character extends AbstractCharacterObject {
     public void addMerchantMesos(int add) {
         final int newAmount = (int) Math.min((long) merchantmeso + add, Integer.MAX_VALUE);
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET MerchantMesos = ? WHERE id = ?", Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, newAmount);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("MerchantMesos", newAmount);
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(id)};
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return;
         }
@@ -8936,12 +9205,13 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void setMerchantMeso(int set) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET MerchantMesos = ? WHERE id = ?", Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, set);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("MerchantMesos", set);
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(id)};
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return;
         }
@@ -10166,14 +10436,15 @@ public class Character extends AbstractCharacterObject {
         cal.add(Calendar.DATE, days);
         final Timestamp TS = new Timestamp(cal.getTimeInMillis());
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET banreason = ?, tempban = ?, greason = ? WHERE id = ?")) {
-            ps.setString(1, desc);
-            ps.setTimestamp(2, TS);
-            ps.setInt(3, reason);
-            ps.setInt(4, accountid);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("banreason", desc);
+            values.put("tempban", TS.getTime());
+            values.put("greason", reason);
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(accountid)};
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -10512,12 +10783,13 @@ public class Character extends AbstractCharacterObject {
     public void logOff() {
         this.loggedIn = false;
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET lastLogoutTime=? WHERE id=?")) {
-            ps.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
-            ps.setInt(2, getId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("lastLogoutTime", System.currentTimeMillis());
+            String whereClause = "id=?";
+            String[] whereArgs = {String.valueOf(getId())};
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -10622,53 +10894,58 @@ public class Character extends AbstractCharacterObject {
     }
 
     public boolean registerNameChange(String newName) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             //check for pending name change
             long currentTimeMillis = System.currentTimeMillis();
-            try (PreparedStatement ps = con.prepareStatement("SELECT completionTime FROM namechanges WHERE characterid=?")) { //double check, just in case
-                ps.setInt(1, getId());
+                String[] columns = {"completionTime"};
+                String selection = "characterid=?";
+                String[] selectionArgs = {String.valueOf(getId())};
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        Timestamp completedTimestamp = rs.getTimestamp("completionTime");
-                        if (completedTimestamp == null) {
-                            return false; //pending
-                        } else if (completedTimestamp.getTime() + YamlConfig.config.server.NAME_CHANGE_COOLDOWN > currentTimeMillis) {
-                            return false;
+                try (Cursor cursor = con.query("namechanges", columns, selection, selectionArgs, null, null, null)) {
+                    while (cursor.moveToNext()) {
+                        int completionTimeIdx = cursor.getColumnIndex("completionTime");
+                        if (completionTimeIdx != -1) {
+                            long completionTimeMillis = cursor.getLong(completionTimeIdx);
+                            if (completionTimeMillis == 0) {
+                                return false; // pending
+                            } else if (completionTimeMillis + YamlConfig.config.server.NAME_CHANGE_COOLDOWN > currentTimeMillis) {
+                                return false;
+                            }
                         }
                     }
+                } catch (SQLiteException e) {
+                    log.error("Failed to register name change for chr {}", getName(), e);
+                    return false;
                 }
-            } catch (SQLException e) {
-                log.error("Failed to register name change for chr {}", getName(), e);
-                return false;
-            }
 
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO namechanges (characterid, old, new) VALUES (?, ?, ?)")) {
-                ps.setInt(1, getId());
-                ps.setString(2, getName());
-                ps.setString(3, newName);
-                ps.executeUpdate();
+            ContentValues values = new ContentValues();
+            values.put("characterid", getId());
+            values.put("old", getName());
+            values.put("new", newName);
+            long newRowId = con.insert("namechanges", null, values);
+
+            if (newRowId != -1) {
                 this.pendingNameChange = true;
                 return true;
-            } catch (SQLException e) {
-                log.error("Failed to register name change for chr {}", getName(), e);
+            } else {
+                log.error("Failed to register name change for chr {}", getName());
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Failed to get DB connection while registering name change", e);
         }
         return false;
     }
 
     public boolean cancelPendingNameChange() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM namechanges WHERE characterid=? AND completionTime IS NULL")) {
-            ps.setInt(1, getId());
-            int affectedRows = ps.executeUpdate();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String whereClause = "characterid=? AND completionTime IS NULL";
+            String[] whereArgs = {String.valueOf(getId())};
+            int affectedRows = con.delete("namechanges", whereClause, whereArgs);
             if (affectedRows > 0) {
                 pendingNameChange = false;
             }
-            return affectedRows > 0; //rows affected
-        } catch (SQLException e) {
+            return affectedRows > 0; // Rows affected
+        } catch (SQLiteException e) {
             log.error("Failed to cancel name change for chr {}", getName(), e);
             return false;
         }
@@ -10754,7 +11031,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10764,7 +11041,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10773,7 +11050,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10783,7 +11060,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10793,7 +11070,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10803,7 +11080,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10813,7 +11090,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10823,7 +11100,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10833,7 +11110,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10843,7 +11120,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10853,7 +11130,7 @@ public class Character extends AbstractCharacterObject {
             ps.setString(1, newName);
             ps.setString(2, oldName);
             ps.executeUpdate();
-        } catch(SQLException e) { 
+        } catch(SQLiteException e) { 
             e.printStackTrace();
             FilePrinter.printError(FilePrinter.CHANGE_CHARACTER_NAME, e, "Character ID : " + characterId);
             return false;
@@ -10993,47 +11270,49 @@ public class Character extends AbstractCharacterObject {
         return null;
     }
     public boolean registerWorldTransfer(int newWorld) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             //check for pending world transfer
             long currentTimeMillis = System.currentTimeMillis();
-            try (PreparedStatement ps = con.prepareStatement("SELECT completionTime FROM worldtransfers WHERE characterid=?")) { //double check, just in case
-                ps.setInt(1, getId());
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    Timestamp completedTimestamp = rs.getTimestamp("completionTime");
-                    if (completedTimestamp == null) {
-                        return false; //pending
-                    } else if (completedTimestamp.getTime() + YamlConfig.config.server.WORLD_TRANSFER_COOLDOWN > currentTimeMillis) {
-                        return false;
+            try (Cursor ps = con.rawQuery("SELECT completionTime FROM worldtransfers WHERE characterid=?", new String[] { String.valueOf(getId())})) { //double check, just in case
+                while (ps.moveToNext()) {
+                    int completionTimeIdx = ps.getColumnIndex("completionTime");
+                    if (completionTimeIdx != -1) {
+                        Timestamp completedTimestamp = Timestamp.valueOf(ps.getString(completionTimeIdx));
+                        if (completedTimestamp == null) {
+                            return false; // pending
+                        } else if (completedTimestamp.getTime() + YamlConfig.config.server.WORLD_TRANSFER_COOLDOWN > currentTimeMillis) {
+                            return false;
+                        }
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 log.error("Failed to register world transfer for chr {}", getName(), e);
                 return false;
             }
 
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO worldtransfers (characterid, `from`, `to`) VALUES (?, ?, ?)")) {
-                ps.setInt(1, getId());
-                ps.setInt(2, getWorld());
-                ps.setInt(3, newWorld);
-                ps.executeUpdate();
+            ContentValues values = new ContentValues();
+            values.put("characterid", getId());
+            values.put("from", getWorld());
+            values.put("to", newWorld);
+            long result = con.insert("worldtransfers", null, values);
+            if (result != -1) {
                 return true;
-            } catch (SQLException e) {
-                log.error("Failed to register world transfer for chr {}", getName(), e);
+            } else {
+                log.error("Failed to register world transfer for chr {}", getName());
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Failed to get DB connection while registering world transfer", e);
         }
         return false;
     }
 
     public boolean cancelPendingWorldTranfer() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM worldtransfers WHERE characterid=? AND completionTime IS NULL")) {
-            ps.setInt(1, getId());
-            int affectedRows = ps.executeUpdate();
-            return affectedRows > 0; //rows affected
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String whereClause = "characterid = ? AND completionTime IS NULL";
+            String[] whereArgs = { String.valueOf(getId()) };
+            int affectedRows = con.delete("worldtransfers", whereClause, whereArgs);
+            return affectedRows > 0;
+        } catch (SQLiteException e) {
             log.error("Failed to cancel pending world transfer for chr {}", getName(), e);
             return false;
         }
@@ -11087,28 +11366,34 @@ public class Character extends AbstractCharacterObject {
     }
 
     public int getRewardPoints() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT rewardpoints FROM accounts WHERE id=?;")) {
-            ps.setInt(1, accountid);
-            ResultSet resultSet = ps.executeQuery();
+        String[] columns = { "rewardpoints" };
+        String selection = "id = ?";
+        String[] selectionArgs = { String.valueOf(accountid) };
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null);) {
             int point = -1;
-            if (resultSet.next()) {
-                point = resultSet.getInt(1);
+            if (cursor.moveToFirst()) {
+                int rewardpointsIdx = cursor.getColumnIndex("rewardpoints");
+                if (rewardpointsIdx != -1) {
+                    point = cursor.getInt(rewardpointsIdx);
+                }
             }
-            return point;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return -1;
     }
 
     public void setRewardPoints(int value) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET rewardpoints=? WHERE id=?;")) {
-            ps.setInt(1, value);
-            ps.setInt(2, accountid);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        ContentValues values = new ContentValues();
+        values.put("rewardpoints", value);
+        String whereClause = "id = ?";
+        String[] whereArgs = { String.valueOf(accountid) };
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+             con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -11119,12 +11404,14 @@ public class Character extends AbstractCharacterObject {
             throw new NotEnabledException();
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET reborns=? WHERE id=?;")) {
-            ps.setInt(1, value);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        ContentValues values = new ContentValues();
+        values.put("reborns", value);
+        String whereClause = "id = ?";
+        String[] whereArgs = { String.valueOf(id) };
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -11138,16 +11425,19 @@ public class Character extends AbstractCharacterObject {
             yellowMessage("Rebirth system is not enabled!");
             throw new NotEnabledException();
         }
+        String[] columns = { "reborns" };
+        String selection = "id = ?";
+        String[] selectionArgs = { String.valueOf(id) };
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT reborns FROM characters WHERE id=?;")) {
-            ps.setInt(1, id);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getInt(1);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.query("characters", columns, selection, selectionArgs, null, null, null)) {
+            if (cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex("reborns");
+                if (columnIndex != -1) {
+                    return cursor.getInt(columnIndex);
+                }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         throw new RuntimeException();
@@ -11339,13 +11629,14 @@ public class Character extends AbstractCharacterObject {
 
     public void setLanguage(int num) {
         getClient().setLanguage(num);
+        ContentValues values = new ContentValues();
+        values.put("language", num);
+        String whereClause = "id = ?";
+        String[] whereArgs = { String.valueOf(getClient().getAccID()) };
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET language = ? WHERE id = ?")) {
-            ps.setInt(1, num);
-            ps.setInt(2, getClient().getAccID());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

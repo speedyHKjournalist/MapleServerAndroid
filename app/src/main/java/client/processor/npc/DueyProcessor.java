@@ -23,6 +23,8 @@
 */
 package client.processor.npc;
 
+import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Character;
@@ -97,17 +99,15 @@ public class DueyProcessor {
 
     private static Pair<Integer, Integer> getAccountCharacterIdFromCNAME(String name) {
         Pair<Integer, Integer> ids = new Pair<>(-1, -1);
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id,accountid FROM characters WHERE name = ?")) {
-            ps.setString(1, name);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ids.left = rs.getInt("accountid");
-                    ids.right = rs.getInt("id");
-                }
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT id,accountid FROM characters WHERE name = ?", new String[]{name})) {
+            if (ps.moveToFirst()) {
+                int accountidIdx = ps.getColumnIndex("accountid");
+                int idIdx = ps.getColumnIndex("id");
+                    ids.left = ps.getInt(accountidIdx);
+                    ids.right = ps.getInt(idIdx);
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -115,21 +115,20 @@ public class DueyProcessor {
     }
 
     private static void showDueyNotification(Client c, Character player) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT SenderName, Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC")) {
-
-            ps.setInt(1, player.getId());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    try (PreparedStatement ps2 = con.prepareStatement("UPDATE dueypackages SET Checked = 0 where ReceiverId = ?")) {
-                        ps2.setInt(1, player.getId());
-                        ps2.executeUpdate();
-
-                        c.sendPacket(PacketCreator.sendDueyParcelReceived(rs.getString("SenderName"), rs.getInt("Type") == 1));
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor rs = con.rawQuery("SELECT SenderName, Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
+                     new String[]{String.valueOf(player.getId())})) {
+            if (rs.moveToFirst()) {
+                do {
+                    try (Cursor rs2 = con.rawQuery("UPDATE dueypackages SET Checked = 0 where ReceiverId = ?",
+                            new String[]{String.valueOf(player.getId())})) {
+                        int SenderNameIdx = rs.getColumnIndex("SenderName");
+                        int typeIdx = rs.getColumnIndex("Type");
+                        c.sendPacket(PacketCreator.sendDueyParcelReceived(rs.getString(SenderNameIdx), rs.getInt(typeIdx) == 1));
                     }
-                }
+                } while (rs.moveToNext());
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -150,9 +149,10 @@ public class DueyProcessor {
         }
     }
 
-    private static DueyPackage getPackageFromDB(ResultSet rs) {
+    private static DueyPackage getPackageFromDB(Cursor rs) {
         try {
-            int packageId = rs.getInt("PackageId");
+            int PackageIdIdx = rs.getColumnIndex("PackageId");
+            int packageId = rs.getInt(PackageIdIdx);
 
             List<Pair<Item, InventoryType>> dueyItems = ItemFactory.DUEY.loadItems(packageId, false);
             DueyPackage dueypack;
@@ -163,13 +163,19 @@ public class DueyProcessor {
                 dueypack = new DueyPackage(packageId);
             }
 
-            dueypack.setSender(rs.getString("SenderName"));
-            dueypack.setMesos(rs.getInt("Mesos"));
-            dueypack.setSentTime(rs.getTimestamp("TimeStamp"), rs.getBoolean("Type"));
-            dueypack.setMessage(rs.getString("Message"));
+            int SenderNameIdx = rs.getColumnIndex("SenderName");
+            int MesosIdx = rs.getColumnIndex("Mesos");
+            int TimeStampIdx = rs.getColumnIndex("TimeStamp");
+            int TypeIdx = rs.getColumnIndex("Type");
+            int MessageIdx = rs.getColumnIndex("Message");
+
+            dueypack.setSender(rs.getString(SenderNameIdx));
+            dueypack.setMesos(rs.getInt(MesosIdx));
+            dueypack.setSentTime(new Timestamp(rs.getLong(TimeStampIdx)), rs.getInt(TypeIdx) != 0);
+            dueypack.setMessage(rs.getString(MessageIdx));
 
             return dueypack;
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
             return null;
         }
@@ -177,22 +183,18 @@ public class DueyProcessor {
 
     private static List<DueyPackage> loadPackages(Character chr) {
         List<DueyPackage> packages = new LinkedList<>();
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM dueypackages dp WHERE ReceiverId = ?")) {
-            ps.setInt(1, chr.getId());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    DueyPackage dueypack = getPackageFromDB(rs);
-                    if (dueypack == null) {
-                        continue;
-                    }
-
-                    packages.add(dueypack);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE ReceiverId = ?",
+                     new String[]{String.valueOf(chr.getId())})) {
+            while (ps.moveToNext()) {
+                DueyPackage dueypack = getPackageFromDB(ps);
+                if (dueypack == null) {
+                    continue;
                 }
+                packages.add(dueypack);
             }
 
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -200,33 +202,23 @@ public class DueyProcessor {
     }
 
     private static int createPackage(int mesos, String message, String sender, int toCid, boolean quick) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO `dueypackages` (ReceiverId, SenderName, Mesos, TimeStamp, Message, Type, Checked) VALUES (?, ?, ?, ?, ?, ?, 1)", Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, toCid);
-            ps.setString(2, sender);
-            ps.setInt(3, mesos);
-            ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-            ps.setString(5, message);
-            ps.setInt(6, quick ? 1 : 0);
+        ContentValues values = new ContentValues();
+        values.put("ReceiverId", toCid);
+        values.put("SenderName", sender);
+        values.put("Mesos", mesos);
+        values.put("TimeStamp", System.currentTimeMillis());
+        values.put("Message", message);
+        values.put("Type", quick ? 1 : 0);
 
-            int updateRows = ps.executeUpdate();
-            if (updateRows < 1) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            long packageId;
+            packageId = con.insert("dueypackages", null, values);
+            if (packageId < 1) {
                 log.error("Error trying to create package [mesos: {}, sender: {}, quick: {}, receiver chrId: {}]", mesos, sender, quick, toCid);
                 return -1;
             }
-
-            final int packageId;
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    packageId = rs.getInt(1);
-                } else {
-                    log.error("Failed inserting package [mesos: {}, sender: {}, quick: {}, receiver chrId: {}]", mesos, sender, quick, toCid);
-                    return -1;
-                }
-            }
-
-            return packageId;
-        } catch (SQLException sqle) {
+            return (int) packageId;
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 
@@ -396,14 +388,10 @@ public class DueyProcessor {
             try {
                 try {
                     DueyPackage dp = null;
-                    try (Connection con = DatabaseConnection.getConnection();
-                         PreparedStatement ps = con.prepareStatement("SELECT * FROM dueypackages dp WHERE PackageId = ?")) {
-                        ps.setInt(1, packageId);
-
-                        try (ResultSet rs = ps.executeQuery()) {
-                            if (rs.next()) {
-                                dp = getPackageFromDB(rs);
-                            }
+                    try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                         Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE PackageId = ?", new String[]{String.valueOf(packageId)})) {
+                        if (ps.moveToNext()) {
+                            dp = getPackageFromDB(ps);
                         }
                     }
 
@@ -442,7 +430,7 @@ public class DueyProcessor {
                     c.getPlayer().gainMeso(dp.getMesos(), false);
 
                     dueyRemovePackage(c, packageId, false);
-                } catch (SQLException e) {
+                } catch (SQLiteException e) {
                     e.printStackTrace();
                 }
             } finally {
@@ -484,15 +472,13 @@ public class DueyProcessor {
         c.add(Calendar.DATE, -30);
         final Timestamp ts = new Timestamp(c.getTime().getTime());
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             List<Integer> toRemove = new LinkedList<>();
-            try (PreparedStatement ps = con.prepareStatement("SELECT `PackageId` FROM dueypackages WHERE `TimeStamp` < ?")) {
-                ps.setTimestamp(1, ts);
+            try (Cursor ps = con.rawQuery("SELECT `PackageId` FROM dueypackages WHERE `TimeStamp` < ?", new String[]{String.valueOf(ts)})) {
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        toRemove.add(rs.getInt("PackageId"));
-                    }
+                if (ps.moveToNext()) {
+                    int PackageIdIdx = ps.getColumnIndex("PackageId");
+                    toRemove.add(ps.getInt(PackageIdIdx));
                 }
             }
 
@@ -500,11 +486,10 @@ public class DueyProcessor {
                 removePackageFromDB(pid);
             }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM dueypackages WHERE `TimeStamp` < ?")) {
-                ps.setTimestamp(1, ts);
-                ps.executeUpdate();
-            }
-        } catch (SQLException e) {
+            String selection = "TimeStamp < ?";
+            String[] whereArgs = { String.valueOf(ts.getTime()) };
+            con.delete("dueypackages", selection, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

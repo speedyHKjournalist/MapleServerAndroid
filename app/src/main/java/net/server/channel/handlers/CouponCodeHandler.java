@@ -23,13 +23,16 @@
 */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
-import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.CashShop;
@@ -37,11 +40,6 @@ import server.ItemInformationProvider;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -52,31 +50,38 @@ import java.util.Map.Entry;
 public final class CouponCodeHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(CouponCodeHandler.class);
 
-    private static List<Pair<Integer, Pair<Integer, Integer>>> getNXCodeItems(Character chr, Connection con, int codeid) throws SQLException {
+    private static List<Pair<Integer, Pair<Integer, Integer>>> getNXCodeItems(Character chr, SQLiteDatabase con, int codeid) throws SQLiteException {
         Map<Integer, Integer> couponItems = new HashMap<>();
         Map<Integer, Integer> couponPoints = new HashMap<>(5);
 
-        try (PreparedStatement ps = con.prepareStatement("SELECT * FROM nxcode_items WHERE codeid = ?")) {
-            ps.setInt(1, codeid);
+        try (Cursor cursor = con.rawQuery("SELECT * FROM nxcode_items WHERE codeid = ?", new String[]{String.valueOf(codeid)})) {
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    int typeIdx = cursor.getColumnIndex("type");
+                    int quantityIdx = cursor.getColumnIndex("quantity");
+                    if (typeIdx != -1 && quantityIdx != -1) {
+                        int type = cursor.getInt(typeIdx);
+                        int quantity = cursor.getInt(quantityIdx);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int type = rs.getInt("type"), quantity = rs.getInt("quantity");
-                    if (type < 5) {
-                        Integer i = couponPoints.get(type);
-                        if (i != null) {
-                            couponPoints.put(type, i + quantity);
+                        if (type < 5) {
+                            Integer i = couponPoints.get(type);
+                            if (i != null) {
+                                couponPoints.put(type, i + quantity);
+                            } else {
+                                couponPoints.put(type, quantity);
+                            }
                         } else {
-                            couponPoints.put(type, quantity);
-                        }
-                    } else {
-                        int item = rs.getInt("item");
+                            int itemIdx = cursor.getColumnIndex("item");
+                            if (itemIdx != -1) {
+                                int item = cursor.getInt(itemIdx);
 
-                        Integer i = couponItems.get(item);
-                        if (i != null) {
-                            couponItems.put(item, i + quantity);
-                        } else {
-                            couponItems.put(item, quantity);
+                                Integer i = couponItems.get(item);
+                                if (i != null) {
+                                    couponItems.put(item, i + quantity);
+                                } else {
+                                    couponItems.put(item, quantity);
+                                }
+                            }
                         }
                     }
                 }
@@ -120,39 +125,39 @@ public final class CouponCodeHandler extends AbstractPacketHandler {
                 return new Pair<>(-5, null);
             }
 
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM nxcode WHERE code = ?")) {
-                    ps.setString(1, code);
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                try (Cursor cursor = con.rawQuery("SELECT * FROM nxcode WHERE code = ?", new String[]{code})) {
+                    if (cursor.moveToNext()) {
+                        int idIdx = cursor.getColumnIndex("id");
+                        int retrieverIdx = cursor.getColumnIndex("retriever");
+                        int expirationIdx = cursor.getColumnIndex("expiration");
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (!rs.next()) {
-                            return new Pair<>(-1, null);
-                        }
+                        int codeId = cursor.getInt(idIdx);
+                        String retriever = cursor.getString(retrieverIdx);
+                        long expiration = cursor.getLong(expirationIdx);
 
-                        if (rs.getString("retriever") != null) {
+                        if (retriever != null) {
                             return new Pair<>(-2, null);
                         }
 
-                        if (rs.getLong("expiration") < Server.getInstance().getCurrentTime()) {
+                        if (expiration < System.currentTimeMillis()) {
                             return new Pair<>(-3, null);
                         }
 
-                        final int codeid = rs.getInt("id");
-
-                        ret = getNXCodeItems(chr, con, codeid);
+                        ret = getNXCodeItems(chr, con, codeId);
                         if (ret == null) {
                             return new Pair<>(-4, null);
                         }
+                    } else {
+                        return new Pair<>(-1, null);
                     }
                 }
 
-                try (PreparedStatement ps = con.prepareStatement("UPDATE nxcode SET retriever = ? WHERE code = ?")) {
-                    ps.setString(1, chr.getName());
-                    ps.setString(2, code);
-                    ps.executeUpdate();
-                }
+                ContentValues values = new ContentValues();
+                values.put("retriever", chr.getName());
+                con.update("nxcode", values, "code = ?", new String[]{code});
             }
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
 

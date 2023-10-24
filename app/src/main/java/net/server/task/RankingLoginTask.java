@@ -21,6 +21,10 @@
 */
 package net.server.task;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Job;
 import config.YamlConfig;
 import net.server.Server;
@@ -39,54 +43,62 @@ import java.sql.SQLException;
 public class RankingLoginTask implements Runnable {
     private long lastUpdate = System.currentTimeMillis();
 
-    private void resetMoveRank(boolean job) throws SQLException {
+    private void resetMoveRank(boolean job) throws SQLiteException {
         String query = "UPDATE characters SET " + (job ? "jobRankMove = 0" : "rankMove = 0");
-        try (Connection con = DatabaseConnection.getConnection()) {
-            PreparedStatement reset = con.prepareStatement(query);
-            reset.executeUpdate();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.rawQuery(query, null);
         }
     }
 
-    private void updateRanking(int job, int world) throws SQLException {
+    private void updateRanking(int job, int world) throws SQLiteException {
         String sqlCharSelect = "SELECT c.id, " + (job != -1 ? "c.jobRank, c.jobRankMove" : "c.`rank`, c.rankMove") + ", a.lastlogin AS lastlogin, a.loggedin FROM characters AS c LEFT JOIN accounts AS a ON c.accountid = a.id WHERE c.gm < 2 AND c.world = ? ";
         if (job != -1) {
             sqlCharSelect += "AND c.job DIV 100 = ? ";
         }
         sqlCharSelect += "ORDER BY c.level DESC , c.exp DESC , c.lastExpGainTime ASC, c.fame DESC , c.meso DESC";
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement charSelect = con.prepareStatement(sqlCharSelect)) {
-            charSelect.setInt(1, world);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            Cursor cursor;
             if (job != -1) {
-                charSelect.setInt(2, job);
+                cursor = con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world), String.valueOf(job)});
+            } else {
+                cursor = con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world)});
             }
+            int rank = 0;
+            while (cursor.moveToNext()) {
+                int rankMove = 0;
+                rank++;
 
-            try (ResultSet rs = charSelect.executeQuery();
-                 PreparedStatement ps = con.prepareStatement("UPDATE characters SET " + (job != -1 ? "jobRank = ?, jobRankMove = ? " : "`rank` = ?, rankMove = ? ") + "WHERE id = ?")) {
-                int rank = 0;
+                int lastloginIdx = cursor.getColumnIndex("lastlogin");
+                int loggedinIdx = cursor.getColumnIndex("loggedin");
+                int jobRankMoveIdx = cursor.getColumnIndex("jobRankMove");
+                int rankMoveIdx = cursor.getColumnIndex("rankMove");
+                int jobRankIdx = cursor.getColumnIndex("jobRank");
+                int rankIdx = cursor.getColumnIndex("rank");
+                int idIdx= cursor.getColumnIndex("id");
 
-                while (rs.next()) {
-                    int rankMove = 0;
-                    rank++;
-
-                    final long lastlogin = rs.getTimestamp("lastlogin").getTime();
-                    if (lastlogin < lastUpdate || rs.getInt("loggedin") > 0) {
-                        rankMove = rs.getInt((job != -1 ? "jobRankMove" : "rankMove"));
-                    }
-                    rankMove += rs.getInt((job != -1 ? "jobRank" : "rank")) - rank;
-                    ps.setInt(1, rank);
-                    ps.setInt(2, rankMove);
-                    ps.setInt(3, rs.getInt("id"));
-                    ps.executeUpdate();
+                final long lastlogin = cursor.getLong(lastloginIdx);
+                if (lastlogin < lastUpdate || cursor.getInt(loggedinIdx) > 0) {
+                    rankMove = cursor.getInt(job != -1 ? jobRankMoveIdx: rankMoveIdx);
                 }
+                rankMove += cursor.getInt(job != -1 ? jobRankIdx : rankIdx) - rank;
+
+                ContentValues values = new ContentValues();
+                values.put(job != -1 ? "jobRank" : "rank", rank);
+                values.put(job != -1 ? "jobRankMove" : "rankMove", rankMove);
+
+                String whereClause = "id = ?";
+                String[] whereArgs = {String.valueOf(cursor.getInt(idIdx))};
+                con.update("characters", values, whereClause, whereArgs);
             }
+            cursor.close();
         }
     }
 
     @Override
     public void run() {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            con.setAutoCommit(false);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.beginTransaction();
 
             try {
                 if (YamlConfig.config.server.USE_REFRESH_RANK_MOVE) {
@@ -99,18 +111,16 @@ public class RankingLoginTask implements Runnable {
                     for (int i = 0; i <= Job.getMax(); i++) {
                         updateRanking(i, j);
                     }
-                    con.commit();
                 }
 
-                con.setAutoCommit(true);
+                con.setTransactionSuccessful();
                 lastUpdate = System.currentTimeMillis();
-            } catch (SQLException ex) {
-                con.rollback();
+            } catch (SQLiteException ex) {
                 throw ex;
             } finally {
-                con.setAutoCommit(true);
+                con.endTransaction();
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

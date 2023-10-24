@@ -21,7 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server.maps;
 
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.inventory.Inventory;
@@ -318,24 +320,16 @@ public class HiredMerchant extends AbstractMapObject {
                     if (owner != null) {
                         owner.addMerchantMesos(price);
                     } else {
-                        try (Connection con = DatabaseConnection.getConnection()) {
+                        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                             long merchantMesos = 0;
-                            try (PreparedStatement ps = con.prepareStatement("SELECT MerchantMesos FROM characters WHERE id = ?")) {
-                                ps.setInt(1, ownerId);
-                                try (ResultSet rs = ps.executeQuery()) {
-                                    if (rs.next()) {
-                                        merchantMesos = rs.getInt(1);
-                                    }
+                            try (Cursor ps = con.rawQuery("SELECT MerchantMesos FROM characters WHERE id = ?", new String[]{String.valueOf(ownerId)})) {
+                                if (ps.moveToFirst()) {
+                                    merchantMesos = ps.getInt(0);
                                 }
                             }
                             merchantMesos += price;
-
-                            try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET MerchantMesos = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS)) {
-                                ps.setInt(1, (int) Math.min(merchantMesos, Integer.MAX_VALUE));
-                                ps.setInt(2, ownerId);
-                                ps.executeUpdate();
-                            }
-                        } catch (Exception e) {
+                            con.rawQuery("UPDATE characters SET MerchantMesos = ? WHERE id = ?", new String[]{String.valueOf((int) Math.min(merchantMesos, Integer.MAX_VALUE)), String.valueOf(ownerId)});
+                        } catch (SQLiteException e) {
                             e.printStackTrace();
                         }
                     }
@@ -392,7 +386,7 @@ public class HiredMerchant extends AbstractMapObject {
             synchronized (items) {
                 items.clear();
             }
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
 
@@ -400,11 +394,9 @@ public class HiredMerchant extends AbstractMapObject {
         if (player != null) {
             player.setHasMerchant(false);
         } else {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("UPDATE characters SET HasMerchant = 0 WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, ownerId);
-                ps.executeUpdate();
-            } catch (SQLException ex) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                 con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{"0", String.valueOf(ownerId)});
+            } catch (SQLiteException ex) {
                 ex.printStackTrace();
             }
         }
@@ -456,10 +448,8 @@ public class HiredMerchant extends AbstractMapObject {
             if (player != null) {
                 player.setHasMerchant(false);
             } else {
-                try (Connection con = DatabaseConnection.getConnection();
-                     PreparedStatement ps = con.prepareStatement("UPDATE characters SET HasMerchant = 0 WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS)) {
-                    ps.setInt(1, ownerId);
-                    ps.executeUpdate();
+                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                    con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{String.valueOf(0), String.valueOf(ownerId)});
                 }
             }
 
@@ -575,7 +565,7 @@ public class HiredMerchant extends AbstractMapObject {
 
             try {
                 this.saveItems(false);
-            } catch (SQLException ex) {
+            } catch (SQLiteException ex) {
                 ex.printStackTrace();
             }
         }
@@ -586,7 +576,7 @@ public class HiredMerchant extends AbstractMapObject {
 
         try {
             this.saveItems(false);
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
     }
@@ -655,7 +645,7 @@ public class HiredMerchant extends AbstractMapObject {
         return list;
     }
 
-    public void saveItems(boolean shutdown) throws SQLException {
+    public void saveItems(boolean shutdown) throws SQLiteException {
         List<Pair<Item, InventoryType>> itemsWithType = new ArrayList<>();
         List<Short> bundles = new ArrayList<>();
 

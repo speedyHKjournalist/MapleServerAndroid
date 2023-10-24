@@ -1,5 +1,7 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import server.life.MonsterStats;
 import tools.Pair;
 
@@ -121,20 +123,18 @@ public class MesoFetcher {
 
     private static void generateMissingMobsMesoRange() {
         System.out.print("Generating missing ranges... ");
-        try (Connection con = SimpleDatabaseConnection.getConnection();
-        	PreparedStatement ps = con.prepareStatement("SELECT dropperid FROM drop_data WHERE dropperid NOT IN (SELECT DISTINCT dropperid FROM drop_data WHERE itemid = 0) GROUP BY dropperid HAVING count(*) >= " + MIN_ITEMS + ";");
-        	ResultSet rs = ps.executeQuery();) {
+        try (SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT dropperid FROM drop_data WHERE dropperid NOT IN (SELECT DISTINCT dropperid FROM drop_data WHERE itemid = 0) GROUP BY dropperid HAVING count(*) >= " + MIN_ITEMS + ";", null)) {
         	
             List<Integer> existingMobs = new ArrayList<>(200);
 
-            if (rs.isBeforeFirst()) {
-                while (rs.next()) {
-                    int mobid = rs.getInt(1);
-
+            if (cursor.moveToFirst()) {
+                do {
+                    int mobid = cursor.getInt(0);
                     if (mobRange.containsKey(mobid)) {
                         existingMobs.add(mobid);
                     }
-                }
+                } while (cursor.moveToNext());
 
                 if (!existingMobs.isEmpty()) {
                     try (PrintWriter pw = new PrintWriter(Files.newOutputStream(OUTPUT_FILE))) {

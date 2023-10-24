@@ -23,7 +23,6 @@ package net.server;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.database.sqlite.SQLiteException;
@@ -38,7 +37,6 @@ import client.inventory.ItemFactory;
 import client.inventory.manipulator.CashIdGenerator;
 import client.newyear.NewYearCardRecord;
 import client.processor.npc.FredrickProcessor;
-import com.whl.quickjs.android.QuickJSLoader;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
@@ -890,7 +888,6 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
-        QuickJSLoader.init();
         log.info("Cosmic v{} starting up.", ServerConstants.VERSION);
         if (this.context != null) {
             YamlConfig.config = YamlConfig.loadConfig(this.context);
@@ -1620,17 +1617,18 @@ public class Server {
     }
 
     public void loadAllAccountsCharactersView() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id FROM accounts");
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                int accountId = rs.getInt("id");
-                if (isFirstAccountLogin(accountId)) {
-                    loadAccountCharactersView(accountId, 0, 0);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT id FROM accounts", null)) {
+            while (cursor.moveToNext()) {
+                int idIdx = cursor.getColumnIndex("id");
+                if (idIdx != -1) {
+                    int accountId = cursor.getInt(idIdx);
+                    if (isFirstAccountLogin(accountId)) {
+                        loadAccountCharactersView(accountId, 0, 0);
+                    }
                 }
             }
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }

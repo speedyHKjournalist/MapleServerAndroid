@@ -20,6 +20,7 @@
 package client;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import database.MapleDBHelper;
@@ -108,8 +109,8 @@ public class FamilyEntry {
         Server.getInstance().getWorld(oldFamily.getWorld()).removeFamily(oldFamily.getID());
 
         //db
-        try (Connection con = DatabaseConnection.getConnection()) {
-            con.setAutoCommit(false);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.beginTransaction();
             boolean success = updateDBChangeFamily(con, getChrId(), newFamily.getID(), senior.getChrId());
             for (FamilyEntry junior : juniors) { // better to duplicate this than the SQL code
                 if (junior != null) {
@@ -119,12 +120,13 @@ public class FamilyEntry {
                     }
                 }
             }
-            if (!success) {
-                con.rollback();
+            if (success) {
+                con.setTransactionSuccessful(); // Set the transaction as successful
+            } else {
                 log.error("Could not absorb {}'s family into {}'s family. (SQL ERROR)", oldFamily.getName(), newFamily.getName());
             }
-            con.setAutoCommit(true);
-        } catch (SQLException e) {
+            con.endTransaction();
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB when joining families", e);
         }
     }
@@ -150,9 +152,8 @@ public class FamilyEntry {
         family.setMessage("", true);
         doFullCount(); //to make sure all counts are correct
         // update db
-        try (Connection con = DatabaseConnection.getConnection()) {
-            con.setAutoCommit(false);
-
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.beginTransaction();
             boolean success = updateDBChangeFamily(con, getChrId(), getFamily().getID(), 0);
 
             for (FamilyEntry junior : juniors) { // better to duplicate this than the SQL code
@@ -163,18 +164,18 @@ public class FamilyEntry {
                     }
                 }
             }
-            if (!success) {
-                con.rollback();
+            if (success) {
+                con.setTransactionSuccessful();
+            } else {
                 log.error("Could not fork family with new leader {}. (Old senior: {}, leader: {})", getName(), oldSenior.getName(), oldFamily.getLeader().getName());
             }
-            con.setAutoCommit(true);
-
-        } catch (SQLException e) {
+            con.endTransaction();
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB when forking families", e);
         }
     }
 
-    private synchronized boolean updateNewFamilyDB(Connection con) {
+    private synchronized boolean updateNewFamilyDB(SQLiteDatabase con) {
         if (!updateFamilyEntryDB(con, getChrId(), getFamily().getID())) {
             return false;
         }
@@ -192,12 +193,12 @@ public class FamilyEntry {
         return true;
     }
 
-    private static boolean updateFamilyEntryDB(Connection con, int cid, int familyid) {
-        try (PreparedStatement ps = con.prepareStatement("UPDATE family_character SET familyid = ? WHERE cid = ?")) {
-            ps.setInt(1, familyid);
-            ps.setInt(2, cid);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+    private static boolean updateFamilyEntryDB(SQLiteDatabase con, int cid, int familyid) {
+        try (Cursor cursor = con.rawQuery("UPDATE family_character SET familyid = ? WHERE cid = ?", new String[]{String.valueOf(familyid), String.valueOf(cid)})) {
+            if (!cursor.moveToFirst()) {
+                log.error("Could not update family id in 'family_character' for chrId {}. (fork)", cid);
+            }
+        } catch (SQLiteException e) {
             log.error("Could not update family id in 'family_character' for chrId {}. (fork)", cid, e);
             return false;
         }
@@ -376,33 +377,32 @@ public class FamilyEntry {
     }
 
     private static boolean updateDBChangeFamily(int cid, int familyid, int seniorid) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             return updateDBChangeFamily(con, cid, familyid, seniorid);
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Could not get connection to DB while changing family", e);
             return false;
         }
     }
 
-    private static boolean updateDBChangeFamily(Connection con, int cid, int familyid, int seniorid) {
-        try (PreparedStatement ps = con.prepareStatement("UPDATE family_character SET familyid = ?, seniorid = ?, reptosenior = 0 WHERE cid = ?")) {
-            ps.setInt(1, familyid);
-            ps.setInt(2, seniorid);
-            ps.setInt(3, cid);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+    private static boolean updateDBChangeFamily(SQLiteDatabase con, int cid, int familyid, int seniorid) {
+        try (Cursor cursor = con.rawQuery("UPDATE family_character SET familyid = ?, seniorid = ?, reptosenior = 0 WHERE cid = ?", new String[]{String.valueOf(familyid), String.valueOf(seniorid), String.valueOf(cid)})) {
+            if (!cursor.moveToFirst()) {
+                log.error("Could not update seniorId in 'family_character' for chrId {}", cid);
+            }
+        } catch (SQLiteException e) {
             log.error("Could not update seniorId in 'family_character' for chrId {}", cid, e);
             return false;
         }
         return updateCharacterFamilyDB(con, cid, familyid, false);
     }
 
-    private static boolean updateCharacterFamilyDB(Connection con, int charid, int familyid, boolean fork) {
-        try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET familyid = ? WHERE id = ?")) {
-            ps.setInt(1, familyid);
-            ps.setInt(2, charid);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+    private static boolean updateCharacterFamilyDB(SQLiteDatabase con, int charid, int familyid, boolean fork) {
+        try (Cursor cursor = con.rawQuery("UPDATE characters SET familyid = ? WHERE id = ?", new String[]{String.valueOf(familyid), String.valueOf(charid)})) {
+            if (!cursor.moveToFirst()) {
+                log.error("Could not update familyId in 'characters' for chrId {} when changing family.", charid);
+            }
+        } catch (SQLiteException e) {
             log.error("Could not update familyId in 'characters' for chrId {} when changing family. {}", charid, fork ? "(fork)" : "", e);
             return false;
         }
@@ -544,12 +544,13 @@ public class FamilyEntry {
         if (entitlements[id] >= 1) {
             return false;
         }
-        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement("INSERT INTO family_entitlement (entitlementid, charid, timestamp) VALUES (?, ?, ?)")) {
-            ps.setInt(1, id);
-            ps.setInt(2, getChrId());
-            ps.setLong(3, System.currentTimeMillis());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("INSERT INTO family_entitlement (entitlementid, charid, timestamp) VALUES (?, ?, ?)",
+                     new String[]{String.valueOf(id), String.valueOf(getChrId()), String.valueOf(System.currentTimeMillis())})) {
+            if (!cursor.moveToFirst()) {
+                log.error("Could not insert a new row in 'family_entitlement' for chr {}", getName());
+            }
+        } catch (SQLiteException e) {
             log.error("Could not insert new row in 'family_entitlement' for chr {}", getName(), e);
         }
         entitlements[id]++;
@@ -558,11 +559,12 @@ public class FamilyEntry {
 
     public boolean refundEntitlement(FamilyEntitlement entitlement) {
         int id = entitlement.ordinal();
-        try (Connection con = DatabaseConnection.getConnection(); PreparedStatement ps = con.prepareStatement("DELETE FROM family_entitlement WHERE entitlementid = ? AND charid = ?")) {
-            ps.setInt(1, id);
-            ps.setInt(2, getChrId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("DELETE FROM family_entitlement WHERE entitlementid = ? AND charid = ?", new String[]{String.valueOf(id), String.valueOf(getChrId())})) {
+            if (!cursor.moveToFirst()) {
+                log.error("Could not refund family entitlement \"{}\" for chr {}", entitlement.getName(), getName());
+            }
+        } catch (SQLiteException e) {
             log.error("Could not refund family entitlement \"{}\" for chr {}", entitlement.getName(), getName(), e);
         }
         entitlements[id] = 0;

@@ -21,6 +21,9 @@
  */
 package net.server.channel.handlers;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.*;
 import client.inventory.*;
@@ -145,7 +148,7 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
                 try {
                     player = Character.loadCharFromDB(cid, c, true);
                     newcomer = true;
-                } catch (SQLException e) {
+                } catch (SQLiteException e) {
                     e.printStackTrace();
                 }
 
@@ -450,21 +453,20 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
     }
 
     private static void showDueyNotification(Client c, Character player) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC")) {
-            ps.setInt(1, player.getId());
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
+                     new String[]{String.valueOf(player.getId())})) {
+            if (cursor.moveToFirst()) {
+                int typeIdx = cursor.getColumnIndex("Type");
+                int type = cursor.getInt(typeIdx);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    try (PreparedStatement ps2 = con.prepareStatement("UPDATE dueypackages SET Checked = 0 WHERE ReceiverId = ?")) {
-                        ps2.setInt(1, player.getId());
-                        ps2.executeUpdate();
+                String updateQuery = "UPDATE dueypackages SET Checked = 0 WHERE ReceiverId = ?";
+                con.execSQL(updateQuery, new String[]{String.valueOf(player.getId())});
 
-                        c.sendPacket(PacketCreator.sendDueyParcelNotification(rs.getInt("Type") == 1));
-                    }
-                }
+                // Send the appropriate notification to the client (implement this method accordingly).
+                c.sendPacket(PacketCreator.sendDueyParcelNotification(type == 1));
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

@@ -21,6 +21,10 @@
 */
 package server;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import client.Client;
 import client.inventory.InventoryType;
 import client.inventory.Item;
@@ -243,8 +247,8 @@ public class Shop {
 
     public static Shop createFromDB(int id, boolean isShopId) {
         Shop ret = null;
-        int shopId;
-        try (Connection con = DatabaseConnection.getConnection()) {
+        int shopId = -1;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             final String query;
             if (isShopId) {
                 query = "SELECT * FROM shops WHERE shopid = ?";
@@ -252,41 +256,47 @@ public class Shop {
                 query = "SELECT * FROM shops WHERE npcid = ?";
             }
 
-            try (PreparedStatement ps = con.prepareStatement(query)) {
-                ps.setInt(1, id);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        shopId = rs.getInt("shopid");
-                        ret = new Shop(shopId, rs.getInt("npcid"));
-                    } else {
-                        return null;
+            try (Cursor shopCursor = con.rawQuery(query, new String[] { String.valueOf(id) })) {
+                if (shopCursor.moveToNext()) {
+                    int shopidIdx = shopCursor.getColumnIndex("shopid");
+                    int npcidIdx = shopCursor.getColumnIndex("npcid");
+                    if (shopidIdx != -1 && npcidIdx != -1) {
+                        shopId = shopCursor.getInt(shopidIdx);
+                        ret = new Shop(shopId, shopCursor.getInt(npcidIdx));
                     }
+                } else {
+                    return null;
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT itemid, price, pitch FROM shopitems WHERE shopid = ? ORDER BY position DESC")) {
-                ps.setInt(1, shopId);
+            try (Cursor itemCursor = con.rawQuery("SELECT itemid, price, pitch FROM shopitems WHERE shopid = ? ORDER BY position DESC",
+                    new String[] { String.valueOf(shopId) })) {
+                List<Integer> recharges = new ArrayList<>(rechargeableItems);
+                while (itemCursor.moveToNext()) {
+                    int itemidIdx = itemCursor.getColumnIndex("itemid");
+                    int priceIdx = itemCursor.getColumnIndex("price");
+                    int pitchIdx = itemCursor.getColumnIndex("pitch");
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    List<Integer> recharges = new ArrayList<>(rechargeableItems);
-                    while (rs.next()) {
-                        if (ItemConstants.isRechargeable(rs.getInt("itemid"))) {
-                            ShopItem starItem = new ShopItem((short) 1, rs.getInt("itemid"), rs.getInt("price"), rs.getInt("pitch"));
+                    if (itemidIdx != -1 &&
+                            priceIdx != -1 &&
+                            pitchIdx != -1) {
+                        if (ItemConstants.isRechargeable(itemCursor.getInt(itemidIdx))) {
+                            ShopItem starItem = new ShopItem((short) 1, itemCursor.getInt(itemidIdx), itemCursor.getInt(priceIdx), itemCursor.getInt(pitchIdx));
                             ret.addItem(starItem);
                             if (rechargeableItems.contains(starItem.getItemId())) {
                                 recharges.remove(Integer.valueOf(starItem.getItemId()));
                             }
                         } else {
-                            ret.addItem(new ShopItem((short) 1000, rs.getInt("itemid"), rs.getInt("price"), rs.getInt("pitch")));
+                            ret.addItem(new ShopItem((short) 1000, itemCursor.getInt(itemidIdx), itemCursor.getInt(priceIdx), itemCursor.getInt(pitchIdx)));
                         }
                     }
-                    for (Integer recharge : recharges) {
-                        ret.addItem(new ShopItem((short) 1000, recharge, 0, 0));
-                    }
+                }
+
+                for (Integer recharge : recharges) {
+                    ret.addItem(new ShopItem((short) 1000, recharge, 0, 0));
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return ret;

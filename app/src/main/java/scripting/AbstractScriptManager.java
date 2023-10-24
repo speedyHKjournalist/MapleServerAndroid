@@ -24,41 +24,39 @@ package scripting;
 import android.content.res.AssetManager;
 import android.util.Log;
 import client.Client;
-import com.whl.quickjs.wrapper.QuickJSContext;
-import com.whl.quickjs.wrapper.QuickJSException;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.File;
-import java.io.InputStream;
+import javax.script.*;
+import java.io.*;
+import java.util.List;
 
 /**
  * @author Matze
  */
 public abstract class AbstractScriptManager {
     private static final Logger log = LoggerFactory.getLogger(AbstractScriptManager.class);
+    private final ScriptEngineFactory sef;
 
     protected AbstractScriptManager() {
+        sef = new ScriptEngineManager().getEngineByName("rhino").getFactory();
     }
 
-    protected QuickJSContext getInvocableScriptEngine(String path) {
+    protected ScriptEngine getInvocableScriptEngine(String path) {
         AssetManager assetManager = Server.getInstance().getContext().getAssets();
         try(InputStream is = assetManager.open("scripts/" + path)) {
             try {
-                QuickJSContext engine = QuickJSContext.create();
-                StringBuilder stringBuilder = new StringBuilder();
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = is.read(buffer)) != -1) {
-                    // Append the read data to the StringBuilder.
-                    stringBuilder.append(new String(buffer, 0, bytesRead));
-                }
-
-                engine.evaluate(stringBuilder.toString());
+                ScriptEngine engine = sef.getScriptEngine();
+//                if (!(engine instanceof GraalJSScriptEngine graalScriptEngine)) {
+//                    throw new IllegalStateException("ScriptEngineFactory did not provide a GraalJSScriptEngine");
+//                }
+//
+//                enableScriptHostAccess(graalScriptEngine);
+                Reader reader = new InputStreamReader(is);
+                engine.eval(reader);
                 return engine;
-            } catch (final QuickJSException t) {
+            } catch (final ScriptException t) {
                 log.warn("Exception during script eval for file: {}", path, t);
                 return null;
             }
@@ -68,8 +66,8 @@ public abstract class AbstractScriptManager {
         }
     }
 
-    protected QuickJSContext getInvocableScriptEngine(String path, Client c) {
-        QuickJSContext engine = c.getScriptEngine("scripts/" + path);
+    protected ScriptEngine getInvocableScriptEngine(String path, Client c) {
+        ScriptEngine engine = c.getScriptEngine("scripts/" + path);
         if (engine == null) {
             engine = getInvocableScriptEngine(path);
             c.setScriptEngine(path, engine);
@@ -81,4 +79,13 @@ public abstract class AbstractScriptManager {
     protected void resetContext(String path, Client c) {
         c.removeScriptEngine("scripts/" + path);
     }
+
+//    /**
+//     * Allow usage of "Java.type()" in script to look up host class
+//     */
+//    private void enableScriptHostAccess(GraalJSScriptEngine engine) {
+//        Bindings bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
+//        bindings.put("polyglot.js.allowHostAccess", true);
+//        bindings.put("polyglot.js.allowHostClassLookup", true);
+//    }
 }

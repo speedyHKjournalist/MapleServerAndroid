@@ -21,6 +21,10 @@
 */
 package net.server.guild;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import client.Character;
 import client.Client;
 import net.packet.Packet;
@@ -66,18 +70,16 @@ public class Alliance {
             return false;
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT name FROM alliance WHERE name = ?")) {
-            ps.setString(1, name);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String selectQuery = "SELECT name FROM alliance WHERE name = ?";
+            String[] selectionArgs = { name };
+            try (Cursor cursor = con.rawQuery(selectQuery, selectionArgs)) {
+                if (cursor.moveToNext()) {
                     return false;
                 }
             }
-
             return true;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return false;
         }
@@ -156,28 +158,38 @@ public class Alliance {
         // will create an alliance, where the first guild listed is the leader and the alliance name MUST BE already checked for unicity.
 
         int id = -1;
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO `alliance` (`name`) VALUES (?)", PreparedStatement.RETURN_GENERATED_KEYS)) {
-                ps.setString(1, name);
-                ps.executeUpdate();
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    rs.next();
-                    id = rs.getInt(1);
-                }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
+            con.beginTransaction();
+
+            String insertAllianceQuery = "INSERT INTO alliance (name) VALUES (?)";
+            String[] insertAllianceArgs = { name };
+            SQLiteStatement insertAllianceStatement = con.compileStatement(insertAllianceQuery);
+            insertAllianceStatement.bindAllArgsAsStrings(insertAllianceArgs);
+            long allianceRowId = insertAllianceStatement.executeInsert();
+            id = (int) allianceRowId;
+            if (allianceRowId == -1) {
+                throw new SQLiteException("Failed to insert alliance record.");
             }
 
             for (int guild : guilds) {
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO `allianceguilds` (`allianceid`, `guildid`) VALUES (?, ?)")) {
-                    ps.setInt(1, id);
-                    ps.setInt(2, guild);
-                    ps.executeUpdate();
+                String insertAllianceGuildsQuery = "INSERT INTO allianceguilds (allianceid, guildid) VALUES (?, ?)";
+                SQLiteStatement insertAllianceGuildsStatement = con.compileStatement(insertAllianceGuildsQuery);
+                insertAllianceGuildsStatement.bindLong(1, allianceRowId);
+                insertAllianceGuildsStatement.bindLong(2, guild);
+                long guildRowId = insertAllianceGuildsStatement.executeInsert();
+
+                if (guildRowId == -1) {
+                    throw new SQLiteException("Failed to insert allianceguilds record.");
                 }
             }
-        } catch (SQLException e) {
+            con.setTransactionSuccessful();
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return null;
+        } finally {
+            con.endTransaction();
         }
-
         return new Alliance(name, id);
     }
 
@@ -186,40 +198,56 @@ public class Alliance {
             return null;
         }
         Alliance alliance = new Alliance(null, -1);
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM alliance WHERE id = ?")) {
-                ps.setInt(1, id);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        return null;
-                    }
+            try (Cursor cursor = con.rawQuery("SELECT * FROM alliance WHERE id = ?", new String[] { String.valueOf(id) })) {
+                if (cursor.moveToFirst()) {
+                    int capacityColumnIndex = cursor.getColumnIndex("capacity");
+                    int nameColumnIndex = cursor.getColumnIndex("name");
+                    int noticeColumnIndex = cursor.getColumnIndex("notice");
 
                     alliance.allianceId = id;
-                    alliance.capacity = rs.getInt("capacity");
-                    alliance.name = rs.getString("name");
-                    alliance.notice = rs.getString("notice");
+                    if (capacityColumnIndex != -1 &&
+                            nameColumnIndex != -1 &&
+                            noticeColumnIndex != -1) {
+                        alliance.capacity = cursor.getInt(capacityColumnIndex);
+                        alliance.name = cursor.getString(nameColumnIndex);
+                        alliance.notice = cursor.getString(noticeColumnIndex);
+                    }
 
-                    String[] ranks = new String[5];
-                    ranks[0] = rs.getString("rank1");
-                    ranks[1] = rs.getString("rank2");
-                    ranks[2] = rs.getString("rank3");
-                    ranks[3] = rs.getString("rank4");
-                    ranks[4] = rs.getString("rank5");
-                    alliance.rankTitles = ranks;
+                    int rank1Idx = cursor.getColumnIndex("rank1");
+                    int rank2Idx = cursor.getColumnIndex("rank2");
+                    int rank3Idx = cursor.getColumnIndex("rank3");
+                    int rank4Idx = cursor.getColumnIndex("rank4");
+                    int rank5Idx = cursor.getColumnIndex("rank5");
+
+                    if (rank1Idx != -1 &&
+                            rank2Idx != -1 &&
+                            rank3Idx != -1 &&
+                            rank4Idx != -1 &&
+                            rank5Idx != -1) {
+                        String[] ranks = new String[5];
+                        ranks[0] = cursor.getString(rank1Idx);
+                        ranks[1] = cursor.getString(rank2Idx);
+                        ranks[2] = cursor.getString(rank3Idx);
+                        ranks[3] = cursor.getString(rank4Idx);
+                        ranks[4] = cursor.getString(rank5Idx);
+                        alliance.rankTitles = ranks;
+                    }
+                } else {
+                    return null;
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT guildid FROM allianceguilds WHERE allianceid = ?")) {
-                ps.setInt(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        alliance.addGuild(rs.getInt("guildid"));
+            try (Cursor cursor = con.rawQuery("SELECT guildid FROM allianceguilds WHERE allianceid = ?", new String[] { String.valueOf(id) })) {
+                while (cursor.moveToNext()) {
+                    int guildidIdx = cursor.getColumnIndex("guildid");
+                    if (guildidIdx != -1) {
+                        alliance.addGuild(cursor.getInt(guildidIdx));
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -227,65 +255,69 @@ public class Alliance {
     }
 
     public void saveToDB() {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.beginTransaction();
 
-            try (PreparedStatement ps = con.prepareStatement("UPDATE `alliance` SET capacity = ?, notice = ?, rank1 = ?, rank2 = ?, rank3 = ?, rank4 = ?, rank5 = ? WHERE id = ?")) {
-                ps.setInt(1, this.capacity);
-                ps.setString(2, this.notice);
+            try (SQLiteStatement updateAlliance = con.compileStatement("UPDATE `alliance` SET capacity = ?, notice = ?, rank1 = ?, rank2 = ?, rank3 = ?, rank4 = ?, rank5 = ? WHERE id = ?");
+                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?");
+                 SQLiteStatement insertAllianceGuilds = con.compileStatement("INSERT INTO `allianceguilds` (`allianceid`, `guildid`) VALUES (?, ?)")) {
 
-                ps.setString(3, this.rankTitles[0]);
-                ps.setString(4, this.rankTitles[1]);
-                ps.setString(5, this.rankTitles[2]);
-                ps.setString(6, this.rankTitles[3]);
-                ps.setString(7, this.rankTitles[4]);
-
-                ps.setInt(8, this.allianceId);
-                ps.executeUpdate();
-            }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?")) {
-                ps.setInt(1, this.allianceId);
-                ps.executeUpdate();
-            }
-
-            for (int guild : guilds) {
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO `allianceguilds` (`allianceid`, `guildid`) VALUES (?, ?)")) {
-                    ps.setInt(1, this.allianceId);
-                    ps.setInt(2, guild);
-                    ps.executeUpdate();
+                updateAlliance.bindLong(1, this.capacity);
+                updateAlliance.bindString(2, this.notice);
+                for (int i = 0; i < 5; i++) {
+                    updateAlliance.bindString(i + 3, this.rankTitles[i]);
                 }
+                updateAlliance.bindLong(8, this.allianceId);
+                updateAlliance.executeUpdateDelete();
+
+                deleteAllianceGuilds.bindLong(1, this.allianceId);
+                deleteAllianceGuilds.executeUpdateDelete();
+
+                for (int guild : guilds) {
+                    insertAllianceGuilds.bindLong(1, this.allianceId);
+                    insertAllianceGuilds.bindLong(2, guild);
+                    insertAllianceGuilds.executeInsert();
+                }
+
+                con.setTransactionSuccessful(); // Commit the transaction
+            } finally {
+                con.endTransaction(); // End the transaction
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
 
     public static void disbandAlliance(int allianceId) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.beginTransaction();
+            try (SQLiteStatement deleteAlliance = con.compileStatement("DELETE FROM `alliance` WHERE id = ?");
+                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?")) {
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM `alliance` WHERE id = ?")) {
-                ps.setInt(1, allianceId);
-                ps.executeUpdate();
-            }
+                deleteAlliance.bindLong(1, allianceId);
+                deleteAlliance.executeUpdateDelete();
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?")) {
-                ps.setInt(1, allianceId);
-                ps.executeUpdate();
+                deleteAllianceGuilds.bindLong(1, allianceId);
+                deleteAllianceGuilds.executeUpdateDelete();
+
+                con.setTransactionSuccessful(); // Commit the transaction
+            } finally {
+                con.endTransaction(); // End the transaction
             }
 
             Server.getInstance().allianceMessage(allianceId, GuildPackets.disbandAlliance(allianceId), -1, -1);
             Server.getInstance().disbandAlliance(allianceId);
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
 
     private static void removeGuildFromAllianceOnDb(int guildId) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM `allianceguilds` WHERE guildid = ?")) {
-            ps.setInt(1, guildId);
-            ps.executeUpdate();
-        } catch (SQLException sqle) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE guildid = ?");
+            deleteAllianceGuilds.bindLong(1, guildId);
+            deleteAllianceGuilds.executeUpdateDelete();
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }

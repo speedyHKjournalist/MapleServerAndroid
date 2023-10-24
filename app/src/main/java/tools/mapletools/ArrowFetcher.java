@@ -19,6 +19,8 @@
 */
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import server.life.MonsterStats;
 import tools.Pair;
 
@@ -27,6 +29,7 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -144,31 +147,34 @@ public class ArrowFetcher {
 
     private static void updateMobsArrowRange() {
         System.out.print("Generating updated ranges... ");
-        final Connection con = SimpleDatabaseConnection.getConnection();
+        final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
         Map<Integer, List<Integer>> existingEntries = new HashMap<>(200);
 
         try {
             // select all arrow drop entries on the DB, to update their values
-            PreparedStatement ps = con.prepareStatement("SELECT dropperid, itemid FROM drop_data WHERE itemid >= " + MIN_ARROW_ID + " AND itemid <= " + MAX_ARROW_ID + " ORDER BY itemid;");
-            ResultSet rs = ps.executeQuery();
+            Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= " + MIN_ARROW_ID + " AND itemid <= " + MAX_ARROW_ID + " ORDER BY itemid;", null);
 
-            if (rs.isBeforeFirst()) {
-                while (rs.next()) {
-                    int mobid = rs.getInt(1);
-                    int itemid = rs.getInt(2);
+            if (cursor.moveToFirst()) {
+                do {
+                    int dropperidIdx = cursor.getColumnIndex("dropperid");
+                    int itemidIdx = cursor.getColumnIndex("itemid");
+                    if (dropperidIdx != -1 && itemidIdx != -1) {
+                        int mobid = cursor.getInt(dropperidIdx);
+                        int itemid = cursor.getInt(itemidIdx);
 
-                    if (mobRange.containsKey(mobid)) {
-                        List<Integer> em = existingEntries.get(mobid);
+                        if (mobRange.containsKey(mobid)) {
+                            List<Integer> em = existingEntries.get(mobid);
 
-                        if (em == null) {
-                            em = new ArrayList<>(2);
-                            existingEntries.put(mobid, em);
+                            if (em == null) {
+                                em = new ArrayList<>(2);
+                                existingEntries.put(mobid, em);
+                            }
+
+                            em.add(itemid);
                         }
-
-                        em.add(itemid);
                     }
-                }
+                } while (cursor.moveToNext());
 
                 if (!existingEntries.isEmpty()) {
                     List<int[]> entryValues = getArrowEntryValues(existingEntries);
@@ -196,9 +202,7 @@ public class ArrowFetcher {
             } else {
                 throw new Exception("NO DATA");
             }
-
-            rs.close();
-            ps.close();
+            cursor.close();
             con.close();
 
             System.out.println("done!");

@@ -1,5 +1,8 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 import server.ItemInformationProvider;
 import tools.DatabaseConnection;
@@ -43,7 +46,7 @@ public class QuestItemFetcher {
     private static final int INITIAL_LENGTH = 200;
     private static final boolean DISPLAY_EXTRA_INFO = true;     // display items with zero quantity over the quest act WZ
 
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
     private static final Map<Integer, Set<Integer>> startQuestItems = new HashMap<>(INITIAL_LENGTH);
     private static final Map<Integer, Set<Integer>> completeQuestItems = new HashMap<>(INITIAL_LENGTH);
     private static final Map<Integer, Set<Integer>> zeroedStartQuestItems = new HashMap<>();
@@ -304,44 +307,42 @@ public class QuestItemFetcher {
         return dropdata ? "drop_data" : "reactordrops";
     }
 
-    private static void filterQuestDropsOnTable(Pair<Integer, Integer> iq, List<Pair<Integer, Integer>> itemsWithQuest, boolean dropdata) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("SELECT questid FROM " + getTableName(dropdata) + " WHERE itemid = ?;");
-        ps.setInt(1, iq.getLeft());
-        ResultSet rs = ps.executeQuery();
+    private static void filterQuestDropsOnTable(Pair<Integer, Integer> iq, List<Pair<Integer, Integer>> itemsWithQuest, boolean dropdata) throws SQLiteException {
+        Cursor cursor = con.rawQuery("SELECT questid FROM " + getTableName(dropdata) + " WHERE itemid = ?;", new String[]{String.valueOf(iq.getLeft())});
+        if (cursor.moveToFirst()) {
+            do {
+                int questidIdx = cursor.getColumnIndex("questid");
+                if (questidIdx != -1) {
+                    int curQuest = cursor.getInt(questidIdx);
+                    if (curQuest != iq.getRight()) {
+                        Set<Integer> sqSet = startQuestItems.get(curQuest);
+                        if (sqSet != null && sqSet.contains(iq.getLeft())) {
+                            continue;
+                        }
 
-        if (rs.isBeforeFirst()) {
-            while (rs.next()) {
-                int curQuest = rs.getInt(1);
-                if (curQuest != iq.getRight()) {
-                    Set<Integer> sqSet = startQuestItems.get(curQuest);
-                    if (sqSet != null && sqSet.contains(iq.getLeft())) {
-                        continue;
+                        int[] mixed = new int[3];
+                        mixed[0] = iq.getLeft();
+                        mixed[1] = curQuest;
+                        mixed[2] = iq.getRight();
+
+                        mixedQuestidItems.put(iq.getLeft(), mixed);
                     }
-
-                    int[] mixed = new int[3];
-                    mixed[0] = iq.getLeft();
-                    mixed[1] = curQuest;
-                    mixed[2] = iq.getRight();
-
-                    mixedQuestidItems.put(iq.getLeft(), mixed);
                 }
-            }
+            } while (cursor.moveToNext());
 
             itemsWithQuest.remove(iq);
         }
-
-        rs.close();
-        ps.close();
+        cursor.close();
     }
 
-    private static void filterQuestDropsOnDB(List<Pair<Integer, Integer>> itemsWithQuest) throws SQLException {
+    private static void filterQuestDropsOnDB(List<Pair<Integer, Integer>> itemsWithQuest) throws SQLiteException {
         List<Pair<Integer, Integer>> copyItemsWithQuest = new ArrayList<>(itemsWithQuest);
         try {
             for (Pair<Integer, Integer> iq : copyItemsWithQuest) {
                 filterQuestDropsOnTable(iq, itemsWithQuest, true);
                 filterQuestDropsOnTable(iq, itemsWithQuest, false);
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -527,7 +528,7 @@ public class QuestItemFetcher {
             System.out.println("Unable to open file '" + file + "'");
         } catch (IOException ex) {
             System.out.println("Error reading file '" + file + "'");
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to report quest data.");
             System.out.println(e.getMessage());
         } catch (Exception e) {

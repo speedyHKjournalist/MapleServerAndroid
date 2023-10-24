@@ -1,5 +1,8 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 
 import java.io.*;
@@ -23,7 +26,7 @@ import java.util.*;
  */
 public class NoItemIdFetcher {
     private static final Path OUTPUT_FILE = ToolConstants.getOutputFile("no_item_id_report.txt");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static final Set<Integer> existingIds = new HashSet<>();
     private static final Set<Integer> nonExistingIds = new HashSet<>();
@@ -161,18 +164,23 @@ public class NoItemIdFetcher {
         }
     }
 
-    private static void evaluateDropsFromTable(String table) throws SQLException {
-        PreparedStatement ps = con.prepareStatement("SELECT DISTINCT itemid FROM " + table + ";");
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-            if (!existingIds.contains(rs.getInt(1))) {
-                nonExistingIds.add(rs.getInt(1));
+    private static void evaluateDropsFromTable(String table) throws SQLiteException {
+        Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + table + ";", null);
+        if (cursor != null) {
+            try {
+                while (cursor.moveToNext()) {
+                    int itemidIdx = cursor.getColumnIndex("itemid");
+                    if (itemidIdx != -1) {
+                        int itemId = cursor.getInt(itemidIdx);
+                        if (!existingIds.contains(itemId)) {
+                            nonExistingIds.add(itemId);
+                        }
+                    }
+                }
+            } finally {
+                cursor.close();
             }
         }
-
-        rs.close();
-        ps.close();
     }
 
     private static void evaluateDropsFromDb() {

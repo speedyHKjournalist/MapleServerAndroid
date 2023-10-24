@@ -30,7 +30,8 @@ import scripting.AbstractScriptManager;
 import server.quest.Quest;
 
 import javax.script.Invocable;
-import com.whl.quickjs.wrapper.QuickJSContext;
+import javax.script.ScriptEngine;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,8 +49,8 @@ public class QuestScriptManager extends AbstractScriptManager {
         return instance;
     }
 
-    private QuickJSContext getQuestScriptEngine(Client c, short questid) {
-        QuickJSContext engine = getInvocableScriptEngine("quest/" + questid + ".js", c);
+    private ScriptEngine getQuestScriptEngine(Client c, short questid) {
+        ScriptEngine engine = getInvocableScriptEngine("quest/" + questid + ".js", c);
         if (engine == null && GameConstants.isMedalQuest(questid)) {
             engine = getInvocableScriptEngine("quest/medalQuest.js", c);   // start generic medal quest
         }
@@ -71,16 +72,15 @@ public class QuestScriptManager extends AbstractScriptManager {
                     qm.dispose();
                     return;
                 }
-                QuickJSContext engine = QuickJSContext.create();
 
-                //QuickJSContext engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid);
                 if (engine == null) {
                     log.warn("START Quest {} is uncoded.", questid);
                     qm.dispose();
                     return;
                 }
 
-                // engine.put("qm", qm);
+                engine.put("qm", qm);
 
                 Invocable iv = (Invocable) engine;
                 scripts.put(c, iv);
@@ -125,7 +125,7 @@ public class QuestScriptManager extends AbstractScriptManager {
                     return;
                 }
 
-                QuickJSContext engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid);
                 if (engine == null) {
                     log.warn("END Quest {} is uncoded.", questid);
                     qm.dispose();
@@ -167,7 +167,7 @@ public class QuestScriptManager extends AbstractScriptManager {
             if (c.canClickNPC()) {
                 qms.put(c, qm);
 
-                QuickJSContext engine = getQuestScriptEngine(c, questid);
+                ScriptEngine engine = getQuestScriptEngine(c, questid);
                 if (engine == null) {
                     //FilePrinter.printError(FilePrinter.QUEST_UNCODED, "RAISE Quest " + questid + " is uncoded.");
                     qm.dispose();

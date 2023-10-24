@@ -21,6 +21,7 @@
 */
 package net.server.channel.handlers;
 
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.autoban.AutobanFactory;
@@ -650,7 +651,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
 
                     try {
                         merchant.saveItems(false);   // thanks Masterrulax for realizing yet another dupe with merchants/Fredrick
-                    } catch (SQLException ex) {
+                    } catch (SQLiteException ex) {
                         ex.printStackTrace();
                     }
                 } else {

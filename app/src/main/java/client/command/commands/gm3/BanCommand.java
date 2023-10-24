@@ -23,6 +23,9 @@
 */
 package client.command.commands.gm3;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -54,16 +57,14 @@ public class BanCommand extends Command {
             String readableTargetName = Character.makeMapleReadable(target.getName());
             String ip = target.getClient().getRemoteAddress();
             //Ban ip
-            try (Connection con = DatabaseConnection.getConnection()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 if (ip.matches("/[0-9]{1,3}\\..*")) {
-                    try (PreparedStatement ps = con.prepareStatement("INSERT INTO ipbans VALUES (DEFAULT, ?, ?)")) {
-                        ps.setString(1, ip);
-                        ps.setString(2, String.valueOf(target.getClient().getAccID()));
-
-                        ps.executeUpdate();
-                    }
+                    ContentValues values = new ContentValues();
+                    values.put("ip", ip);
+                    values.put("aid", String.valueOf(target.getClient().getAccID()));
+                    con.insert("ipbans", null, values);
                 }
-            } catch (SQLException ex) {
+            } catch (SQLiteException ex) {
                 ex.printStackTrace();
                 c.getPlayer().message("Error occured while banning IP address");
                 c.getPlayer().message(target.getName() + "'s IP was not banned: " + ip);

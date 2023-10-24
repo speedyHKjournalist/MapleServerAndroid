@@ -23,6 +23,9 @@
 */
 package client.command.commands.gm4;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -56,41 +59,30 @@ public class PnpcRemoveCommand extends Command {
         int ypos = pos.y;
 
         List<Pair<Integer, Pair<Integer, Integer>>> toRemove = new LinkedList<>();
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             final PreparedStatement ps;
+            String select;
+            String[] selectArgs;
             if (npcId > -1) {
-                String select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND life = ?";
-                ps = con.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-                ps.setInt(1, player.getWorld());
-                ps.setInt(2, mapId);
-                ps.setString(3, "n");
-                ps.setInt(4, npcId);
+                select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND life = ?";
+                selectArgs = new String[]{String.valueOf(player.getWorld()), String.valueOf(mapId), "n", String.valueOf(npcId)};
             } else {
-                String select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND x >= ? AND x <= ? AND y >= ? AND y <= ?";
-                ps = con.prepareStatement(select, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-                ps.setInt(1, player.getWorld());
-                ps.setInt(2, mapId);
-                ps.setString(3, "n");
-                ps.setInt(4, xpos - 50);
-                ps.setInt(5, xpos + 50);
-                ps.setInt(6, ypos - 50);
-                ps.setInt(7, ypos + 50);
+                select = "SELECT * FROM plife WHERE world = ? AND map = ? AND type LIKE ? AND x >= ? AND x <= ? AND y >= ? AND y <= ?";
+                selectArgs = new String[]{String.valueOf(player.getWorld()), String.valueOf(mapId), "n", String.valueOf(xpos - 50), String.valueOf(xpos + 50), String.valueOf(ypos - 50), String.valueOf(ypos + 50)};
             }
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (true) {
-                    rs.beforeFirst();
-                    if (!rs.next()) {
-                        break;
-                    }
+            try (Cursor cursor = con.rawQuery(select, selectArgs)) {
+                while (cursor.moveToNext()) {
+                    int lifeIdx = cursor.getColumnIndex("life");
+                    int xIdx = cursor.getColumnIndex("x");
+                    int yIdx = cursor.getColumnIndex("y");
 
-                    toRemove.add(new Pair<>(rs.getInt("life"), new Pair<>(rs.getInt("x"), rs.getInt("y"))));
-                    rs.deleteRow();
+                    toRemove.add(new Pair<>(cursor.getInt(lifeIdx), new Pair<>(cursor.getInt(xIdx), cursor.getInt(yIdx))));
+                    con.delete("plife", "life = ? AND x = ? AND y = ?",
+                            new String[]{String.valueOf(cursor.getInt(lifeIdx)), String.valueOf(cursor.getInt(xIdx)), String.valueOf(cursor.getInt(yIdx))});
                 }
             }
-
-            ps.close();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             player.dropMessage(5, "Failed to remove pNPC from the database.");
         }

@@ -21,6 +21,9 @@
 */
 package client;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import net.packet.Packet;
 import net.server.PlayerStorage;
 import tools.DatabaseConnection;
@@ -139,25 +142,26 @@ public class BuddyList {
     }
 
     public void loadFromDb(int characterId) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT b.buddyid, b.pending, b.group, c.name as buddyname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?")) {
-                ps.setInt(1, characterId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        if (rs.getInt("pending") == 1) {
-                            pendingRequests.push(new CharacterNameAndId(rs.getInt("buddyid"), rs.getString("buddyname")));
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.rawQuery("SELECT b.buddyid, b.pending, b.group, c.name as buddyname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?",
+                    new String[]{String.valueOf(characterId)})) {
+                while (cursor.moveToNext()) {
+                    int pendingIndex = cursor.getColumnIndex("pending");
+                    int buddyNameIndex = cursor.getColumnIndex("buddyname");
+                    int groupIndex = cursor.getColumnIndex("group");
+                    int buddyIdIndex = cursor.getColumnIndex("buddyid");
+
+                    if (pendingIndex != -1 && buddyNameIndex != -1 && groupIndex != -1 && buddyIdIndex != -1) {
+                        if (cursor.getInt(pendingIndex) == 1) {
+                            pendingRequests.push(new CharacterNameAndId(cursor.getInt(buddyIdIndex), cursor.getString(buddyNameIndex)));
                         } else {
-                            put(new BuddylistEntry(rs.getString("buddyname"), rs.getString("group"), rs.getInt("buddyid"), (byte) -1, true));
+                            put(new BuddylistEntry(cursor.getString(buddyNameIndex), cursor.getString(groupIndex), cursor.getInt(buddyIdIndex), (byte) -1, true));
                         }
                     }
                 }
             }
-
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM buddies WHERE pending = 1 AND characterid = ?")) {
-                ps.setInt(1, characterId);
-                ps.executeUpdate();
-            }
-        } catch (SQLException ex) {
+        con.rawQuery("DELETE FROM buddies WHERE pending = 1 AND characterid = ?", new String[]{String.valueOf(characterId)});
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
     }

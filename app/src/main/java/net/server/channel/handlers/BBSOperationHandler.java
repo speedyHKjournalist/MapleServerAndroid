@@ -21,6 +21,10 @@
  */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import net.AbstractPacketHandler;
@@ -100,15 +104,11 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
     }
 
     private static void listBBSThreads(Client c, int start) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM bbs_threads WHERE guildid = ? ORDER BY localthreadid DESC",
-                     ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
-
-            ps.setInt(1, c.getPlayer().getGuildId());
-            try (ResultSet rs = ps.executeQuery()) {
-                c.sendPacket(GuildPackets.BBSThreadList(rs, start));
-            }
-        } catch (SQLException se) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT * FROM bbs_threads WHERE guildid = ? ORDER BY localthreadid DESC",
+                     new String[]{String.valueOf(c.getPlayer().getGuildId())})) {
+                c.sendPacket(GuildPackets.BBSThreadList(cursor, start));
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -117,36 +117,31 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         if (c.getPlayer().getGuildId() <= 0) {
             return;
         }
-        try (Connection con = DatabaseConnection.getConnection()) {
-            final int threadid;
-            try (PreparedStatement ps = con.prepareStatement("SELECT threadid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?")) {
-                ps.setInt(1, c.getPlayer().getGuildId());
-                ps.setInt(2, localthreadid);
-
-                try (ResultSet threadRS = ps.executeQuery()) {
-                    if (!threadRS.next()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            int threadid = -1;
+            try (Cursor cursor = con.rawQuery("SELECT threadid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?",
+                    new String[]{String.valueOf(c.getPlayer().getGuildId()), String.valueOf(localthreadid)})) {
+                    if (!cursor.moveToNext()) {
                         return;
                     }
-
-                    threadid = threadRS.getInt("threadid");
-                }
+                    int threadidIdx = cursor.getColumnIndex("threadid");
+                    if (threadidIdx != -1) {
+                        threadid = cursor.getInt(threadidIdx);
+                    }
             }
+            ContentValues values = new ContentValues();
+            values.put("threadid", threadid);
+            values.put("postercid", c.getPlayer().getId());
+            values.put("timestamp", currentServerTime());
+            values.put("content", text);
 
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO bbs_replies " + "(`threadid`, `postercid`, `timestamp`, `content`) VALUES " + "(?, ?, ?, ?)")) {
-                ps.setInt(1, threadid);
-                ps.setInt(2, c.getPlayer().getId());
-                ps.setLong(3, currentServerTime());
-                ps.setString(4, text);
-                ps.executeUpdate();
-            }
+            con.insert("bbs_replies", null, values);
 
-            try (PreparedStatement ps = con.prepareStatement("UPDATE bbs_threads SET replycount = replycount + 1 WHERE threadid = ?")) {
-                ps.setInt(1, threadid);
-                ps.executeUpdate();
-            }
-
+            ContentValues values1 = new ContentValues();
+            values1.put("replycount", "replycount + 1");
+            con.update("bbs_threads", values, "threadid = ?", new String[]{String.valueOf(threadid)});
             displayThread(c, localthreadid);
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -156,21 +151,19 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         if (chr.getGuildId() < 1) {
             return;
         }
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE bbs_threads SET `name` = ?, `timestamp` = ?, " + "`icon` = ?, " + "`startpost` = ? WHERE guildid = ? AND localthreadid = ? AND (postercid = ? OR ?)")) {
+        ContentValues values = new ContentValues();
+        values.put("name", title);
+        values.put("timestamp", currentServerTime());
+        values.put("icon", icon);
+        values.put("startpost", text);
 
-            ps.setString(1, title);
-            ps.setLong(2, currentServerTime());
-            ps.setInt(3, icon);
-            ps.setString(4, text);
-            ps.setInt(5, chr.getGuildId());
-            ps.setInt(6, localthreadid);
-            ps.setInt(7, chr.getId());
-            ps.setBoolean(8, chr.getGuildRank() < 3);
-            ps.execute();
+        String selection = "guildid = ? AND localthreadid = ? AND (postercid = ? OR ?)";
+        String[] selectionArgs = new String[]{String.valueOf(chr.getGuildId()), String.valueOf(localthreadid), String.valueOf(chr.getId()), String.valueOf(chr.getGuildRank() < 3)};
 
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("bbs_threads", values, selection, selectionArgs);
             displayThread(client, localthreadid);
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -181,30 +174,32 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             return;
         }
         int nextId = 0;
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             if (!bNotice) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT MAX(localthreadid) AS lastLocalId FROM bbs_threads WHERE guildid = ?")) {
-                    ps.setInt(1, chr.getGuildId());
-                    try (ResultSet rs = ps.executeQuery()) {
-                        rs.next();
-                        nextId = rs.getInt("lastLocalId") + 1;
+                try (Cursor cursor = con.rawQuery("SELECT MAX(localthreadid) AS lastLocalId FROM bbs_threads WHERE guildid = ?", new String[]{String.valueOf(chr.getGuildId())})) {
+                    if (cursor.moveToNext()) {
+                        int lastLocalIdIdx = cursor.getColumnIndex("lastLocalId");
+                        if (lastLocalIdIdx != -1) {
+                            int lastLocalId = cursor.getInt(lastLocalIdIdx);
+                            nextId = lastLocalId + 1;
+                        }
                     }
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO bbs_threads (`postercid`, `name`, `timestamp`, `icon`, `startpost`, `guildid`, `localthreadid`) VALUES(?, ?, ?, ?, ?, ?, ?)")) {
-                ps.setInt(1, chr.getId());
-                ps.setString(2, title);
-                ps.setLong(3, currentServerTime());
-                ps.setInt(4, icon);
-                ps.setString(5, text);
-                ps.setInt(6, chr.getGuildId());
-                ps.setInt(7, nextId);
-                ps.executeUpdate();
-            }
+            ContentValues values = new ContentValues();
+            values.put("postercid", chr.getId());
+            values.put("name", title);
+            values.put("timestamp", currentServerTime());
+            values.put("icon", icon);
+            values.put("startpost", text);
+            values.put("guildid", chr.getGuildId());
+            values.put("localthreadid", nextId);
+
+            con.insert("bbs_threads", null, values);
 
             displayThread(client, nextId);
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
 
@@ -216,36 +211,28 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             return;
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
 
             final int threadid;
-            try (PreparedStatement ps = con.prepareStatement("SELECT threadid, postercid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?")) {
-                ps.setInt(1, mc.getGuildId());
-                ps.setInt(2, localthreadid);
+            try (Cursor cursor = con.rawQuery("SELECT threadid, postercid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?",
+                    new String[]{String.valueOf(mc.getGuildId()), String.valueOf(localthreadid)})) {
+                    int threadidIdx = cursor.getColumnIndex("threadid");
+                    int postercidIdx = cursor.getColumnIndex("postercid");
 
-                try (ResultSet threadRS = ps.executeQuery()) {
-                    if (!threadRS.next()) {
+                    if (mc.getId() != cursor.getInt(postercidIdx) && mc.getGuildRank() > 2) {
                         return;
                     }
-
-                    if (mc.getId() != threadRS.getInt("postercid") && mc.getGuildRank() > 2) {
-                        return;
-                    }
-
-                    threadid = threadRS.getInt("threadid");
-                }
+                    threadid = cursor.getInt(threadidIdx);
             }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM bbs_replies WHERE threadid = ?")) {
-                ps.setInt(1, threadid);
-                ps.executeUpdate();
-            }
+            String whereClause = "threadid = ?";
+            String[] whereArgs = {String.valueOf(threadid)};
+            con.delete("bbs_replies", whereClause, whereArgs);
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM bbs_threads WHERE threadid = ?")) {
-                ps.setInt(1, threadid);
-                ps.executeUpdate();
-            }
-        } catch (SQLException se) {
+            String whereClause1 = "threadid = ?";
+            String[] whereArgs1 = {String.valueOf(threadid)};
+            con.delete("bbs_threads", whereClause1, whereArgs1);
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -256,37 +243,38 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             return;
         }
 
-        final int threadid;
-        try (Connection con = DatabaseConnection.getConnection()) {
+        int threadid = -1;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT postercid, threadid FROM bbs_replies WHERE replyid = ?")) {
-                ps.setInt(1, replyid);
+            try (Cursor cursor = con.rawQuery("SELECT postercid, threadid FROM bbs_replies WHERE replyid = ?",
+                    new String[]{String.valueOf(replyid)})) {
+                if (cursor.moveToNext()) {
+                    int postercidIdx = cursor.getColumnIndex("postercid");
+                    int threadidIdx = cursor.getColumnIndex("threadid");
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
+                    if (mc.getId() != cursor.getInt(postercidIdx) && mc.getGuildRank() > 2) {
                         return;
                     }
 
-                    if (mc.getId() != rs.getInt("postercid") && mc.getGuildRank() > 2) {
-                        return;
-                    }
-
-                    threadid = rs.getInt("threadid");
+                    threadid = cursor.getInt(threadidIdx);
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM bbs_replies WHERE replyid = ?")) {
-                ps.setInt(1, replyid);
-                ps.executeUpdate();
-            }
+            String whereClause = "replyid = ?";
+            String[] whereArgs = {String.valueOf(replyid)};
+            con.delete("bbs_replies", whereClause, whereArgs);
 
-            try (PreparedStatement ps = con.prepareStatement("UPDATE bbs_threads SET replycount = replycount - 1 WHERE threadid = ?")) {
-                ps.setInt(1, threadid);
-                ps.executeUpdate();
-            }
+            ContentValues values = new ContentValues();
+            values.put("replycount", "replycount - 1");
+
+            String whereClause1 = "threadid = ?";
+            String[] whereArgs1 = {String.valueOf(threadid)};
+
+            con.update("bbs_threads", values, whereClause1, whereArgs1);
+
 
             displayThread(client, threadid, false);
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -301,25 +289,26 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             return;
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             // TODO clean up this block and use try-with-resources
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM bbs_threads WHERE guildid = ? AND " + (bIsThreadIdLocal ? "local" : "") + "threadid = ?")) {
-                ps.setInt(1, mc.getGuildId());
-                ps.setInt(2, threadid);
-                ResultSet threadRS = ps.executeQuery();
-                if (!threadRS.next()) {
-                    return;
-                }
-                ResultSet repliesRS = null;
-                try (PreparedStatement ps2 = con.prepareStatement("SELECT * FROM bbs_replies WHERE threadid = ?")) {
-                    if (threadRS.getInt("replycount") >= 0) {
-                        ps2.setInt(1, !bIsThreadIdLocal ? threadid : threadRS.getInt("threadid"));
-                        repliesRS = ps2.executeQuery();
+            try (Cursor threadCursor = con.rawQuery("SELECT * FROM bbs_threads WHERE guildid = ? AND " + (bIsThreadIdLocal ? "local" : "") + "threadid = ?",
+                    new String[]{String.valueOf(mc.getGuildId()), String.valueOf(threadid)})) {
+                if (threadCursor.moveToNext()) {
+                    int replycountIdx = threadCursor.getColumnIndex("replycount");
+                    int replycount = threadCursor.getInt(replycountIdx);
+
+                    Cursor repliesCursor = null;
+                    if (replycount >= 0) {
+                        int threadidIdx = threadCursor.getColumnIndex("threadid");
+                        int actualThreadId = !bIsThreadIdLocal ? threadid : threadCursor.getInt(threadidIdx);
+                        repliesCursor = con.rawQuery("SELECT * FROM bbs_replies WHERE threadid = ?",
+                                new String[]{String.valueOf(actualThreadId)});
                     }
-                    client.sendPacket(GuildPackets.showThread(bIsThreadIdLocal ? threadid : threadRS.getInt("localthreadid"), threadRS, repliesRS));
+                    int localthreadidIdx = threadCursor.getColumnIndex("localthreadid");
+                    client.sendPacket(GuildPackets.showThread(bIsThreadIdLocal ? threadid : threadCursor.getInt(localthreadidIdx), threadCursor, repliesCursor));
                 }
             }
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             log.error("Error displaying thread", se);
         } catch (RuntimeException re) {//btw we get this everytime for some reason, but replies work!
             log.error("The number of reply rows does not match the replycount in thread.", re);

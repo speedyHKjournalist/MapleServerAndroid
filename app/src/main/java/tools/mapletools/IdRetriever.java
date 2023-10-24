@@ -1,5 +1,10 @@
 package tools.mapletools;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,7 +37,7 @@ public class IdRetriever {
     private static final boolean INSTALL_SQLTABLE = true;
     private static final Path INPUT_FILE = ToolConstants.getInputFile("fetch_ids.txt");
     private static final Path OUTPUT_FILE = ToolConstants.getOutputFile("fetched_ids.txt");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static InputStreamReader fileReader = null;
     private static BufferedReader bufferedReader = null;
@@ -51,26 +56,26 @@ public class IdRetriever {
         }
     }
 
-    private static void parseMapleHandbookLine(String line) throws SQLException {
+    private static void parseMapleHandbookLine(String line) throws SQLiteException {
         String[] tokens = line.split(" - ", 3);
 
         if (tokens.length > 1) {
-            PreparedStatement ps = con.prepareStatement("INSERT INTO `handbook` (`id`, `name`, `description`) VALUES (?, ?, ?)");
-            try {
-                ps.setInt(1, Integer.parseInt(tokens[0]));
-            } catch (NumberFormatException npe) {   // odd...
-                String num = tokens[0].substring(1);
-                ps.setInt(1, Integer.parseInt(num));
-            }
-            ps.setString(2, tokens[1]);
-            ps.setString(3, tokens.length > 2 ? tokens[2] : "");
-            ps.execute();
+            ContentValues values = new ContentValues();
 
-            ps.close();
+            try {
+                values.put("id", Integer.parseInt(tokens[0]));
+            } catch (NumberFormatException npe) {
+                String num = tokens[0].substring(1);
+                values.put("id", Integer.parseInt(num));
+            }
+
+            values.put("name", tokens[1]);
+            values.put("description", tokens.length > 2 ? tokens[2] : "");
+            con.insertOrThrow("handbook", null, values);
         }
     }
 
-    private static void parseMapleHandbookFile(File fileObj) throws SQLException {
+    private static void parseMapleHandbookFile(File fileObj) throws SQLiteException {
         if (shouldSkipParsingFile(fileObj.getName())) {
             return;
         }
@@ -86,7 +91,7 @@ public class IdRetriever {
             while ((line = bufferedReader.readLine()) != null) {
                 try {
                     parseMapleHandbookLine(line);
-                } catch (SQLException e) {
+                } catch (SQLiteException e) {
                     System.err.println("Failed to parse line: " + line);
                     throw e;
                 }
@@ -104,23 +109,19 @@ public class IdRetriever {
         return "Quest.txt".equals(fileName);
     }
 
-    private static void setupSqlTable() throws SQLException {
-        PreparedStatement ps = con.prepareStatement("DROP TABLE IF EXISTS `handbook`;");
-        ps.execute();
-        ps.close();
+    private static void setupSqlTable() throws SQLiteException {
+        con.execSQL("DROP TABLE IF EXISTS `handbook`;");
 
-        ps = con.prepareStatement("CREATE TABLE `handbook` ("
-                + "`key` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-                + "`id` int(10) DEFAULT NULL,"
-                + "`name` varchar(200) DEFAULT NULL,"
-                + "`description` varchar(1000) DEFAULT '',"
-                + "PRIMARY KEY (`key`)"
-                + ");");
-        ps.execute();
-        ps.close();
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS handbook ("
+                + "_key INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "id INTEGER,"
+                + "name TEXT,"
+                + "description TEXT DEFAULT ''"
+                + ");";
+        con.execSQL(createTableQuery);
     }
 
-    private static void parseMapleHandbook() throws SQLException {
+    private static void parseMapleHandbook() throws SQLiteException {
         ArrayList<File> files = new ArrayList<>();
 
         listFiles(ToolConstants.HANDBOOK_PATH, files);
@@ -135,7 +136,7 @@ public class IdRetriever {
         }
     }
 
-    private static void fetchDataOnMapleHandbook() throws SQLException {
+    private static void fetchDataOnMapleHandbook() throws SQLiteException {
         try (BufferedReader br = Files.newBufferedReader(INPUT_FILE);
                 PrintWriter printWriter = new PrintWriter(Files.newOutputStream(OUTPUT_FILE));) {
             bufferedReader = br;
@@ -146,22 +147,17 @@ public class IdRetriever {
                     continue;
                 }
 
-                PreparedStatement ps = con.prepareStatement("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;");
-                ps.setString(1, line);
+                Cursor cursor = con.rawQuery("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;", new String[]{line});
 
-                ResultSet rs = ps.executeQuery();
-
-                String str = "";
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-
-                    str += Integer.toString(id);
-                    str += " ";
+                StringBuilder str = new StringBuilder();
+                while (cursor.moveToNext()) {
+                    int idIdx = cursor.getColumnIndex("id");
+                    if (idIdx != -1) {
+                        int id = cursor.getInt(idIdx);
+                        str.append(id).append(" ");
+                    }
                 }
-
-                rs.close();
-                ps.close();
-
+                cursor.close();
                 printWriter.println(str);
             }
         } catch (IOException ex) {
@@ -177,7 +173,7 @@ public class IdRetriever {
             } else {
                 fetchDataOnMapleHandbook();
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Error: invalid SQL syntax");
             e.printStackTrace();
         }

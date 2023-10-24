@@ -21,6 +21,10 @@
 */
 package net.server.channel.handlers;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.*;
 import client.BuddyList.BuddyAddResult;
 import client.Character;
@@ -59,17 +63,16 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
         }
     }
 
-    private CharacterIdNameBuddyCapacity getCharacterIdAndNameFromDatabase(String name) throws SQLException {
+    private CharacterIdNameBuddyCapacity getCharacterIdAndNameFromDatabase(String name) throws SQLiteException {
         CharacterIdNameBuddyCapacity ret = null;
-
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id, name, buddyCapacity FROM characters WHERE name LIKE ?")) {
-            ps.setString(1, name);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ret = new CharacterIdNameBuddyCapacity(rs.getInt("id"), rs.getString("name"), rs.getInt("buddyCapacity"));
-                }
+        String[] selectionArgs = { "%" + name + "%" };
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT id, name, buddyCapacity FROM characters WHERE name LIKE ?", selectionArgs)) {
+            if (cursor.moveToFirst()) {
+                int idIdx = cursor.getColumnIndex("id");
+                int nameIdx = cursor.getColumnIndex("name");
+                int buddyCapacityIdx = cursor.getColumnIndex("buddyCapacity");
+                ret = new CharacterIdNameBuddyCapacity(cursor.getInt(idIdx), cursor.getString(nameIdx), cursor.getInt(buddyCapacityIdx));
             }
         }
 
@@ -110,27 +113,21 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         if (channel != -1) {
                             buddyAddResult = world.requestBuddyAdd(addName, c.getChannel(), player.getId(), player.getName());
                         } else {
-                            try (Connection con = DatabaseConnection.getConnection()) {
-                                try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) as buddyCount FROM buddies WHERE characterid = ? AND pending = 0")) {
-                                    ps.setInt(1, charWithId.getId());
-
-                                    try (ResultSet rs = ps.executeQuery()) {
-                                        if (!rs.next()) {
-                                            throw new RuntimeException("Result set expected");
-                                        } else if (rs.getInt("buddyCount") >= charWithId.getBuddyCapacity()) {
+                            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                                try (Cursor cursor = con.rawQuery("SELECT COUNT(*) as buddyCount FROM buddies WHERE characterid = ? AND pending = 0",
+                                        new String[]{ String.valueOf(charWithId.getId()) })) {
+                                    if (cursor.moveToFirst()) {
+                                        int buddyCountIdx = cursor.getColumnIndex("buddyCount");
+                                        if (cursor.getInt(buddyCountIdx) >= charWithId.getBuddyCapacity()) {
                                             buddyAddResult = BuddyAddResult.BUDDYLIST_FULL;
                                         }
                                     }
                                 }
 
-                                try (PreparedStatement ps = con.prepareStatement("SELECT pending FROM buddies WHERE characterid = ? AND buddyid = ?")) {
-                                    ps.setInt(1, charWithId.getId());
-                                    ps.setInt(2, player.getId());
-
-                                    try (ResultSet rs = ps.executeQuery()) {
-                                        if (rs.next()) {
+                                try (Cursor cursor = con.rawQuery("SELECT pending FROM buddies WHERE characterid = ? AND buddyid = ?",
+                                        new String[]{ String.valueOf(charWithId.getId()), String.valueOf(player.getId()) })) {
+                                    if (cursor.moveToFirst()) {
                                             buddyAddResult = BuddyAddResult.ALREADY_ON_LIST;
-                                        }
                                     }
                                 }
                             }
@@ -145,11 +142,12 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                                 displayChannel = channel;
                                 notifyRemoteChannel(c, channel, otherCid, ADDED);
                             } else if (buddyAddResult != BuddyAddResult.ALREADY_ON_LIST && channel == -1) {
-                                try (Connection con = DatabaseConnection.getConnection();
-                                     PreparedStatement ps = con.prepareStatement("INSERT INTO buddies (characterid, `buddyid`, `pending`) VALUES (?, ?, 1)")) {
-                                    ps.setInt(1, charWithId.getId());
-                                    ps.setInt(2, player.getId());
-                                    ps.executeUpdate();
+                                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                                    ContentValues values = new ContentValues();
+                                    values.put("characterid", charWithId.getId());
+                                    values.put("buddyid", player.getId());
+                                    values.put("pending", 1);
+                                    con.insert("buddies", null, values);
                                 }
                             }
                             buddylist.put(new BuddylistEntry(charWithId.getName(), group, otherCid, displayChannel, true));
@@ -158,7 +156,7 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                     } else {
                         c.sendPacket(PacketCreator.serverNotice(1, "A character called \"" + addName + "\" does not exist"));
                     }
-                } catch (SQLException e) {
+                } catch (SQLiteException e) {
                     e.printStackTrace();
                 }
             } else {
@@ -173,14 +171,15 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                     String otherName = null;
                     Character otherChar = c.getChannelServer().getPlayerStorage().getCharacterById(otherCid);
                     if (otherChar == null) {
-                        try (Connection con = DatabaseConnection.getConnection();
-                             PreparedStatement ps = con.prepareStatement("SELECT name FROM characters WHERE id = ?")) {
-                            ps.setInt(1, otherCid);
+                        String[] projection = { "name" };
+                        String selection = "id = ?";
+                        String[] selectionArgs = { String.valueOf(otherCid) };
 
-                            try (ResultSet rs = ps.executeQuery()) {
-                                if (rs.next()) {
-                                    otherName = rs.getString("name");
-                                }
+                        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                             Cursor cursor = con.query("characters", projection, selection, selectionArgs, null, null, null)) {
+                            if (cursor.moveToNext()) {
+                                int nameIdx = cursor.getColumnIndex("name");
+                                otherName = cursor.getString(nameIdx);
                             }
                         }
                     } else {
@@ -191,7 +190,7 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         c.sendPacket(PacketCreator.updateBuddylist(buddylist.getBuddies()));
                         notifyRemoteChannel(c, channel, otherCid, ADDED);
                     }
-                } catch (SQLException e) {
+                } catch (SQLiteException e) {
                     e.printStackTrace();
                 }
             }

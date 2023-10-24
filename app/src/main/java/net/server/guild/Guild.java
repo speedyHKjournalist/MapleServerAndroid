@@ -21,6 +21,10 @@
 */
 package net.server.guild;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import client.Character;
 import client.Client;
 import config.YamlConfig;
@@ -67,44 +71,84 @@ public class Guild {
         this.world = world;
         members = new ArrayList<>();
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM guilds WHERE guildid = " + guildid);
-                 ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.rawQuery("SELECT * FROM guilds WHERE guildid = " + guildid, null)) {
+                if (cursor.moveToNext()) {
+                    id = guildid;
+                    int nameIdx = cursor.getColumnIndex("name");
+                    int GPIdx = cursor.getColumnIndex("GP");
+                    int logoIdx = cursor.getColumnIndex("logo");
+                    int logoColorIdx = cursor.getColumnIndex("logoColor");
+                    int logoBGIdx = cursor.getColumnIndex("logoBG");
+                    int logoBGColorIdx = cursor.getColumnIndex("logoBGColor");
+                    int capacityIdx = cursor.getColumnIndex("capacity");
+                    for (int i = 1; i <= 5; i++) {
+                        int rankIdx = cursor.getColumnIndex("rank" + i + "title");
+                        rankTitles[i - 1] = cursor.getString(rankIdx);
+                    }
+                    int leaderIdx = cursor.getColumnIndex("leader");
+                    int noticeIdx = cursor.getColumnIndex("notice");
+                    int signatureIdx = cursor.getColumnIndex("signature");
+                    int allianceIdIdx = cursor.getColumnIndex("allianceId");
+
+                    if (nameIdx != -1) {
+                        name = cursor.getString(nameIdx);
+                    }
+                    if (GPIdx != -1) {
+                        gp = cursor.getInt(GPIdx);
+                    }
+                    if (logoIdx != -1) {
+                        logo = cursor.getInt(logoIdx);
+                    }
+                    if (logoColorIdx != -1) {
+                        logoColor = cursor.getInt(logoColorIdx);
+                    }
+                    if (logoBGIdx != -1) {
+                        logoBG = cursor.getInt(logoBGIdx);
+                    }
+                    if (logoBGColorIdx != -1) {
+                        logoBGColor = cursor.getInt(logoBGColorIdx);
+                    }
+                    if (capacityIdx != -1) {
+                        capacity = cursor.getInt(capacityIdx);
+                    }
+                    if (leaderIdx != -1) {
+                        leader = cursor.getInt(leaderIdx);
+                    }
+                    if (noticeIdx != -1) {
+                        notice = cursor.getString(noticeIdx);
+                    }
+                    if (signatureIdx != -1) {
+                        signature = cursor.getInt(signatureIdx);
+                    }
+                    if (allianceIdIdx != -1) {
+                        allianceId = cursor.getInt(allianceIdIdx);
+                    }
+                } else {
                     id = -1;
                     return;
                 }
-                id = guildid;
-                name = rs.getString("name");
-                gp = rs.getInt("GP");
-                logo = rs.getInt("logo");
-                logoColor = rs.getInt("logoColor");
-                logoBG = rs.getInt("logoBG");
-                logoBGColor = rs.getInt("logoBGColor");
-                capacity = rs.getInt("capacity");
-                for (int i = 1; i <= 5; i++) {
-                    rankTitles[i - 1] = rs.getString("rank" + i + "title");
-                }
-                leader = rs.getInt("leader");
-                notice = rs.getString("notice");
-                signature = rs.getInt("signature");
-                allianceId = rs.getInt("allianceId");
             }
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT id, name, level, job, guildrank, allianceRank FROM characters WHERE guildid = ? ORDER BY guildrank ASC, name ASC")) {
-                ps.setInt(1, guildid);
+            try (Cursor cursor = con.rawQuery("SELECT id, name, level, job, guildrank, allianceRank FROM characters WHERE guildid = ? ORDER BY guildrank ASC, name ASC",
+                    new String[]{String.valueOf(guildid)})) {
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        return;
+                if (cursor.moveToFirst()) {
+                    int idIndex = cursor.getColumnIndex("id");
+                    int levelIndex = cursor.getColumnIndex("level");
+                    int nameIndex = cursor.getColumnIndex("name");
+                    int jobIndex = cursor.getColumnIndex("job");
+                    int guildrankIndex = cursor.getColumnIndex("guildrank");
+                    int allianceRankIndex = cursor.getColumnIndex("allianceRank");
+
+                    if (idIndex != -1 && levelIndex != -1 && nameIndex != -1 && jobIndex != -1 && guildrankIndex != -1 && allianceRankIndex != -1) {
+                        do {
+                            members.add(new GuildCharacter(null, cursor.getInt(idIndex), cursor.getInt(levelIndex), cursor.getString(nameIndex), (byte) -1, world, cursor.getInt(jobIndex), cursor.getInt(guildrankIndex), guildid, false, cursor.getInt(allianceRankIndex)));
+                        } while (cursor.moveToNext());
                     }
-
-                    do {
-                        members.add(new GuildCharacter(null, rs.getInt("id"), rs.getInt("level"), rs.getString("name"), (byte) -1, world, rs.getInt("job"), rs.getInt("guildrank"), guildid, false, rs.getInt("allianceRank")));
-                    } while (rs.next());
                 }
             }
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             log.error("Unable to read guild information from sql", se);
         }
     }
@@ -151,7 +195,7 @@ public class Guild {
     }
 
     public void writeToDB(boolean bDisband) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
 
             if (!bDisband) {
                 StringBuilder builder = new StringBuilder();
@@ -160,31 +204,15 @@ public class Guild {
                     builder.append("rank").append(i + 1).append("title = ?, ");
                 }
                 builder.append("capacity = ?, notice = ? WHERE guildid = ?");
-                try (PreparedStatement ps = con.prepareStatement(builder.toString())) {
-                    ps.setInt(1, gp);
-                    ps.setInt(2, logo);
-                    ps.setInt(3, logoColor);
-                    ps.setInt(4, logoBG);
-                    ps.setInt(5, logoBGColor);
-                    for (int i = 6; i < 11; i++) {
-                        ps.setString(i, rankTitles[i - 6]);
-                    }
-                    ps.setInt(11, capacity);
-                    ps.setString(12, notice);
-                    ps.setInt(13, this.id);
-                    ps.executeUpdate();
-                }
+                con.rawQuery(builder.toString(), new String[] {
+                        String.valueOf(gp), String.valueOf(logo), String.valueOf(logoColor),
+                        String.valueOf(logoBG), String.valueOf(logoBGColor),
+                        rankTitles[0], rankTitles[1], rankTitles[2], rankTitles[3], rankTitles[4],
+                        String.valueOf(capacity), notice, String.valueOf(this.id)
+                });
             } else {
-                try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET guildid = 0, guildrank = 5 WHERE guildid = ?")) {
-                    ps.setInt(1, this.id);
-                    ps.executeUpdate();
-                }
-
-                try (PreparedStatement ps = con.prepareStatement("DELETE FROM guilds WHERE guildid = ?")) {
-                    ps.setInt(1, this.id);
-                    ps.executeUpdate();
-                }
-
+                con.rawQuery("UPDATE characters SET guildid = 0, guildrank = 5 WHERE guildid = ?", new String[] { String.valueOf(this.id) });
+                con.rawQuery("DELETE FROM guilds WHERE guildid = ?", new String[] { String.valueOf(id) });
                 membersLock.lock();
                 try {
                     this.broadcast(GuildPackets.guildDisband(this.id));
@@ -192,7 +220,7 @@ public class Guild {
                     membersLock.unlock();
                 }
             }
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -424,42 +452,36 @@ public class Guild {
     }
 
     public static int createGuild(int leaderId, String name) {
-        try (Connection con = DatabaseConnection.getConnection()) {
-
-            try (PreparedStatement ps = con.prepareStatement("SELECT guildid FROM guilds WHERE name = ?")) {
-                ps.setString(1, name);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.rawQuery("SELECT guildid FROM guilds WHERE name = ?", new String[] { name })) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int guildIdIdx = cursor.getColumnIndex("guildid");
+                    if (guildIdIdx != -1) {
                         return 0;
                     }
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("INSERT INTO guilds (`leader`, `name`, `signature`) VALUES (?, ?, ?)")) {
-                ps.setInt(1, leaderId);
-                ps.setString(2, name);
-                ps.setInt(3, (int) System.currentTimeMillis());
-                ps.executeUpdate();
+            try (SQLiteStatement statement = con.compileStatement("INSERT INTO guilds (`leader`, `name`, `signature`) VALUES (?, ?, ?)")) {
+                statement.bindLong(1, leaderId);
+                statement.bindString(2, name);
+                statement.bindLong(3, (int) System.currentTimeMillis());
+                statement.executeInsert();
             }
 
-            final int guildId;
-            try (PreparedStatement ps = con.prepareStatement("SELECT guildid FROM guilds WHERE leader = ?")) {
-                ps.setInt(1, leaderId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    rs.next();
-                    guildId = rs.getInt("guildid");
+            int guildId = 0;
+            try (Cursor cursor = con.rawQuery("SELECT guildid FROM guilds WHERE leader = ?", new String[]{String.valueOf(leaderId)})) {
+                if (cursor.moveToFirst()) {
+                    int guildidIdx = cursor.getColumnIndex("guildid");
+                    if (guildidIdx != -1) {
+                        guildId = cursor.getInt(guildidIdx);
+                    }
                 }
             }
-
-            try (PreparedStatement ps = con.prepareStatement("UPDATE characters SET guildid = ? WHERE id = ?")) {
-                ps.setInt(1, guildId);
-                ps.setInt(2, leaderId);
-                ps.executeUpdate();
-            }
-
+            if (guildId != 0)
+                con.execSQL("UPDATE characters SET guildid = ? WHERE id = ?", new Object[]{guildId, leaderId});
             return guildId;
-        } catch (Exception e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return 0;
         }
@@ -753,11 +775,13 @@ public class Guild {
     }
 
     public static void displayGuildRanks(Client c, int npcid) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `name`, `GP`, `logoBG`, `logoBGColor`, `logo`, `logoColor` FROM guilds ORDER BY `GP` DESC LIMIT 50", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-             ResultSet rs = ps.executeQuery()) {
-            c.sendPacket(GuildPackets.showGuildRanks(npcid, rs));
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT `name`, `GP`, `logoBG`, `logoBGColor`, `logo`, `logoColor` FROM guilds ORDER BY `GP` DESC LIMIT 50", null)) {
+            if (cursor.getCount() > 0) {
+                cursor.moveToFirst();
+                c.sendPacket(GuildPackets.showGuildRanks(npcid, cursor));
+            }
+        } catch (SQLiteException e) {
             log.error("Failed to display guild ranks.", e);
         }
     }
@@ -768,12 +792,9 @@ public class Guild {
 
     public void setAllianceId(int aid) {
         this.allianceId = aid;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE guilds SET allianceId = ? WHERE guildid = ?")) {
-            ps.setInt(1, aid);
-            ps.setInt(2, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.execSQL("UPDATE guilds SET allianceId = ? WHERE guildid = ?", new Object[]{aid, id});
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -791,13 +812,10 @@ public class Guild {
                 membersLock.unlock();
             }
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("UPDATE characters SET allianceRank = ? WHERE guildid = ?")) {
-                ps.setInt(1, 5);
-                ps.setInt(2, id);
-                ps.executeUpdate();
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                con.rawQuery("UPDATE characters SET allianceRank = ? WHERE guildid = ?", new String[] { "5", String.valueOf(id) });
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

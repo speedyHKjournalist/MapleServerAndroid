@@ -19,7 +19,9 @@
 */
 package server.expeditions;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
@@ -142,32 +144,31 @@ public class ExpeditionBossLog {
 
     private static int countPlayerEntries(int cid, BossLogEntry boss) {
         int ret_count = 0;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM " + getBossLogTable(boss.week) + " WHERE characterid = ? AND bosstype LIKE ?")) {
-            ps.setInt(1, cid);
-            ps.setString(2, boss.name());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ret_count = rs.getInt(1);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT COUNT(*) FROM " + getBossLogTable(boss.week) + " WHERE characterid = ? AND bosstype LIKE ?",
+                     new String[]{String.valueOf(cid), boss.name()})) {
+            if (ps != null) {
+                if (ps.moveToNext()) {
+                    ret_count = ps.getInt(0);
                 } else {
                     ret_count = -1;
                 }
             }
             return ret_count;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return -1;
         }
     }
 
     private static void insertPlayerEntry(int cid, BossLogEntry boss) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO " + getBossLogTable(boss.week) + " (characterid, bosstype) VALUES (?,?)")) {
-            ps.setInt(1, cid);
-            ps.setString(2, boss.name());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        ContentValues values = new ContentValues();
+        values.put("characterid", cid);
+        values.put("bosstype", boss.name());
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.insert(getBossLogTable(boss.week), null, values);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

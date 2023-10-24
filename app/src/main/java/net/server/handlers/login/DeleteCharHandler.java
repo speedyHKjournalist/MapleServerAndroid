@@ -21,6 +21,9 @@
  */
 package net.server.handlers.login;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Client;
 import client.Family;
 import net.AbstractPacketHandler;
@@ -45,19 +48,22 @@ public final class DeleteCharHandler extends AbstractPacketHandler {
         int cid = p.readInt();
         if (c.checkPic(pic)) {
             //check for family, guild leader, pending marriage, world transfer
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT `world`, `guildid`, `guildrank`, `familyId` FROM characters WHERE id = ?");
-                 PreparedStatement ps2 = con.prepareStatement("SELECT COUNT(*) as rowcount FROM worldtransfers WHERE `characterid` = ? AND completionTime IS NULL")) {
-                ps.setInt(1, cid);
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor ps = con.rawQuery("SELECT `world`, `guildid`, `guildrank`, `familyId` FROM characters WHERE id = ?",
+                         new String[]{String.valueOf(cid)});
+                 Cursor ps2 = con.rawQuery("SELECT COUNT(*) as rowcount FROM worldtransfers WHERE `characterid` = ? AND completionTime IS NULL",
+                         new String[]{String.valueOf(cid)})) {
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        throw new SQLException("Character record does not exist.");
-                    }
-                    int world = rs.getInt("world");
-                    int guildId = rs.getInt("guildid");
-                    int guildRank = rs.getInt("guildrank");
-                    int familyId = rs.getInt("familyId");
+                if (ps.moveToFirst()) {
+                    int worldIdx = ps.getColumnIndex("world");
+                    int guildidIdx = ps.getColumnIndex("guildid");
+                    int guildrankIdx = ps.getColumnIndex("guildrank");
+                    int familyIdIdx = ps.getColumnIndex("familyId");
+
+                    int world = ps.getInt(worldIdx);
+                    int guildId = ps.getInt(guildidIdx);
+                    int guildRank = ps.getInt(guildrankIdx);
+                    int familyId = ps.getInt(familyIdIdx);
                     if (guildId != 0 && guildRank <= 1) {
                         c.sendPacket(PacketCreator.deleteCharResponse(cid, 0x16));
                         return;
@@ -68,17 +74,18 @@ public final class DeleteCharHandler extends AbstractPacketHandler {
                             return;
                         }
                     }
+                } else {
+                    throw new SQLiteException("Character record does not exist.");
                 }
 
-                ps2.setInt(1, cid);
-                try (ResultSet rs = ps2.executeQuery()) {
-                    rs.next();
-                    if (rs.getInt("rowcount") > 0) {
+                if (ps2.moveToFirst()) {
+                    int rowcountIdx = ps.getColumnIndex("rowcount");
+                    if (ps2.getInt(rowcountIdx) > 0) {
                         c.sendPacket(PacketCreator.deleteCharResponse(cid, 0x1A));
                         return;
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 log.error("Failed to delete chrId {}", cid, e);
                 c.sendPacket(PacketCreator.deleteCharResponse(cid, 0x09));
                 return;

@@ -26,8 +26,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import androidx.core.database.sqlite.SQLiteDatabaseKt;
 import client.inventory.InventoryType;
-import com.whl.quickjs.wrapper.QuickJSContext;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.id.MapId;
@@ -73,6 +73,7 @@ import tools.DatabaseConnection;
 import tools.HexTool;
 import tools.PacketCreator;
 
+import javax.script.ScriptEngine;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -115,7 +116,7 @@ public class Client extends ChannelInboundHandlerAdapter {
     private volatile long lastPong;
     private int gmlevel;
     private Set<String> macs = new HashSet<>();
-    private Map<String, QuickJSContext> engines = new HashMap<>();
+    private Map<String, ScriptEngine> engines = new HashMap<>();
     private byte characterSlots = 3;
     private byte loginattempt = 0;
     private String pin = "";
@@ -337,17 +338,21 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     private List<CharNameAndId> loadCharactersInternal(int worldId) {
         List<CharNameAndId> chars = new ArrayList<>(15);
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id, name FROM characters WHERE accountid = ? AND world = ?")) {
-            ps.setInt(1, this.getAccID());
-            ps.setInt(2, worldId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    chars.add(new CharNameAndId(rs.getString("name"), rs.getInt("id")));
-                }
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT id, name FROM characters WHERE accountid = ? AND world = ?", new String[]{String.valueOf(this.getAccID()), String.valueOf(worldId)})) {
+            if (ps.moveToFirst()) {
+                do {
+                    int idIdx = ps.getColumnIndex("id");
+                    int nameIdx = ps.getColumnIndex("name");
+                    if (idIdx != -1 && nameIdx != -1) {
+                        int id = ps.getInt(idIdx);
+                        String name = ps.getString(nameIdx);
+                        chars.add(new CharNameAndId(name, id));
+                    }
+                } while (ps.moveToNext());
             }
-        } catch (SQLException e) {
+
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return chars;
@@ -382,16 +387,15 @@ public class Client extends ChannelInboundHandlerAdapter {
             return voteTime;
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT date FROM bit_votingrecords WHERE UPPER(account) = UPPER(?)")) {
-            ps.setString(1, accountName);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return -1;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT date FROM bit_votingrecords WHERE UPPER(account) = UPPER(?)", new String[]{accountName.toUpperCase()})) {
+            if (ps.moveToFirst()) {
+                int dateIdx = ps.getColumnIndex("date");
+                if (dateIdx != -1) {
+                    voteTime = ps.getInt(dateIdx);
                 }
-                voteTime = rs.getInt("date");
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Error getting voting time");
             return -1;
         }
@@ -415,18 +419,14 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         boolean ret = false;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM hwidbans WHERE hwid LIKE ?")) {
-            ps.setString(1, hwid.hwid());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs != null && rs.next()) {
-                    if (rs.getInt(1) > 0) {
-                        ret = true;
-                    }
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT COUNT(*) FROM hwidbans WHERE hwid LIKE ?", new String[]{hwid.hwid()})) {
+            if (ps.moveToFirst()) {
+                if (ps.getInt(0) > 0) {
+                    ret = true;
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -465,30 +465,28 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
 
-    private void loadHWIDIfNescessary() throws SQLException {
+    private void loadHWIDIfNescessary() throws SQLiteException {
         if (hwid == null) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT hwid FROM accounts WHERE id = ?")) {
-                ps.setInt(1, accId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        hwid = new Hwid(rs.getString("hwid"));
-                    }
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.rawQuery("SELECT hwid FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+                if (cursor.moveToFirst()) {
+                    int hwidIdx = cursor.getColumnIndex("hwid");
+                    hwid = new Hwid(cursor.getString(hwidIdx));
                 }
             }
         }
     }
 
     // TODO: Recode to close statements...
-    private void loadMacsIfNescessary() throws SQLException {
+    private void loadMacsIfNescessary() throws SQLiteException {
         if (macs.isEmpty()) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT macs FROM accounts WHERE id = ?")) {
-                ps.setInt(1, accId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        for (String mac : rs.getString("macs").split(", ")) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.rawQuery("SELECT macs FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+                if (cursor.moveToFirst()) {
+                    int macsIdx = cursor.getColumnIndex("macs");
+                    if (macsIdx != -1) {
+                        String macsString = cursor.getString(macsIdx);
+                        for (String mac : macsString.split(", ")) {
                             if (!mac.equals("")) {
                                 macs.add(mac);
                             }
@@ -500,15 +498,12 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public void banHWID() {
-        try {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             loadHWIDIfNescessary();
-
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("INSERT INTO hwidbans (hwid) VALUES (?)")) {
-                ps.setString(1, hwid.hwid());
-                ps.executeUpdate();
-            }
-        } catch (SQLException e) {
+            ContentValues values = new ContentValues();
+            values.put("hwid", hwid.hwid());
+            con.insert("hwidbans", null, values);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -518,32 +513,37 @@ public class Client extends ChannelInboundHandlerAdapter {
             loadMacsIfNescessary();
 
             List<String> filtered = new LinkedList<>();
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT filter FROM macfilters");
-                     ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        filtered.add(rs.getString("filter"));
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                try (Cursor cursor = con.rawQuery("SELECT filter FROM macfilters", null)) {
+                    if (cursor != null) {
+                        while (cursor.moveToNext()) {
+                            int filterIdx = cursor.getColumnIndex("filter");
+                            if (filterIdx != -1) {
+                                String filter = cursor.getString(filterIdx);
+                                filtered.add(filter);
+                            }
+                        }
+                        cursor.close();
                     }
                 }
 
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO macbans (mac, aid) VALUES (?, ?)")) {
-                    for (String mac : macs) {
-                        boolean matched = false;
-                        for (String filter : filtered) {
-                            if (mac.matches(filter)) {
-                                matched = true;
-                                break;
-                            }
+                for (String mac : macs) {
+                    boolean matched = false;
+                    for (String filter : filtered) {
+                        if (mac.matches(filter)) {
+                            matched = true;
+                            break;
                         }
-                        if (!matched) {
-                            ps.setString(1, mac);
-                            ps.setString(2, String.valueOf(getAccID()));
-                            ps.executeUpdate();
-                        }
+                    }
+                    if (!matched) {
+                        ContentValues values = new ContentValues();
+                        values.put("mac", mac);
+                        values.put("aid", String.valueOf(getAccID()));
+                        con.insert("macbans", null, values);
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -565,12 +565,13 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void setPin(String pin) {
         this.pin = pin;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET pin = ? WHERE id = ?")) {
-            ps.setString(1, pin);
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("pin", pin);
+            String whereClause = "id=?";
+            String[] whereArgs = { String.valueOf(accId) };
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -598,12 +599,13 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void setPic(String pic) {
         this.pic = pic;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET pic = ? WHERE id = ?")) {
-            ps.setString(1, pic);
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("pic", pic);
+            String whereClause = "id=?";
+            String[] whereArgs = { String.valueOf(accId) };
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -794,12 +796,13 @@ public class Client extends ChannelInboundHandlerAdapter {
     public void updateHwid(Hwid hwid) {
         this.hwid = hwid;
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET hwid = ? WHERE id = ?")) {
-            ps.setString(1, hwid.hwid());
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("hwid", hwid.hwid());
+            String whereClause = "id=?";
+            String[] whereArgs = { String.valueOf(accId) };
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -816,12 +819,13 @@ public class Client extends ChannelInboundHandlerAdapter {
             }
         }
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET macs = ? WHERE id = ?")) {
-            ps.setString(1, newMacData.toString());
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("macs", newMacData.toString());
+            String whereClause = "id=?";
+            String[] whereArgs = { String.valueOf(accId) };
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -1148,7 +1152,7 @@ public class Client extends ChannelInboundHandlerAdapter {
             }
 
             return Character.deleteCharFromDB(chr, senderAccId);
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
             return false;
         }
@@ -1208,11 +1212,11 @@ public class Client extends ChannelInboundHandlerAdapter {
         gmlevel = level;
     }
 
-    public void setScriptEngine(String name, QuickJSContext e) {
+    public void setScriptEngine(String name, ScriptEngine e) {
         engines.put(name, e);
     }
 
-    public QuickJSContext getScriptEngine(String name) {
+    public ScriptEngine getScriptEngine(String name) {
         return engines.get(name);
     }
 
@@ -1274,16 +1278,19 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public int getVotePoints() {
         int points = 0;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `votepoints` FROM accounts WHERE id = ?")) {
-            ps.setInt(1, accId);
+        String[] columns = { "votepoints" };
+        String selection = "id=?";
+        String[] selectionArgs = { String.valueOf(accId) };
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    points = rs.getInt("votepoints");
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
+            if (cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex("votepoints");
+                if (columnIndex != -1) {
+                    points = cursor.getInt(columnIndex);
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         votePoints = points;
@@ -1306,12 +1313,14 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     private void saveVotePoints() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE accounts SET votepoints = ? WHERE id = ?")) {
-            ps.setInt(1, votePoints);
-            ps.setInt(2, accId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        ContentValues values = new ContentValues();
+        values.put("votepoints", votePoints);
+        String whereClause = "id=?";
+        String[] whereArgs = { String.valueOf(accId) };
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("accounts", values, whereClause, whereArgs);
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -1400,13 +1409,14 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public synchronized boolean gainCharacterSlot() {
         if (canGainCharacterSlot()) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("UPDATE accounts SET characterslots = ? WHERE id = ?")) {
-                ps.setInt(1, this.characterSlots += 1);
-                ps.setInt(2, accId);
-                ps.executeUpdate();
+            ContentValues values = new ContentValues();
+            values.put("characterslots", characterSlots + 1);
+            String whereClause = "id=?";
+            String[] whereArgs = { String.valueOf(accId) };
 
-            } catch (SQLException e) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                con.update("accounts", values, whereClause, whereArgs);
+            } catch (SQLiteException e) {
                 e.printStackTrace();
             }
             return true;
@@ -1415,16 +1425,18 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public final byte getGReason() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT `greason` FROM `accounts` WHERE id = ?")) {
-            ps.setInt(1, accId);
+        String[] projection = { "greason" };
+        String selection = "id = ?";
+        String[] selectionArgs = { String.valueOf(accId) };
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getByte("greason");
-                }
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.query("accounts", projection, selection, selectionArgs, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int greason = cursor.getInt(cursor.getColumnIndexOrThrow("greason"));
+                return (byte) greason;
             }
-        } catch (SQLException e) {
+
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return 0;

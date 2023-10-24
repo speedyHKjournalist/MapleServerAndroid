@@ -21,9 +21,11 @@
 */
 package server.life;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import client.Character;
 import client.Client;
 import client.inventory.InventoryType;
@@ -31,6 +33,7 @@ import client.inventory.Item;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.id.NpcId;
+import database.MapleDBHelper;
 import net.server.Server;
 import net.server.channel.Channel;
 import net.server.world.World;
@@ -90,40 +93,86 @@ public class PlayerNPC extends AbstractMapObject {
         setObjectId(oid);
     }
 
-    public PlayerNPC(ResultSet rs) {
+    public PlayerNPC(Cursor cursor) {
+        int objectId = -1;
         try {
-            CY = rs.getInt("cy");
-            name = rs.getString("name");
-            hair = rs.getInt("hair");
-            face = rs.getInt("face");
-            skin = rs.getByte("skin");
-            gender = rs.getInt("gender");
-            dir = rs.getInt("dir");
-            FH = rs.getInt("fh");
-            RX0 = rs.getInt("rx0");
-            RX1 = rs.getInt("rx1");
-            scriptId = rs.getInt("scriptid");
+            int cyIdx = cursor.getColumnIndex("cy");
+            int nameIdx = cursor.getColumnIndex("name");
+            int hairIdx = cursor.getColumnIndex("hair");
+            int faceIdx = cursor.getColumnIndex("face");
+            int skinIdx = cursor.getColumnIndex("skin");
+            int genderIdx = cursor.getColumnIndex("gender");
+            int dirIdx = cursor.getColumnIndex("dir");
+            int fhIdx = cursor.getColumnIndex("fh");
+            int rx0Idx = cursor.getColumnIndex("rx0");
+            int rx1Idx = cursor.getColumnIndex("rx1");
+            int scriptidIdx = cursor.getColumnIndex("scriptid");
+            int worldrankIdx = cursor.getColumnIndex("worldrank");
+            int overallrankIdx = cursor.getColumnIndex("overallrank");
+            int worldjobrankIdx = cursor.getColumnIndex("worldjobrank");
+            int jobIdx = cursor.getColumnIndex("job");
+            if (cyIdx != -1 &&
+                    nameIdx != -1 &&
+                    hairIdx != -1 &&
+                    faceIdx != -1 &&
+                    skinIdx != -1 &&
+                    genderIdx != -1 &&
+                    dirIdx != -1 &&
+                    fhIdx != -1 &&
+                    rx0Idx != -1 &&
+                    rx1Idx != -1 &&
+                    scriptidIdx != -1 &&
+                    worldrankIdx != -1 &&
+                    overallrankIdx != -1 &&
+                    worldjobrankIdx != -1 &&
+                    jobIdx != -1) {
+                CY = cursor.getInt(cyIdx);
+                name = cursor.getString(nameIdx);
+                hair = cursor.getInt(hairIdx);
+                face = cursor.getInt(faceIdx);
+                skin = cursor.getBlob(skinIdx)[0];
+                gender = cursor.getInt(genderIdx);
+                dir = cursor.getInt(dirIdx);
+                FH = cursor.getInt(fhIdx);
+                RX0 = cursor.getInt(rx0Idx);
+                RX1 = cursor.getInt(rx1Idx);
+                scriptId = cursor.getInt(scriptidIdx);
 
-            worldRank = rs.getInt("worldrank");
-            overallRank = rs.getInt("overallrank");
-            worldJobRank = rs.getInt("worldjobrank");
-            overallJobRank = GameConstants.getOverallJobRankByScriptId(scriptId);
-            job = rs.getInt("job");
+                worldRank = cursor.getInt(worldrankIdx);
+                overallRank = cursor.getInt(overallrankIdx);
+                worldJobRank = cursor.getInt(worldjobrankIdx);
+                overallJobRank = GameConstants.getOverallJobRankByScriptId(scriptId);
+                job = cursor.getInt(jobIdx);
 
-            setPosition(new Point(rs.getInt("x"), CY));
-            setObjectId(rs.getInt("id"));
+                int xIdx = cursor.getColumnIndex("x");
+                int idIdx = cursor.getColumnIndex("id");
+                if (xIdx != -1) {
+                    setPosition(new Point(cursor.getInt(xIdx), CY));
+                }
+                if (idIdx != -1) {
+                    objectId = cursor.getInt(idIdx);
+                    setObjectId(objectId);
+                }
+            }
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT equippos, equipid FROM playernpcs_equip WHERE npcid = ?")) {
-                ps.setInt(1, rs.getInt("id"));
+            if (objectId != -1) {
+                String query = "SELECT equippos, equipid FROM playernpcs_equip WHERE npcid = ?";
+                String[] selectionArgs = {String.valueOf(objectId)};
 
-                try (ResultSet rs2 = ps.executeQuery()) {
-                    while (rs2.next()) {
-                        equips.put(rs2.getShort("equippos"), rs2.getInt("equipid"));
+                try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+                        Cursor cursor1 = con.rawQuery(query, selectionArgs)) {
+                    if (cursor1 != null) {
+                        while (cursor.moveToNext()) {
+                            int equipposIdx = cursor.getColumnIndex("equippos");
+                            int equipidIdx = cursor.getColumnIndex("equipid");
+                            if (equipposIdx != -1 && equipidIdx != -1) {
+                                equips.put(cursor1.getShort(equipposIdx), cursor1.getInt(equipidIdx));
+                            }
+                        }
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -276,17 +325,13 @@ public class PlayerNPC extends AbstractMapObject {
     public static boolean canSpawnPlayerNpc(String name, int mapid) {
         boolean ret = true;
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT name FROM playernpcs WHERE name LIKE ? AND map = ?")) {
-            ps.setString(1, name);
-            ps.setInt(2, mapid);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ret = false;
-                }
+        String[] selectionArgs = {name, String.valueOf(mapid)};
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT name FROM playernpcs WHERE name LIKE ? AND map = ?", selectionArgs)) {
+            if (cursor.moveToFirst()) {
+                ret = false;
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -300,16 +345,16 @@ public class PlayerNPC extends AbstractMapObject {
         CY = newPos.y;
         FH = map.getFootholds().findBelow(newPos).getId();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE playernpcs SET x = ?, cy = ?, fh = ?, rx0 = ?, rx1 = ? WHERE id = ?")) {
-            ps.setInt(1, newPos.x);
-            ps.setInt(2, CY);
-            ps.setInt(3, FH);
-            ps.setInt(4, RX0);
-            ps.setInt(5, RX1);
-            ps.setInt(6, getObjectId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+             con.rawQuery("UPDATE playernpcs SET x = ?, cy = ?, fh = ?, rx0 = ?, rx1 = ? WHERE id = ?", new String[]{
+                     String.valueOf(newPos.x),
+                     String.valueOf(CY),
+                     String.valueOf(FH),
+                     String.valueOf(RX0),
+                     String.valueOf(RX1),
+                     String.valueOf(getObjectId())
+             });
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -321,18 +366,14 @@ public class PlayerNPC extends AbstractMapObject {
             int nextBranchSid = branchSid + branchLen;
 
             List<Integer> availables = new ArrayList<>(20);
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT scriptid FROM playernpcs WHERE scriptid >= ? AND scriptid < ? ORDER BY scriptid")) {
-                ps.setInt(1, branchSid);
-                ps.setInt(2, nextBranchSid);
-
+            String query = "SELECT scriptid FROM playernpcs WHERE scriptid >= ? AND scriptid < ? ORDER BY scriptid";
+            String[] selectionArgs = {String.valueOf(branchSid), String.valueOf(nextBranchSid)};
+            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+                 Cursor cursor = con.rawQuery(query, selectionArgs)) {
                 Set<Integer> usedScriptIds = new HashSet<>();
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        usedScriptIds.add(rs.getInt(1));
-                    }
+                while (cursor.moveToNext()) {
+                    usedScriptIds.add(cursor.getInt(0));
                 }
-
                 int j = 0;
                 for (int i = branchSid; i < nextBranchSid; i++) {
                     if (!usedScriptIds.contains(i)) {
@@ -353,7 +394,7 @@ public class PlayerNPC extends AbstractMapObject {
             for (int i = availables.size() - 1; i >= 0; i--) {
                 list.add(availables.get(i));
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -410,68 +451,67 @@ public class PlayerNPC extends AbstractMapObject {
         int worldId = chr.getWorld();
         int jobId = (chr.getJob().getId() / 100) * 100;
 
-        PlayerNPC ret;
-        try (Connection con = DatabaseConnection.getConnection()) {
+        PlayerNPC ret = null;
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
             boolean createNew = false;
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM playernpcs WHERE scriptid = ?")) {
-                ps.setInt(1, scriptId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        createNew = true;
-                    }
+            String[] selectionArgs = {String.valueOf(scriptId)};
+            try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs WHERE scriptid = ?", selectionArgs)) {
+                if (!cursor.moveToFirst()) {
+                    createNew = true;
                 }
             }
 
             if (createNew) {   // creates new playernpc if scriptid doesn't exist
                 final int npcId;
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO playernpcs (name, hair, face, skin, gender, x, cy, world, map, scriptid, dir, fh, rx0, rx1, worldrank, overallrank, worldjobrank, job) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setString(1, chr.getName());
-                    ps.setInt(2, chr.getHair());
-                    ps.setInt(3, chr.getFace());
-                    ps.setInt(4, chr.getSkinColor().getId());
-                    ps.setInt(5, chr.getGender());
-                    ps.setInt(6, pos.x);
-                    ps.setInt(7, pos.y);
-                    ps.setInt(8, worldId);
-                    ps.setInt(9, mapId);
-                    ps.setInt(10, scriptId);
-                    ps.setInt(11, 1);    // default direction
-                    ps.setInt(12, map.getFootholds().findBelow(pos).getId());
-                    ps.setInt(13, pos.x + 50);
-                    ps.setInt(14, pos.x - 50);
-                    ps.setInt(15, runningWorldRank.get(worldId).getAndIncrement());
-                    ps.setInt(16, runningOverallRank.getAndIncrement());
-                    ps.setInt(17, getAndIncrementRunningWorldJobRanks(worldId, jobId));
-                    ps.setInt(18, jobId);
-                    ps.executeUpdate();
+                String insertQuery = "INSERT INTO playernpcs (name, hair, face, skin, gender, x, cy, world, map, scriptid, dir, fh, rx0, rx1, worldrank, overallrank, worldjobrank, job) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                ContentValues values = new ContentValues();
+                values.put("name", chr.getName());
+                values.put("hair", chr.getHair());
+                values.put("face", chr.getFace());
+                values.put("skin", chr.getSkinColor().getId());
+                values.put("gender", chr.getGender());
+                values.put("x", pos.x);
+                values.put("cy", pos.y);
+                values.put("world", worldId);
+                values.put("map", mapId);
+                values.put("scriptid", scriptId);
+                values.put("dir", 1);  // default direction
+                values.put("fh", map.getFootholds().findBelow(pos).getId());
+                values.put("rx0", pos.x + 50);
+                values.put("rx1", pos.x - 50);
+                values.put("worldrank", runningWorldRank.get(worldId).getAndIncrement());
+                values.put("overallrank", runningOverallRank.getAndIncrement());
+                values.put("worldjobrank", getAndIncrementRunningWorldJobRanks(worldId, jobId));
+                values.put("job", jobId);
 
-                    try (ResultSet rs = ps.getGeneratedKeys()) {
-                        rs.next();
-                        npcId = rs.getInt(1);
-                    }
-                }
+                long rowId = con.insert("playernpcs", null, values);
+                npcId = (int) rowId;
 
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO playernpcs_equip (npcid, equipid, equippos) VALUES (?, ?, ?)")) {
-                    ps.setInt(1, npcId);
+                try {
+                    SQLiteStatement statement = con.compileStatement("INSERT INTO playernpcs_equip (npcid, equipid, equippos) VALUES (?, ?, ?)");
+                    con.beginTransaction();
 
                     for (Item equip : chr.getInventory(InventoryType.EQUIPPED)) {
                         int position = Math.abs(equip.getPosition());
                         if ((position < 12 && position > 0) || (position > 100 && position < 112)) {
-                            ps.setInt(2, equip.getItemId());
-                            ps.setInt(3, equip.getPosition());
-                            ps.addBatch();
+                            statement.clearBindings();
+                            statement.bindLong(1, npcId);
+                            statement.bindLong(2, equip.getItemId());
+                            statement.bindLong(3, equip.getPosition());
+                            statement.executeInsert();
                         }
                     }
-                    ps.executeBatch();
+                    con.setTransactionSuccessful();
+                }  catch (SQLiteException e) {
+                    e.printStackTrace(); // Handle any potential SQL exceptions
+                } finally {
+                    con.endTransaction();
+                    con.close();
                 }
 
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM playernpcs WHERE id = ?")) {
-                    ps.setInt(1, npcId);
-
-                    try (ResultSet rs = ps.executeQuery()) {
-                        rs.next();
-                        ret = new PlayerNPC(rs);
+                try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs WHERE id = ?", new String[]{String.valueOf(npcId)})) {
+                    if (cursor.moveToFirst()) {
+                        ret = new PlayerNPC(cursor);
                     }
                 }
             } else {
@@ -479,7 +519,7 @@ public class PlayerNPC extends AbstractMapObject {
             }
 
             return ret;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return null;
         }
@@ -491,30 +531,30 @@ public class PlayerNPC extends AbstractMapObject {
         List<Integer> mapids = new LinkedList<>();
         mapids.add(chr.getWorld());
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT id, map FROM playernpcs WHERE name LIKE ?" + (map != null ? " AND map = ?" : ""))) {
-            ps.setString(1, chr.getName());
-            if (map != null) {
-                ps.setInt(2, map.getId());
-            }
+        String selectQuery = "SELECT id, map FROM playernpcs WHERE name LIKE ?";
+        String deleteQuery1 = "DELETE FROM playernpcs WHERE id = ?";
+        String deleteQuery2 = "DELETE FROM playernpcs_equip WHERE npcid = ?";
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    updateMapids.add(rs.getInt("map"));
-                    int npcId = rs.getInt("id");
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.rawQuery(selectQuery, new String[]{chr.getName()})) {
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        int mapIdx = cursor.getColumnIndex("map");
+                        int idIdx = cursor.getColumnIndex("id");
+                        if (mapIdx != -1 && idIdx != -1) {
+                            updateMapids.add(cursor.getInt(mapIdx));
+                            int npcId = cursor.getInt(idIdx);
 
-                    try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM playernpcs WHERE id = ?")) {
-                        ps2.setInt(1, npcId);
-                        ps2.executeUpdate();
-                    }
+                            // Delete rows from playernpcs table
+                            con.rawQuery(deleteQuery1, new String[]{String.valueOf(npcId)});
 
-                    try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM playernpcs_equip WHERE npcid = ?")) {
-                        ps2.setInt(1, npcId);
-                        ps2.executeUpdate();
+                            // Delete rows from playernpcs_equip table
+                            con.rawQuery(deleteQuery2, new String[]{String.valueOf(npcId)});
+                        }
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -609,44 +649,42 @@ public class PlayerNPC extends AbstractMapObject {
     }
 
     public static void removeAllPlayerNPC() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT DISTINCT world, map FROM playernpcs");
-             ResultSet rs = ps.executeQuery()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT DISTINCT world, map FROM playernpcs", null)) {
             int wsize = Server.getInstance().getWorldsSize();
-            while (rs.next()) {
-                int world = rs.getInt("world"), map = rs.getInt("map");
-                if (world >= wsize) {
-                    continue;
-                }
 
-                for (Channel channel : Server.getInstance().getChannelsFromWorld(world)) {
-                    MapleMap m = channel.getMapFactory().getMap(map);
+            while (cursor.moveToNext()) {
+                int worldIdx = cursor.getColumnIndex("world");
+                int mapIdx = cursor.getColumnIndex("map");
+                if (worldIdx != -1 && mapIdx != -1) {
+                    int world = cursor.getInt(worldIdx);
+                    int map = cursor.getInt(mapIdx);
 
-                    for (MapObject pnpcObj : m.getMapObjectsInRange(new Point(0, 0), Double.POSITIVE_INFINITY, Arrays.asList(MapObjectType.PLAYER_NPC))) {
-                        PlayerNPC pn = (PlayerNPC) pnpcObj;
-                        m.removeMapObject(pnpcObj);
-                        m.broadcastMessage(PacketCreator.removeNPCController(pn.getObjectId()));
-                        m.broadcastMessage(PacketCreator.removePlayerNPC(pn.getObjectId()));
+                    if (world >= wsize) {
+                        continue;
+                    }
+
+                    for (Channel channel : Server.getInstance().getChannelsFromWorld(world)) {
+                        MapleMap m = channel.getMapFactory().getMap(map);
+
+                        for (MapObject pnpcObj : m.getMapObjectsInRange(new Point(0, 0), Double.POSITIVE_INFINITY, Arrays.asList(MapObjectType.PLAYER_NPC))) {
+                            PlayerNPC pn = (PlayerNPC) pnpcObj;
+                            m.removeMapObject(pnpcObj);
+                            m.broadcastMessage(PacketCreator.removeNPCController(pn.getObjectId()));
+                            m.broadcastMessage(PacketCreator.removePlayerNPC(pn.getObjectId()));
+                        }
                     }
                 }
             }
 
-            try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM playernpcs")) {
-                ps2.executeUpdate();
-            }
-
-            try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM playernpcs_equip")) {
-                ps2.executeUpdate();
-            }
-
-            try (PreparedStatement ps2 = con.prepareStatement("DELETE FROM playernpcs_field")) {
-                ps2.executeUpdate();
-            }
+            con.execSQL("DELETE FROM playernpcs");
+            con.execSQL("DELETE FROM playernpcs_equip");
+            con.execSQL("DELETE FROM playernpcs_field");
 
             for (World w : Server.getInstance().getWorlds()) {
                 w.resetPlayerNpcMapData();
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }

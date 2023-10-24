@@ -1,5 +1,8 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import provider.wz.WZFiles;
 
 import java.io.BufferedReader;
@@ -32,7 +35,7 @@ import java.sql.SQLException;
 public class MobBookUpdate {
     private static final Path INPUT_FILE = WZFiles.STRING.getFile().resolve("MonsterBook.img.xml");
     private static final Path OUTPUT_FILE = ToolConstants.getOutputFile("MonsterBook_updated.img.xml");
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static PrintWriter printWriter = null;
     private static BufferedReader bufferedReader = null;
@@ -89,11 +92,8 @@ public class MobBookUpdate {
             String toPrint;
             int itemId, cont = 0;
 
-            PreparedStatement ps = con.prepareStatement("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;");
-            ps.setInt(1, mobId);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
+            Cursor cursor = con.rawQuery("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;", new String[]{String.valueOf(mobId)});
+            if (cursor.moveToFirst()) {
                 toPrint = "";
                 for (int k = 0; k <= status; k++) {
                     toPrint += "  ";
@@ -102,18 +102,19 @@ public class MobBookUpdate {
                 toPrint += "<int name=\"";
                 toPrint += cont;
                 toPrint += "\" value=\"";
+                int itemidIdx = cursor.getColumnIndex("itemid");
+                if (itemidIdx != -1) {
+                    itemId = cursor.getInt(itemidIdx);
+                    toPrint += itemId;
+                    toPrint += "\" />";
 
-                itemId = rs.getInt("itemid");
-                toPrint += itemId;
-                toPrint += "\" />";
-
-                printWriter.println(toPrint);
-                cont++;
+                    printWriter.println(toPrint);
+                    cont++;
+                }
             }
 
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
+            cursor.close();
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
     }
@@ -162,7 +163,7 @@ public class MobBookUpdate {
             System.out.println("Unable to open file '" + INPUT_FILE + "'");
         } catch (IOException ex) {
             System.out.println("Error reading file '" + INPUT_FILE + "'");
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to change card chance rate.");
             System.out.println(e.getMessage());
         } catch (Exception e) {

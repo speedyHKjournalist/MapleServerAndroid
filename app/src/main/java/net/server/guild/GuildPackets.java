@@ -1,5 +1,7 @@
 package net.server.guild;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import net.opcodes.SendOpcode;
@@ -219,66 +221,91 @@ public class GuildPackets {
         return p;
     }
 
-    public static void addThread(final OutPacket p, ResultSet rs) throws SQLException {
-        p.writeInt(rs.getInt("localthreadid"));
-        p.writeInt(rs.getInt("postercid"));
-        p.writeString(rs.getString("name"));
-        p.writeLong(PacketCreator.getTime(rs.getLong("timestamp")));
-        p.writeInt(rs.getInt("icon"));
-        p.writeInt(rs.getInt("replycount"));
+    public static void addThread(final OutPacket p, Cursor rs) throws SQLiteException {
+        int localthreadidIdx = rs.getColumnIndex("localthreadid");
+        int postercidIdx = rs.getColumnIndex("postercid");
+        int nameIdx = rs.getColumnIndex("name");
+        int timestampIdx = rs.getColumnIndex("timestampIdx");
+        int iconIdx = rs.getColumnIndex("icon");
+        int replycountIdx = rs.getColumnIndex("replycount");
+
+        p.writeInt(rs.getInt(localthreadidIdx));
+        p.writeInt(rs.getInt(postercidIdx));
+        p.writeString(rs.getString(nameIdx));
+        p.writeLong(PacketCreator.getTime(rs.getLong(timestampIdx)));
+        p.writeInt(rs.getInt(iconIdx));
+        p.writeInt(rs.getInt(replycountIdx));
     }
 
-    public static Packet BBSThreadList(ResultSet rs, int start) throws SQLException {
+    public static Packet BBSThreadList(Cursor rs, int start) throws SQLiteException {
         OutPacket p = OutPacket.create(SendOpcode.GUILD_BBS_PACKET);
         p.writeByte(0x06);
-        if (!rs.last()) {
+        if (!rs.moveToLast()) {
             p.writeByte(0);
             p.writeInt(0);
             p.writeInt(0);
             return p;
         }
-        int threadCount = rs.getRow();
-        if (rs.getInt("localthreadid") == 0) { //has a notice
-            p.writeByte(1);
-            addThread(p, rs);
-            threadCount--; //one thread didn't count (because it's a notice)
+        int threadCount = rs.getCount();
+        int localthreadidIdx = rs.getColumnIndex("localthreadid");
+        if (localthreadidIdx != 0) {
+            if (rs.getInt(localthreadidIdx) == 0) { //has a notice
+                p.writeByte(1);
+                addThread(p, rs);
+                threadCount--; //one thread didn't count (because it's a notice)
+            } else {
+                p.writeByte(0);
+            }
         } else {
             p.writeByte(0);
         }
-        if (!rs.absolute(start + 1)) { //seek to the thread before where we start
-            rs.first(); //uh, we're trying to start at a place past possible
+        if (!rs.move(start)) {//seek to the thread before where we start
+            rs.moveToFirst(); //uh, we're trying to start at a place past possible
             start = 0;
         }
         p.writeInt(threadCount);
         p.writeInt(Math.min(10, threadCount - start));
         for (int i = 0; i < Math.min(10, threadCount - start); i++) {
             addThread(p, rs);
-            rs.next();
+            rs.moveToNext();
         }
         return p;
     }
 
-    public static Packet showThread(int localthreadid, ResultSet threadRS, ResultSet repliesRS) throws SQLException, RuntimeException {
+    public static Packet showThread(int localthreadid, Cursor threadRS, Cursor repliesRS) throws SQLiteException , RuntimeException {
         OutPacket p = OutPacket.create(SendOpcode.GUILD_BBS_PACKET);
         p.writeByte(0x07);
         p.writeInt(localthreadid);
-        p.writeInt(threadRS.getInt("postercid"));
-        p.writeLong(PacketCreator.getTime(threadRS.getLong("timestamp")));
-        p.writeString(threadRS.getString("name"));
-        p.writeString(threadRS.getString("startpost"));
-        p.writeInt(threadRS.getInt("icon"));
+        int postercidIdx = threadRS.getColumnIndex("postercid");
+        int timestampIdx = threadRS.getColumnIndex("timestamp");
+        int nameIdx = threadRS.getColumnIndex("name");
+        int startpostIdx = threadRS.getColumnIndex("startpost");
+        int iconIdx = threadRS.getColumnIndex("icon");
+
+
+
+        p.writeInt(threadRS.getInt(postercidIdx));
+        p.writeLong(PacketCreator.getTime(threadRS.getLong(timestampIdx)));
+        p.writeString(threadRS.getString(nameIdx));
+        p.writeString(threadRS.getString(startpostIdx));
+        p.writeInt(threadRS.getInt(iconIdx));
         if (repliesRS != null) {
-            int replyCount = threadRS.getInt("replycount");
+            int replycountIdx = threadRS.getColumnIndex("replycount");
+            int replyCount = threadRS.getInt(replycountIdx);
             p.writeInt(replyCount);
             int i;
-            for (i = 0; i < replyCount && repliesRS.next(); i++) {
-                p.writeInt(repliesRS.getInt("replyid"));
-                p.writeInt(repliesRS.getInt("postercid"));
-                p.writeLong(PacketCreator.getTime(repliesRS.getLong("timestamp")));
-                p.writeString(repliesRS.getString("content"));
+            for (i = 0; i < replyCount && repliesRS.moveToNext(); i++) {
+                int replyidIdx = repliesRS.getColumnIndex("replyid");
+                int contentIdx = repliesRS.getColumnIndex("content");
+
+                p.writeInt(repliesRS.getInt(replyidIdx));
+                p.writeInt(repliesRS.getInt(postercidIdx));
+                p.writeLong(PacketCreator.getTime(repliesRS.getLong(timestampIdx)));
+                p.writeString(repliesRS.getString(contentIdx));
             }
-            if (i != replyCount || repliesRS.next()) {
-                throw new RuntimeException(String.valueOf(threadRS.getInt("threadid")));
+            if (i != replyCount || repliesRS.moveToNext()) {
+                int threadidIdx = threadRS.getColumnIndex("threadid");
+                throw new RuntimeException(String.valueOf(threadRS.getInt(threadidIdx)));
             }
         } else {
             p.writeInt(0);
@@ -286,23 +313,31 @@ public class GuildPackets {
         return p;
     }
 
-    public static Packet showGuildRanks(int npcid, ResultSet rs) throws SQLException {
+    public static Packet showGuildRanks(int npcid, Cursor rs) throws SQLiteException {
         OutPacket p = OutPacket.create(SendOpcode.GUILD_OPERATION);
         p.writeByte(0x49);
         p.writeInt(npcid);
-        if (!rs.last()) { //no guilds o.o
+        if (rs.getCount() == 0) { //no guilds o.o
             p.writeInt(0);
             return p;
         }
-        p.writeInt(rs.getRow()); //number of entries
-        rs.beforeFirst();
-        while (rs.next()) {
-            p.writeString(rs.getString("name"));
-            p.writeInt(rs.getInt("GP"));
-            p.writeInt(rs.getInt("logo"));
-            p.writeInt(rs.getInt("logoColor"));
-            p.writeInt(rs.getInt("logoBG"));
-            p.writeInt(rs.getInt("logoBGColor"));
+        p.writeInt(rs.getCount()); //number of entries
+        while (rs.moveToNext()) {
+            int nameIdx = rs.getColumnIndex("name");
+            int GPIdx = rs.getColumnIndex("GP");
+            int logoIdx = rs.getColumnIndex("logo");
+            int logoColorIdx = rs.getColumnIndex("logoColor");
+            int logoBGIdx = rs.getColumnIndex("logoBG");
+            int logoBGColorIdx = rs.getColumnIndex("logoBGColor");
+
+            if (nameIdx != -1 && GPIdx != -1 && logoIdx != -1 && logoColorIdx != -1 && logoBGIdx != -1 && logoBGColorIdx != -1) {
+                p.writeString(rs.getString(nameIdx));
+                p.writeInt(rs.getInt(GPIdx));
+                p.writeInt(rs.getInt(logoIdx));
+                p.writeInt(rs.getInt(logoColorIdx));
+                p.writeInt(rs.getInt(logoBGIdx));
+                p.writeInt(rs.getInt(logoBGColorIdx));
+            }
         }
         return p;
     }

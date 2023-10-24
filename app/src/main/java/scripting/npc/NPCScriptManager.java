@@ -23,7 +23,6 @@ package scripting.npc;
 
 import client.Character;
 import client.Client;
-import com.whl.quickjs.wrapper.QuickJSContext;
 import net.server.world.PartyCharacter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +31,7 @@ import server.ItemInformationProvider.ScriptedItem;
 import tools.PacketCreator;
 
 import javax.script.Invocable;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import java.util.HashMap;
 import java.util.List;
@@ -52,7 +52,7 @@ public class NPCScriptManager extends AbstractScriptManager {
     }
 
     public boolean isNpcScriptAvailable(Client c, String fileName) {
-        QuickJSContext engine = null;
+        ScriptEngine engine = null;
         if (fileName != null) {
             engine = getInvocableScriptEngine("npc/" + fileName + ".js", c);
         }
@@ -88,7 +88,7 @@ public class NPCScriptManager extends AbstractScriptManager {
                 return;
             }
             cms.put(c, cm);
-            QuickJSContext engine = getInvocableScriptEngine("npc/" + filename + ".js", c);
+            ScriptEngine engine = getInvocableScriptEngine("npc/" + filename + ".js", c);
 
             if (engine == null) {
                 c.getPlayer().dropMessage(1, "NPC " + npc + " is uncoded.");
@@ -119,7 +119,7 @@ public class NPCScriptManager extends AbstractScriptManager {
             }
             if (c.canClickNPC()) {
                 cms.put(c, cm);
-                QuickJSContext engine = null;
+                ScriptEngine engine = null;
                 if (!itemScript) {
                     if (fileName != null) {
                         engine = getInvocableScriptEngine("npc/" + fileName + ".js", c);

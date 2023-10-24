@@ -23,6 +23,8 @@
 */
 package client.command.commands.gm3;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -44,20 +46,14 @@ public class UnBanCommand extends Command {
             return;
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int aid = Character.getAccountIdByName(params[0]);
+            ContentValues values = new ContentValues();
+            values.put("banned", -1);
 
-            try (PreparedStatement p = con.prepareStatement("UPDATE accounts SET banned = -1 WHERE id = " + aid)) {
-                p.executeUpdate();
-            }
-
-            try (PreparedStatement p = con.prepareStatement("DELETE FROM ipbans WHERE aid = " + aid)) {
-                p.executeUpdate();
-            }
-
-            try (PreparedStatement p = con.prepareStatement("DELETE FROM macbans WHERE aid = " + aid)) {
-                p.executeUpdate();
-            }
+            con.update("accounts", values, "id = ?", new String[]{String.valueOf(aid)});
+            con.delete("ipbans", "aid = ?", new String[]{String.valueOf(aid)});
+            con.delete("macbans", "aid = ?", new String[]{String.valueOf(aid)});
         } catch (Exception e) {
             e.printStackTrace();
             player.message("Failed to unban " + params[0]);

@@ -20,8 +20,13 @@
  */
 package server.life;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
 import constants.inventory.ItemConstants;
+import database.MapleDBHelper;
+import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -90,19 +95,32 @@ public class MonsterInformationProvider {
     }
 
     private void retrieveGlobal() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM drop_data_global WHERE chance > 0");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                globaldrops.add(new MonsterGlobalDropEntry(
-                        rs.getInt("itemid"),
-                        rs.getInt("chance"),
-                        rs.getByte("continent"),
-                        rs.getInt("minimum_quantity"),
-                        rs.getInt("maximum_quantity"),
-                        rs.getShort("questid")));
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+             Cursor cursor = con.rawQuery("SELECT * FROM drop_data_global WHERE chance > 0", null)) {
+            while (cursor.moveToNext()) {
+                int itemidIdx = cursor.getColumnIndex("itemid");
+                int chanceIdx = cursor.getColumnIndex("chance");
+                int continentIdx = cursor.getColumnIndex("continent");
+                int minimum_quantityIdx = cursor.getColumnIndex("minimum_quantity");
+                int maximum_quantityIdx = cursor.getColumnIndex("maximum_quantity");
+                int questidIdx = cursor.getColumnIndex("questid");
+
+                if (itemidIdx != -1 &&
+                        chanceIdx != -1 &&
+                        continentIdx != -1 &&
+                        minimum_quantityIdx != -1 &&
+                        maximum_quantityIdx != -1 &&
+                        questidIdx != -1) {
+                    globaldrops.add(new MonsterGlobalDropEntry(
+                            cursor.getInt(itemidIdx),
+                            cursor.getInt(chanceIdx),
+                            (byte) cursor.getInt(continentIdx),
+                            cursor.getInt(minimum_quantityIdx),
+                            cursor.getInt(maximum_quantityIdx),
+                            cursor.getShort(questidIdx)));
+                }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.error("Error retrieving global drops", e);
         }
     }
@@ -156,16 +174,20 @@ public class MonsterInformationProvider {
         }
         final List<MonsterDropEntry> ret = new LinkedList<>();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT itemid, chance, minimum_quantity, maximum_quantity, questid FROM drop_data WHERE dropperid = ?")) {
-            ps.setInt(1, monsterId);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT itemid, chance, minimum_quantity, maximum_quantity, questid FROM drop_data WHERE dropperid = ?", new String[]{String.valueOf(monsterId)})) {
+            if (ps != null) {
+                while (ps.moveToNext()) {
+                    int itemidIdx = ps.getColumnIndex("itemid");
+                    int chanceIdx = ps.getColumnIndex("chance");
+                    int minimum_quantityIdx = ps.getColumnIndex("minimum_quantity");
+                    int maximum_quantityIdx = ps.getColumnIndex("maximum_quantity");
+                    int questidIdx = ps.getColumnIndex("questid");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ret.add(new MonsterDropEntry(rs.getInt("itemid"), rs.getInt("chance"), rs.getInt("minimum_quantity"), rs.getInt("maximum_quantity"), rs.getShort("questid")));
+                    ret.add(new MonsterDropEntry(ps.getInt(itemidIdx), ps.getInt(chanceIdx), ps.getInt(minimum_quantityIdx), ps.getInt(maximum_quantityIdx), ps.getShort(questidIdx)));
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return ret;
         }

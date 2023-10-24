@@ -1,5 +1,7 @@
 package tools.mapletools;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -11,13 +13,13 @@ import java.sql.SQLException;
 final class SimpleDatabaseConnection {
     private SimpleDatabaseConnection() {}
 
-    static Connection getConnection() {
+    static SQLiteDatabase getConnection() {
         muffleLogging();
         DatabaseConnection.initializeConnectionPool();
 
         try {
             return DatabaseConnection.getConnection();
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             throw new IllegalStateException("Failed to get database connection", e);
         }
     }

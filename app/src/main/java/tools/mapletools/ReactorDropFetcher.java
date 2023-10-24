@@ -1,5 +1,9 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.DirectoryStream;
@@ -21,7 +25,7 @@ import java.util.*;
 public class ReactorDropFetcher {
     private static final Path OUTPUT_FILE = ToolConstants.getOutputFile("reactor_drop_report.txt");
     private static final String REACTOR_SCRIPT_PATH = ToolConstants.SCRIPTS_PATH + "/reactor";
-    private static final Connection con = SimpleDatabaseConnection.getConnection();
+    private static final SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
     private static PrintWriter printWriter = null;
     private static final Set<Integer> reactors = new HashSet<>();
@@ -52,16 +56,20 @@ public class ReactorDropFetcher {
         }
     }
 
-    private static void loadReactoridsOnDB() throws SQLException {
-        PreparedStatement ps = con.prepareStatement("SELECT DISTINCT reactorid FROM reactordrops;");
-        ResultSet rs = ps.executeQuery();
+    private static void loadReactoridsOnDB() throws SQLiteException {
+        Cursor cursor = con.rawQuery("SELECT DISTINCT reactorid FROM reactordrops;", null);
 
-        while (rs.next()) {
-            reactors.add(rs.getInt("reactorid"));
+        if (cursor.moveToFirst()) {
+            do {
+                int reactoridIdx = cursor.getColumnIndex("reactorid");
+                if (reactoridIdx != -1) {
+                    int reactorId = cursor.getInt(reactoridIdx);
+                    reactors.add(reactorId);
+                }
+            } while (cursor.moveToNext());
         }
 
-        rs.close();
-        ps.close();
+        cursor.close();
     }
 
     private static List<Integer> getSortedReactorids() {
@@ -71,12 +79,12 @@ public class ReactorDropFetcher {
         return sortedReactors;
     }
 
-    private static void fetchMissingReactorDrops() throws SQLException {
+    private static void fetchMissingReactorDrops() throws SQLiteException {
         loadReactoridsOnDB();
         removeScriptedReactorids(REACTOR_SCRIPT_PATH);
     }
 
-    private static void reportMissingReactorDrops() throws SQLException {
+    private static void reportMissingReactorDrops() throws SQLiteException {
         if (!reactors.isEmpty()) {
             printWriter.println("MISSING REACTOR DROP SCRIPTS");
             for (Integer reactorid : getSortedReactorids()) {
@@ -100,7 +108,7 @@ public class ReactorDropFetcher {
             reportMissingReactorDrops();
 
             System.out.println("Done!");
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to report quest data.");
             System.out.println(e.getMessage());
         } catch (Exception e) {

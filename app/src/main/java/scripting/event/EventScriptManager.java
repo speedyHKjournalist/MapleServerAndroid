@@ -21,8 +21,6 @@
  */
 package scripting.event;
 
-import com.whl.quickjs.wrapper.JSCallFunction;
-import com.whl.quickjs.wrapper.JSObject;
 import net.server.channel.Channel;
 import org.slf4j.LoggerFactory;
 import scripting.AbstractScriptManager;
@@ -31,7 +29,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import com.whl.quickjs.wrapper.QuickJSContext;
+import scripting.SynchronizedInvocable;
+
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 
 /**
  * @author Matze
@@ -45,12 +47,12 @@ public class EventScriptManager extends AbstractScriptManager {
 
     private static class EventEntry {
 
-        public EventEntry(JSObject iv, EventManager em) {
+        public EventEntry(Invocable iv, EventManager em) {
             this.iv = iv;
             this.em = em;
         }
 
-        public JSObject iv;
+        public Invocable iv;
         public EventManager em;
     }
 
@@ -80,7 +82,7 @@ public class EventScriptManager extends AbstractScriptManager {
     public final void init() {
         for (EventEntry entry : events.values()) {
             try {
-                entry.iv.getJSFunction("init").call();
+                entry.iv.invokeFunction("init", (Object) null);
             } catch (Exception ex) {
                 log.error("Error on script: {}", entry.em.getName(), ex);
             }
@@ -103,10 +105,10 @@ public class EventScriptManager extends AbstractScriptManager {
     }
 
     private EventEntry initializeEventEntry(String script, Channel channel) {
-        QuickJSContext engine = getInvocableScriptEngine("event/" + script + ".js");
-        JSObject iv = engine.getGlobalObject();
+        ScriptEngine engine = getInvocableScriptEngine("event/" + script + ".js");
+        Invocable iv = SynchronizedInvocable.of((Invocable) engine);
         EventManager eventManager = new EventManager(channel, iv, script);
-//        engine.put(INJECTED_VARIABLE_NAME, eventManager);
+        engine.put(INJECTED_VARIABLE_NAME, eventManager);
         return new EventEntry(iv, eventManager);
     }
 

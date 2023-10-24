@@ -23,6 +23,8 @@
 */
 package client.command.commands.gm1;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -60,16 +62,15 @@ public class WhoDropsCommand extends Command {
                     while (listIterator.hasNext() && count <= 3) {
                         Pair<Integer, String> data = listIterator.next();
                         output += "#b" + data.getRight() + "#k is dropped by:\r\n";
-                        try (Connection con = DatabaseConnection.getConnection();
-                             PreparedStatement ps = con.prepareStatement("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50")) {
-                            ps.setInt(1, data.getLeft());
+                        String[] selectionArgs = {String.valueOf(data.getLeft())};
+                        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                             Cursor ps = con.rawQuery("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50", selectionArgs)) {
 
-                            try (ResultSet rs = ps.executeQuery()) {
-                                while (rs.next()) {
-                                    String resultName = MonsterInformationProvider.getInstance().getMobNameFromId(rs.getInt("dropperid"));
-                                    if (resultName != null) {
-                                        output += resultName + ", ";
-                                    }
+                            while (ps.moveToNext()) {
+                                int dropperidIdx = ps.getColumnIndex("dropperid");
+                                String resultName = MonsterInformationProvider.getInstance().getMobNameFromId(ps.getInt(dropperidIdx));
+                                if (resultName != null) {
+                                    output += resultName + ", ";
                                 }
                             }
                         } catch (Exception e) {

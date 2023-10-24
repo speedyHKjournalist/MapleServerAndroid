@@ -22,6 +22,7 @@
 package client;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import tools.DatabaseConnection;
@@ -152,18 +153,19 @@ public final class MonsterBook {
         }
     }
 
-    public void loadCards(final int charid) throws SQLException {
+    public void loadCards(final int charid) throws SQLiteException {
         lock.lock();
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT cardid, level FROM monsterbook WHERE charid = ? ORDER BY cardid ASC")) {
-            ps.setInt(1, charid);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT cardid, level FROM monsterbook WHERE charid = ? ORDER BY cardid ASC", new String[]{String.valueOf(charid)})) {
+            int cardid;
+            int level;
 
-            try (ResultSet rs = ps.executeQuery()) {
-                int cardid;
-                int level;
-                while (rs.next()) {
-                    cardid = rs.getInt("cardid");
-                    level = rs.getInt("level");
+            while (ps.moveToNext()) {
+                int cardidIdx = ps.getColumnIndex("cardid");
+                int levelIdx = ps.getColumnIndex("level");
+                if (cardidIdx != -1 && levelIdx != -1) {
+                    cardid = ps.getInt(cardidIdx);
+                    level = ps.getInt(levelIdx);
                     if (cardid / 1000 >= 2388) {
                         specialCard++;
                     } else {
@@ -194,19 +196,20 @@ public final class MonsterBook {
     }
 
     public static int[] getCardTierSize() {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM monstercarddata GROUP BY floor(cardid / 1000);", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-             ResultSet rs = ps.executeQuery()) {
-            rs.last();
-            int[] tierSizes = new int[rs.getRow()];
-            rs.beforeFirst();
-
-            while (rs.next()) {
-                tierSizes[rs.getRow() - 1] = rs.getInt(1);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor rs = con.rawQuery("SELECT COUNT(*) FROM monstercarddata GROUP BY floor(cardid / 1000);", null)) {
+            int rowCount = rs.getCount();
+            int[] tierSizes = new int[rowCount];
+            if (rs.moveToFirst()) {
+                int index = 0;
+                do {
+                    tierSizes[index] = rs.getInt(0);
+                    index++;
+                } while (rs.moveToNext());
             }
 
             return tierSizes;
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
             return new int[0];
         }

@@ -1,10 +1,13 @@
 package tools;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import config.YamlConfig;
 import database.MapleDBHelper;
 import database.note.NoteRowMapper;
+import net.server.Server;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -25,15 +29,16 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class DatabaseConnection {
     private static final Logger log = LoggerFactory.getLogger(DatabaseConnection.class);
-    private static HikariDataSource dataSource;
+//    private static HikariDataSource dataSource;
     private static Jdbi jdbi;
 
-    public static Connection getConnection() throws SQLException {
+    public static SQLiteDatabase getConnection() throws SQLiteException {
+        SQLiteDatabase dataSource = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
         if (dataSource == null) {
             throw new IllegalStateException("Unable to get connection - connection pool is uninitialized");
         }
 
-        return dataSource.getConnection();
+        return dataSource;
     }
 
     public static Handle getHandle() {
@@ -78,6 +83,7 @@ public class DatabaseConnection {
      * @return true if connection to the database initiated successfully, false if not successful
      */
     public static boolean initializeConnectionPool() {
+        SQLiteDatabase dataSource = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
         if (dataSource != null) {
             return true;
         }
@@ -86,10 +92,10 @@ public class DatabaseConnection {
         final HikariConfig config = getConfig();
         Instant initStart = Instant.now();
         try {
-            dataSource = new HikariDataSource(config);
-            initializeJdbi(dataSource);
+//            dataSource = new HikariDataSource(config);
+//            initializeJdbi(dataSource);
             long initDuration = Duration.between(initStart, Instant.now()).toMillis();
-            log.info("Connection pool initialized in {} ms", initDuration);
+            log.info("SQLiteDatabase pool initialized in {} ms", initDuration);
             return true;
         } catch (Exception e) {
             long timeout = Duration.between(initStart, Instant.now()).getSeconds();

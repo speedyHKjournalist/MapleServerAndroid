@@ -21,7 +21,12 @@
  */
 package server.maps;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import constants.id.MapId;
+import database.MapleDBHelper;
+import net.server.Server;
 import provider.Data;
 import provider.DataProvider;
 import provider.DataProviderFactory;
@@ -43,6 +48,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import android.graphics.Point;
@@ -86,30 +92,53 @@ public class MapFactory {
     }
 
     private static void loadLifeFromDb(MapleMap map) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM plife WHERE map = ? and world = ?")) {
-            ps.setInt(1, map.getId());
-            ps.setInt(2, map.getWorld());
+        int mapId = map.getId();
+        int worldId = map.getWorld();
+        String selectQuery = "SELECT * FROM plife WHERE map = ? AND world = ?";
+        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+             Cursor cursor = con.rawQuery(selectQuery, new String[]{String.valueOf(mapId), String.valueOf(worldId)})) {
+            while (cursor.moveToNext()) {
+                int lifeIdx = cursor.getColumnIndex("life");
+                int typeIdx = cursor.getColumnIndex("type");
+                int cyIdx = cursor.getColumnIndex("cy");
+                int fIdx = cursor.getColumnIndex("f");
+                int fhIdx = cursor.getColumnIndex("fh");
+                int rx0Idx = cursor.getColumnIndex("rx0");
+                int rx1Idx = cursor.getColumnIndex("rx1");
+                int xIdx = cursor.getColumnIndex("x");
+                int yIdx = cursor.getColumnIndex("y");
+                int hideIdx = cursor.getColumnIndex("hide");
+                int mobtimeIdx = cursor.getColumnIndex("mobtime");
+                int teamIdx = cursor.getColumnIndex("team");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int id = rs.getInt("life");
-                    String type = rs.getString("type");
-                    int cy = rs.getInt("cy");
-                    int f = rs.getInt("f");
-                    int fh = rs.getInt("fh");
-                    int rx0 = rs.getInt("rx0");
-                    int rx1 = rs.getInt("rx1");
-                    int x = rs.getInt("x");
-                    int y = rs.getInt("y");
-                    int hide = rs.getInt("hide");
-                    int mobTime = rs.getInt("mobtime");
-                    int team = rs.getInt("team");
-
+                if (lifeIdx != -1 &&
+                        typeIdx != -1 &&
+                        cyIdx != -1 &&
+                        fIdx != -1 &&
+                        fhIdx != -1 &&
+                        rx0Idx != -1 &&
+                        rx1Idx != -1 &&
+                        xIdx != -1 &&
+                        yIdx != -1 &&
+                        hideIdx != -1 &&
+                        mobtimeIdx != -1 &&
+                        teamIdx != -1) {
+                    int id = cursor.getInt(lifeIdx);
+                    String type = cursor.getString(typeIdx);
+                    int cy = cursor.getInt(cyIdx);
+                    int f = cursor.getInt(fIdx);
+                    int fh = cursor.getInt(fhIdx);
+                    int rx0 = cursor.getInt(rx0Idx);
+                    int rx1 = cursor.getInt(rx1Idx);
+                    int x = cursor.getInt(xIdx);
+                    int y = cursor.getInt(yIdx);
+                    int hide = cursor.getInt(hideIdx);
+                    int mobTime = cursor.getInt(mobtimeIdx);
+                    int team = cursor.getInt(teamIdx);
                     loadLifeRaw(map, id, type, cy, f, fh, rx0, rx1, x, y, hide, mobTime, team);
                 }
             }
-        } catch (SQLException sqle) {
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -240,17 +269,17 @@ public class MapFactory {
             map.setSeats(seats);
         }
         if (event == null) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT * FROM playernpcs WHERE map = ? AND world = ?")) {
-                ps.setInt(1, mapid);
-                ps.setInt(2, world);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        map.addPlayerNPCMapObject(new PlayerNPC(rs));
+            String[] selectionArgs = {String.valueOf(mapid), String.valueOf(world)};
+            String query = "SELECT * FROM playernpcs WHERE map = ? AND world = ?";
+            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
+                 SQLiteDatabase con = mapledb.getWritableDatabase();
+                 Cursor cursor = con.rawQuery(query, selectionArgs)) {
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        map.addPlayerNPCMapObject(new PlayerNPC(cursor));
                     }
                 }
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 e.printStackTrace();
             }
         }

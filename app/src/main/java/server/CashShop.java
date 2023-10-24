@@ -258,13 +258,18 @@ public class CashShop {
 
         public static void reloadSpecialCashItems() {//Yay?
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT * FROM specialcashitems");
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    loadedSpecialItems.add(new SpecialCashItem(rs.getInt("sn"), rs.getInt("modifier"), rs.getByte("info")));
+            String[] columns = { "sn", "modifier", "info" };
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.query("specialcashitems", columns, null, null, null, null, null)) {
+                while (cursor.moveToNext()) {
+                    int snIdx = cursor.getColumnIndex("sn");
+                    int modifierIdx = cursor.getColumnIndex("modifier");
+                    int infoIdx = cursor.getColumnIndex("info");
+                    if (snIdx != -1 && modifierIdx != -1 && infoIdx != -1) {
+                        loadedSpecialItems.add(new SpecialCashItem(cursor.getInt(snIdx), cursor.getInt(modifierIdx), (byte) cursor.getInt(infoIdx)));
+                    }
                 }
-            } catch (SQLException ex) {
+            } catch (SQLiteException ex) {
                 ex.printStackTrace();
             }
             CashItemFactory.specialcashitems = loadedSpecialItems;
@@ -283,7 +288,7 @@ public class CashShop {
     private int notes = 0;
     private final Lock lock = new ReentrantLock();
 
-    public CashShop(int accountId, int characterId, int jobType) throws SQLException {
+    public CashShop(int accountId, int characterId, int jobType) throws SQLiteException {
         this.accountId = accountId;
         this.characterId = characterId;
 
@@ -303,15 +308,16 @@ public class CashShop {
             factory = ItemFactory.CASH_OVERALL;
         }
 
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT `nxCredit`, `maplePoint`, `nxPrepaid` FROM `accounts` WHERE `id` = ?")) {
-                ps.setInt(1, accountId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        this.nxCredit = rs.getInt("nxCredit");
-                        this.maplePoint = rs.getInt("maplePoint");
-                        this.nxPrepaid = rs.getInt("nxPrepaid");
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor ps = con.rawQuery("SELECT `nxCredit`, `maplePoint`, `nxPrepaid` FROM `accounts` WHERE `id` = ?", new String[] { String.valueOf(accountId) })) {
+                if (ps.moveToNext()) {
+                    int nxCreditIdx = ps.getColumnIndex("nxCredit");
+                    int maplePointIdx =ps.getColumnIndex("maplePoint");
+                    int nxPrepaidIdx = ps.getColumnIndex("nxPrepaid");
+                    if (nxCreditIdx != -1 && maplePointIdx != -1 && nxPrepaidIdx != -1) {
+                        this.nxCredit = ps.getInt(nxCreditIdx);
+                        this.maplePoint = ps.getInt(maplePointIdx);
+                        this.nxPrepaid = ps.getInt(nxPrepaidIdx);
                     }
                 }
             }
@@ -320,12 +326,11 @@ public class CashShop {
                 inventory.add(item.getLeft());
             }
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT `sn` FROM `wishlists` WHERE `charid` = ?")) {
-                ps.setInt(1, characterId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        wishList.add(rs.getInt("sn"));
+            try (Cursor cursor = con.rawQuery("SELECT `sn` FROM `wishlists` WHERE `charid` = ?", new String[] { String.valueOf(characterId) })) {
+                while (cursor.moveToNext()) {
+                    int snIdx = cursor.getColumnIndex("sn");
+                    if (snIdx != -1) {
+                        wishList.add(cursor.getInt(snIdx));
                     }
                 }
             }
@@ -437,15 +442,15 @@ public class CashShop {
     }
 
     public void gift(int recipient, String from, String message, int sn, int ringid) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO `gifts` VALUES (DEFAULT, ?, ?, ?, ?, ?)")) {
-            ps.setInt(1, recipient);
-            ps.setString(2, from);
-            ps.setString(3, message);
-            ps.setInt(4, sn);
-            ps.setInt(5, ringid);
-            ps.executeUpdate();
-        } catch (SQLException sqle) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            ContentValues values = new ContentValues();
+            values.put("recipient", recipient);
+            values.put("from", from);
+            values.put("message", message);
+            values.put("sn", sn);
+            values.put("ringid", ringid);
+            con.insert("gifts", null, values);
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
     }
@@ -453,29 +458,40 @@ public class CashShop {
     public List<Pair<Item, String>> loadGifts() {
         List<Pair<Item, String>> gifts = new ArrayList<>();
 
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            String[] selectionArgs = { String.valueOf(characterId) };
 
-            try (PreparedStatement ps = con.prepareStatement("SELECT * FROM `gifts` WHERE `to` = ?")) {
-                ps.setInt(1, characterId);
+            try (Cursor cursor = con.rawQuery("SELECT * FROM `gifts` WHERE `to` = ?", selectionArgs)) {
+                while (cursor.moveToNext()) {
+                    notes++;
+                    int snIdx = cursor.getColumnIndex("sn");
+                    int fromIdx = cursor.getColumnIndex("from");
+                    int messageIdx = cursor.getColumnIndex("message");
+                    int ringidIdx = cursor.getColumnIndex("ringid");
+                    if (snIdx != -1 &&
+                            fromIdx != -1 &&
+                            messageIdx != -1 &&
+                            ringidIdx != -1) {
+                        int sn = cursor.getInt(snIdx);
+                        String from = cursor.getString(fromIdx);
+                        String message = cursor.getString(messageIdx);
+                        int ringid = cursor.getInt(ringidIdx);
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        notes++;
-                        CashItem cItem = CashItemFactory.getItem(rs.getInt("sn"));
+                        CashItem cItem = CashItemFactory.getItem(sn);
                         Item item = cItem.toItem();
                         Equip equip = null;
-                        item.setGiftFrom(rs.getString("from"));
+                        item.setGiftFrom(from);
                         if (item.getInventoryType().equals(InventoryType.EQUIP)) {
                             equip = (Equip) item;
-                            equip.setRingId(rs.getInt("ringid"));
-                            gifts.add(new Pair<>(equip, rs.getString("message")));
+                            equip.setRingId(ringid);
+                            gifts.add(new Pair<>(equip, message));
                         } else {
-                            gifts.add(new Pair<>(item, rs.getString("message")));
+                            gifts.add(new Pair<>(item, message));
                         }
 
                         if (CashItemFactory.isPackage(cItem.getItemId())) { //Packages never contains a ring
                             for (Item packageItem : CashItemFactory.getPackage(cItem.getItemId())) {
-                                packageItem.setGiftFrom(rs.getString("from"));
+                                packageItem.setGiftFrom(from);
                                 addToInventory(packageItem);
                             }
                         } else {
@@ -485,11 +501,11 @@ public class CashShop {
                 }
             }
 
-            try (PreparedStatement ps = con.prepareStatement("DELETE FROM `gifts` WHERE `to` = ?")) {
-                ps.setInt(1, characterId);
-                ps.executeUpdate();
-            }
-        } catch (SQLException sqle) {
+            String table = "gifts";
+            String whereClause = "`to` = ?";
+            String[] whereArgs = { String.valueOf(characterId) };
+            con.delete(table, whereClause, whereArgs);
+        } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }
 

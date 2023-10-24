@@ -23,9 +23,6 @@ package scripting.event;
 
 import client.Character;
 import javax.script.ScriptException;
-
-import com.whl.quickjs.wrapper.JSObject;
-import com.whl.quickjs.wrapper.QuickJSException;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import net.server.Server;
@@ -63,7 +60,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class EventManager {
     private static final Logger log = LoggerFactory.getLogger(EventManager.class);
-    private JSObject iv;
+    private Invocable iv;
     private Channel cserv;
     private World wserv;
     private Server server;
@@ -86,7 +83,7 @@ public class EventManager {
 
     private static final int maxLobbys = 8;     // an event manager holds up to this amount of concurrent lobbys
 
-    public EventManager(Channel cserv, JSObject iv, String name) {
+    public EventManager(Channel cserv, Invocable iv, String name) {
         this.server = Server.getInstance();
         this.iv = iv;
         this.cserv = cserv;
@@ -107,8 +104,8 @@ public class EventManager {
         ess.dispose();
 
         try {
-            iv.getJSFunction("cancelSchedule").call();
-        } catch (QuickJSException ex) {
+            iv.invokeFunction("cancelSchedule", (Object) null);
+        } catch (ScriptException | NoSuchMethodException ex) {
             ex.printStackTrace();
         }
 
@@ -159,8 +156,8 @@ public class EventManager {
 
     private int getMaxLobbies() {
         try {
-            return (int) iv.getJSFunction("getMaxLobbies").call();
-        } catch (QuickJSException ex) { // they didn't define a lobby range
+            return (int) iv.invokeFunction("getMaxLobbies");
+        } catch (ScriptException | NoSuchMethodException ex) { // they didn't define a lobby range
             return maxLobbys;
         }
     }
@@ -172,8 +169,8 @@ public class EventManager {
     public EventScheduledFuture schedule(final String methodName, final EventInstanceManager eim, long delay) {
         Runnable r = () -> {
             try {
-                iv.getJSFunction(methodName).call(eim);
-            } catch (QuickJSException ex) {
+                iv.invokeFunction(methodName, eim);
+            } catch (ScriptException | NoSuchMethodException ex) {
                 log.error("Event script schedule", ex);
             }
         };
@@ -187,8 +184,8 @@ public class EventManager {
     public EventScheduledFuture scheduleAtTimestamp(final String methodName, long timestamp) {
         Runnable r = () -> {
             try {
-                iv.getJSFunction(methodName).call();
-            } catch (QuickJSException ex) {
+                iv.invokeFunction(methodName, (Object) null);
+            } catch (ScriptException | NoSuchMethodException ex) {
                 log.error("Event script scheduleAtTimestamp", ex);
             }
         };
@@ -205,7 +202,7 @@ public class EventManager {
         return cserv;
     }
 
-    public JSObject getIv() {
+    public Invocable getIv() {
         return iv;
     }
 
@@ -355,8 +352,8 @@ public class EventManager {
         }
     }
 
-    private EventInstanceManager createInstance(String name, Object... args) throws QuickJSException {
-        return (EventInstanceManager) iv.getJSFunction(name).call(args);
+    private EventInstanceManager createInstance(String name, Object... args) throws ScriptException, NoSuchMethodException {
+        return (EventInstanceManager) iv.invokeFunction(name, args);
     }
 
     private void registerEventInstance(String eventName, int lobbyId) {
@@ -404,7 +401,7 @@ public class EventManager {
                         try {
                             eim = createInstance("setup", leader.getClient().getChannel());
                             registerEventInstance(eim.getName(), lobbyId);
-                        } catch (QuickJSException | NullPointerException e) {
+                        } catch (ScriptException | NullPointerException e) {
                             String message = getInternalScriptExceptionMessage(e);
                             if (message != null && !message.startsWith(EventInstanceInProgressException.EIIP_KEY)) {
                                 throw e;
@@ -422,7 +419,7 @@ public class EventManager {
                         eim.registerExpedition(exped);
 
                         eim.startEvent();
-                    } catch (QuickJSException ex) {
+                    } catch (ScriptException | NoSuchMethodException ex) {
                         log.error("Event script startInstance", ex);
                     }
 
@@ -476,7 +473,7 @@ public class EventManager {
                         try {
                             eim = createInstance("setup", difficulty, (lobbyId > -1) ? lobbyId : leader.getId());
                             registerEventInstance(eim.getName(), lobbyId);
-                        } catch (QuickJSException | NullPointerException e) {
+                        } catch (ScriptException | NullPointerException e) {
                             String message = getInternalScriptExceptionMessage(e);
                             if (message != null && !message.startsWith(EventInstanceInProgressException.EIIP_KEY)) {
                                 throw e;
@@ -494,7 +491,7 @@ public class EventManager {
                         }
 
                         eim.startEvent();
-                    } catch (QuickJSException ex) {
+                    } catch (ScriptException | NoSuchMethodException ex) {
                         log.error("Event script startInstance", ex);
                     }
 
@@ -548,7 +545,7 @@ public class EventManager {
                         try {
                             eim = createInstance("setup", (Object) null);
                             registerEventInstance(eim.getName(), lobbyId);
-                        } catch (QuickJSException | NullPointerException e) {
+                        } catch (ScriptException | NullPointerException e) {
                             String message = getInternalScriptExceptionMessage(e);
                             if (message != null && !message.startsWith(EventInstanceInProgressException.EIIP_KEY)) {
                                 throw e;
@@ -566,7 +563,7 @@ public class EventManager {
                         party.setEligibleMembers(null);
 
                         eim.startEvent();
-                    } catch (QuickJSException ex) {
+                    } catch (ScriptException | NoSuchMethodException ex) {
                         log.error("Event script startInstance", ex);
                     }
 
@@ -620,7 +617,7 @@ public class EventManager {
                         try {
                             eim = createInstance("setup", difficulty, (lobbyId > -1) ? lobbyId : party.getLeaderId());
                             registerEventInstance(eim.getName(), lobbyId);
-                        } catch (QuickJSException | NullPointerException e) {
+                        } catch (ScriptException | NullPointerException e) {
                             String message = getInternalScriptExceptionMessage(e);
                             if (message != null && !message.startsWith(EventInstanceInProgressException.EIIP_KEY)) {
                                 throw e;
@@ -638,7 +635,7 @@ public class EventManager {
                         party.setEligibleMembers(null);
 
                         eim.startEvent();
-                    } catch (QuickJSException ex) {
+                    } catch (ScriptException | NoSuchMethodException ex) {
                         log.error("Event script startInstance", ex);
                     }
 
@@ -701,11 +698,11 @@ public class EventManager {
                         registerEventInstance(eim.getName(), lobbyId);
                         eim.setLeader(leader);
 
-                        iv.getJSFunction("setup").call(eim);
+                        iv.invokeFunction("setup", eim);
                         eim.setProperty("leader", ldr);
 
                         eim.startEvent();
-                    } catch (QuickJSException ex) {
+                    } catch (ScriptException | NoSuchMethodException ex) {
                         log.error("Event script startInstance", ex);
                     }
 
@@ -728,14 +725,14 @@ public class EventManager {
             return new ArrayList<>();
         }
         try {
-            Object o = iv.getJSFunction("getEligibleParty").call(party.getPartyMembersOnline());
+            Object o = iv.invokeFunction("getEligibleParty", party.getPartyMembersOnline());
 
             if (o instanceof PartyCharacter[] partyChrs) {
                 final List<PartyCharacter> eligibleParty = new ArrayList<>(Arrays.asList(partyChrs));
                 party.setEligibleMembers(eligibleParty);
                 return eligibleParty;
             }
-        } catch (QuickJSException ex) {
+        } catch (ScriptException | NoSuchMethodException ex) {
             ex.printStackTrace();
         }
 
@@ -744,16 +741,16 @@ public class EventManager {
 
     public void clearPQ(EventInstanceManager eim) {
         try {
-            iv.getJSFunction("clearPQ").call(eim);
-        } catch (QuickJSException ex) {
+            iv.invokeFunction("clearPQ", eim);
+        } catch (ScriptException | NoSuchMethodException ex) {
             log.error("Event script clearPQ", ex);
         }
     }
 
     public void clearPQ(EventInstanceManager eim, MapleMap toMap) {
         try {
-            iv.getJSFunction("clearPQ").call(eim, toMap);
-        } catch (QuickJSException ex) {
+            iv.invokeFunction("clearPQ", eim, toMap);
+        } catch (ScriptException | NoSuchMethodException ex) {
             log.error("Event script clearPQ", ex);
         }
     }

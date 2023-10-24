@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package scripting.reactor;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +32,8 @@ import server.maps.ReactorDropEntry;
 import tools.DatabaseConnection;
 
 import javax.script.Invocable;
+import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import com.whl.quickjs.wrapper.QuickJSContext;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -85,12 +87,16 @@ public class ReactorScriptManager extends AbstractScriptManager {
         List<ReactorDropEntry> ret = drops.get(reactorId);
         if (ret == null) {
             ret = new LinkedList<>();
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT itemid, chance, questid FROM reactordrops WHERE reactorid = ? AND chance >= 0")) {
-                    ps.setInt(1, reactorId);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            ret.add(new ReactorDropEntry(rs.getInt("itemid"), rs.getInt("chance"), rs.getInt("questid")));
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                try (Cursor ps = con.rawQuery("SELECT itemid, chance, questid FROM reactordrops WHERE reactorid = ? AND chance >= 0",
+                        new String[]{String.valueOf(reactorId)})) {
+                    if (ps != null) {
+                        while (ps.moveToNext()) {
+                            int itemidIdx = ps.getColumnIndex("itemid");
+                            int chanceIdx = ps.getColumnIndex("chance");
+                            int questidIdx = ps.getColumnIndex("questid");
+
+                            ret.add(new ReactorDropEntry(ps.getInt(itemidIdx), ps.getInt(chanceIdx), ps.getInt(questidIdx)));
                         }
                     }
                 }
@@ -129,7 +135,7 @@ public class ReactorScriptManager extends AbstractScriptManager {
     }
 
     private Invocable initializeInvocable(Client c, Reactor reactor) {
-        QuickJSContext engine = getInvocableScriptEngine("reactor/" + reactor.getId() + ".js", c);
+        ScriptEngine engine = getInvocableScriptEngine("reactor/" + reactor.getId() + ".js", c);
         if (engine == null) {
             return null;
         }

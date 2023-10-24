@@ -21,7 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package net.server.world;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.BuddyList;
 import client.BuddyList.BuddyAddResult;
 import client.BuddyList.BuddyOperation;
@@ -685,13 +689,16 @@ public class World {
     }
 
     public void setOfflineGuildStatus(int guildid, int guildrank, int cid) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("UPDATE characters SET guildid = ?, guildrank = ? WHERE id = ?")) {
-            ps.setInt(1, guildid);
-            ps.setInt(2, guildrank);
-            ps.setInt(3, cid);
-            ps.executeUpdate();
-        } catch (SQLException se) {
+        ContentValues values = new ContentValues();
+        values.put("guildid", guildid);
+        values.put("guildrank", guildrank);
+
+        String whereClause = "id = ?";
+        String[] whereArgs = {String.valueOf(cid)};
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.update("characters", values, whereClause, whereArgs);
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }
@@ -1829,25 +1836,23 @@ public class World {
         setPlayerNpcMapData(mapid, step, podium, true);
     }
 
-    private static void executePlayerNpcMapDataUpdate(Connection con, boolean isPodium, Map<Integer, ?> pnpcData, int value, int worldid, int mapid) throws SQLException {
+    private static void executePlayerNpcMapDataUpdate(SQLiteDatabase con, boolean isPodium, Map<Integer, ?> pnpcData, int value, int worldid, int mapid) throws SQLiteException {
         final String query;
+        String tableName = "playernpcs_field";
+        String columnName = isPodium ? "podium" : "step";
+
         if (pnpcData.containsKey(mapid)) {
-            query = "UPDATE playernpcs_field SET " + (isPodium ? "podium" : "step") + " = ? WHERE world = ? AND map = ?";
+            query = "UPDATE " + tableName + " SET " + columnName + " = ? WHERE world = ? AND map = ?";
         } else {
-            query = "INSERT INTO playernpcs_field (" + (isPodium ? "podium" : "step") + ", world, map) VALUES (?, ?, ?)";
+            query = "INSERT INTO " + tableName + " (" + columnName + ", world, map) VALUES (?, ?, ?)";
         }
 
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, value);
-            ps.setInt(2, worldid);
-            ps.setInt(3, mapid);
-            ps.executeUpdate();
-        }
+        con.execSQL(query, new Object[]{value, worldid, mapid});
     }
 
     private void setPlayerNpcMapData(int mapid, int step, int podium, boolean silent) {
         if (!silent) {
-            try (Connection con = DatabaseConnection.getConnection()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 if (step != -1) {
                     executePlayerNpcMapDataUpdate(con, false, pnpcStep, step, id, mapid);
                 }
@@ -1855,7 +1860,7 @@ public class World {
                 if (podium != -1) {
                     executePlayerNpcMapDataUpdate(con, true, pnpcPodium, podium, id, mapid);
                 }
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 e.printStackTrace();
             }
         }
@@ -1966,31 +1971,29 @@ public class World {
     }
 
     private static Pair<Integer, Pair<Integer, Integer>> getRelationshipCoupleFromDb(int id, boolean usingMarriageId) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             Integer mid = null, hid = null, wid = null;
 
-            PreparedStatement ps;
+            Cursor cursor;
             if (usingMarriageId) {
-                ps = con.prepareStatement("SELECT * FROM marriages WHERE marriageid = ?");
-                ps.setInt(1, id);
+                cursor = con.rawQuery("SELECT * FROM marriages WHERE marriageid = ?", new String[]{String.valueOf(id)});
             } else {
-                ps = con.prepareStatement("SELECT * FROM marriages WHERE husbandid = ? OR wifeid = ?");
-                ps.setInt(1, id);
-                ps.setInt(2, id);
+                cursor = con.rawQuery("SELECT * FROM marriages WHERE husbandid = ? OR wifeid = ?", new String[]{String.valueOf(id), String.valueOf(id)});
             }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    mid = rs.getInt("marriageid");
-                    hid = rs.getInt("husbandid");
-                    wid = rs.getInt("wifeid");
+            int marriageidIdx = cursor.getColumnIndex("marriageid");
+            int husbandidIdx = cursor.getColumnIndex("husbandid");
+            int wifeidIdx = cursor.getColumnIndex("wifeid");
+            if (cursor.moveToFirst()) {
+                if (marriageidIdx != -1 &&
+                        husbandidIdx != -1 &&
+                        wifeidIdx != -1) {
+                    mid = cursor.getInt(marriageidIdx);
+                    hid = cursor.getInt(husbandidIdx);
+                    wid = cursor.getInt(wifeidIdx);
                 }
             }
-
-            ps.close();
-
             return (mid == null) ? null : new Pair<>(mid, new Pair<>(hid, wid));
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
             return null;
         }
@@ -2004,18 +2007,18 @@ public class World {
     }
 
     private static int addRelationshipToDb(int groomId, int brideId) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("INSERT INTO marriages (husbandid, wifeid) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, groomId);
-            ps.setInt(2, brideId);
-            ps.executeUpdate();
+        ContentValues values = new ContentValues();
+        values.put("husbandid", groomId);
+        values.put("wifeid", brideId);
 
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                rs.next();
-                int ret = rs.getInt(1);
-                return ret;
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();) {
+            long newRowId = con.insert("marriages", null, values);
+            if (newRowId != -1) {
+                return (int) newRowId;
+            } else {
+                return -1;
             }
-        } catch (SQLException se) {
+        } catch (SQLiteException se) {
             se.printStackTrace();
             return -1;
         }
@@ -2031,11 +2034,11 @@ public class World {
     }
 
     private static void deleteRelationshipFromDb(int playerId) {
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("DELETE FROM marriages WHERE marriageid = ?")) {
-            ps.setInt(1, playerId);
-            ps.executeUpdate();
-        } catch (SQLException se) {
+        String whereClause = "marriageid = ?";
+        String[] whereArgs = {String.valueOf(playerId)};
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            con.delete("marriages", whereClause, whereArgs);
+        } catch (SQLiteException se) {
             se.printStackTrace();
         }
     }

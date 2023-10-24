@@ -1,5 +1,7 @@
 package tools.mapletools;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import server.life.MonsterStats;
 import tools.Pair;
 
@@ -53,40 +55,41 @@ public class SkillbookChanceFetcher {
     }
 
     private static void fetchSkillbookDropChances() {
-        Connection con = SimpleDatabaseConnection.getConnection();
+        SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
 
         try {
-            PreparedStatement ps = con.prepareStatement("SELECT dropperid, itemid FROM drop_data WHERE itemid >= 2280000 AND itemid < 2300000");
-            ResultSet rs = ps.executeQuery();
+            Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= 2280000 AND itemid < 2300000", null);
 
-            while (rs.next()) {
-                int mobid = rs.getInt("dropperid");
-                int itemid = rs.getInt("itemid");
+            while (cursor.moveToNext()) {
+                int dropperidIdx = cursor.getColumnIndex("dropperid");
+                int citemidIdx = cursor.getColumnIndex("itemid");
+                if (dropperidIdx != -1 && citemidIdx != -1) {
+                    int mobid = cursor.getInt(dropperidIdx);
+                    int itemid = cursor.getInt(citemidIdx);
 
-                int expectedChance = 250;
+                    int expectedChance = 250;
 
-                if (mobStats.get(mobid) != null) {
-                    int level = mobStats.get(mobid).getLevel();
-                    expectedChance *= Math.max(2, (level - 80) / 15);
+                    if (mobStats.get(mobid) != null) {
+                        int level = mobStats.get(mobid).getLevel();
+                        expectedChance *= Math.max(2, (level - 80) / 15);
 
-                    if (mobStats.get(mobid).isBoss()) {
-                        expectedChance *= 20;
+                        if (mobStats.get(mobid).isBoss()) {
+                            expectedChance *= 20;
+                        } else {
+                            expectedChance *= 1;
+                        }
                     } else {
-                        expectedChance *= 1;
+                        expectedChance = 1287;
                     }
-                } else {
-                    expectedChance = 1287;
-                }
 
-                if (isLegendSkillUpgradeBook(itemid)) {     // drop rate of Legends seems to be higher than explorers, in retrospect from values in DB
-                    expectedChance *= 3;
-                }
+                    if (isLegendSkillUpgradeBook(itemid)) {     // drop rate of Legends seems to be higher than explorers, in retrospect from values in DB
+                        expectedChance *= 3;
+                    }
 
-                skillbookChances.put(new Pair<>(mobid, itemid), expectedChance);
+                    skillbookChances.put(new Pair<>(mobid, itemid), expectedChance);
+                }
             }
-
-            rs.close();
-            ps.close();
+            cursor.close();
             con.close();
         } catch (Exception e) {
             e.printStackTrace();

@@ -20,6 +20,8 @@
 package net.server.coordinator.session;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.Character;
 import client.Client;
 import config.YamlConfig;
@@ -67,7 +69,7 @@ public class SessionCoordinator {
     }
 
     private static boolean attemptAccountAccess(int accountId, Hwid hwid, boolean routineCheck) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             List<HwidRelevance> hwidRelevances = SessionDAO.getHwidRelevance(con, accountId);
             for (HwidRelevance hwidRelevance : hwidRelevances) {
                 if (hwidRelevance.hwid().endsWith(hwid.hwid())) {
@@ -84,7 +86,7 @@ public class SessionCoordinator {
             if (hwidRelevances.size() < YamlConfig.config.server.MAX_ALLOWED_ACCOUNT_HWID) {
                 return true;
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             log.warn("Failed to update account access. Account id: {}, nibbleHwid: {}", accountId, hwid, e);
         }
 
@@ -249,7 +251,7 @@ public class SessionCoordinator {
     }
 
     private static void associateHwidAccountIfAbsent(Hwid hwid, int accountId) {
-        try (Connection con = DatabaseConnection.getConnection()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             List<Hwid> hwids = SessionDAO.getHwidsForAccount(con, accountId);
 
             boolean containsRemoteHwid = hwids.stream().anyMatch(accountHwid -> accountHwid.equals(hwid));
@@ -261,7 +263,7 @@ public class SessionCoordinator {
                 Instant expiry = HwidAssociationExpiry.getHwidAccountExpiry(0);
                 SessionDAO.registerAccountAccess(con, accountId, hwid, expiry);
             }
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             log.warn("Failed to associate hwid {} with account id {}", hwid, accountId, ex);
         }
     }
@@ -278,7 +280,7 @@ public class SessionCoordinator {
         if (chrId != null) {
             try {
                 fakeClient.setAccID(Character.loadCharFromDB(chrId, client, false).getAccountID());
-            } catch (SQLException sqle) {
+            } catch (SQLiteException sqle) {
                 sqle.printStackTrace();
             }
         }

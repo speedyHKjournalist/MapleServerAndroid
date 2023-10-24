@@ -119,12 +119,13 @@ public class Family {
     public void setMessage(String message, boolean save) {
         this.preceptsMessage = message;
         if (save) {
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("UPDATE family_character SET precepts = ? WHERE cid = ?")) {
-                ps.setString(1, message);
-                ps.setInt(2, getLeader().getChrId());
-                ps.executeUpdate();
-            } catch (SQLException e) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.rawQuery("UPDATE family_character SET precepts = ? WHERE cid = ?",
+                         new String[]{message, String.valueOf(getLeader().getChrId())})) {
+                if (!cursor.moveToFirst()) {
+                    log.error("Could not save new precepts for family {}", getID());
+                }
+            } catch (SQLiteException e) {
                 log.error("Could not save new precepts for family {}", getID(), e);
             }
         }

@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-//    // ScriptEngine implementation (GraalVM)
+    // ScriptEngine implementation (GraalVM)
 //    id 'org.graalvm.buildtools.native' version '0.9.27'
 }
 
@@ -100,10 +100,12 @@ dependencies {
     // Unit test (Mockito)
     testImplementation 'org.mockito:mockito-core:5.1.1'
 
-//    implementation 'com.eclipsesource.j2v8:j2v8_android:3.0.5'
-     implementation 'wang.harlon.quickjs:wrapper-android:1.0.0'
+//    implementation 'io.alicorn.v8:v8-adapter:1.59'
+//    implementation 'com.eclipsesource.j2v8:j2v8_android:3.0.5@aar'
+//     implementation 'wang.harlon.quickjs:wrapper-android:1.0.0'
+    implementation 'io.apisense:rhino-android:1.1.1'
 
-    implementation files('libs/jsr223.jar')
+//    implementation files('libs/jsr223.jar')
 
     implementation files('libs/jmx-1.2.1.jar')
 }

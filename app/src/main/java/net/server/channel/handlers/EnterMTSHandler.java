@@ -21,6 +21,10 @@
 */
 package net.server.channel.handlers;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteStatement;
 import client.Character;
 import client.Client;
 import client.inventory.Equip;
@@ -120,55 +124,89 @@ public final class EnterMTSHandler extends AbstractPacketHandler {
             c.sendPacket(PacketCreator.showMTSCash(c.getPlayer()));
             List<MTSItemInfo> items = new ArrayList<>();
             int pages = 0;
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT * FROM mts_items WHERE tab = 1 AND transfer = 0 ORDER BY id DESC LIMIT 16, 16");
-                     ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        if (rs.getInt("type") != 1) {
-                            Item i = new Item(rs.getInt("itemid"), (short) 0, (short) rs.getInt("quantity"));
-                            i.setOwner(rs.getString("owner"));
-                            items.add(new MTSItemInfo(i, rs.getInt("price") + 100 + (int) (rs.getInt("price") * 0.1), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
-                        } else {
-                            Equip equip = new Equip(rs.getInt("itemid"), (byte) rs.getInt("position"), -1);
-                            equip.setOwner(rs.getString("owner"));
-                            equip.setQuantity((short) 1);
-                            equip.setAcc((short) rs.getInt("acc"));
-                            equip.setAvoid((short) rs.getInt("avoid"));
-                            equip.setDex((short) rs.getInt("dex"));
-                            equip.setHands((short) rs.getInt("hands"));
-                            equip.setHp((short) rs.getInt("hp"));
-                            equip.setInt((short) rs.getInt("int"));
-                            equip.setJump((short) rs.getInt("jump"));
-                            equip.setVicious((short) rs.getInt("vicious"));
-                            equip.setFlag((short) rs.getInt("flag"));
-                            equip.setLuk((short) rs.getInt("luk"));
-                            equip.setMatk((short) rs.getInt("matk"));
-                            equip.setMdef((short) rs.getInt("mdef"));
-                            equip.setMp((short) rs.getInt("mp"));
-                            equip.setSpeed((short) rs.getInt("speed"));
-                            equip.setStr((short) rs.getInt("str"));
-                            equip.setWatk((short) rs.getInt("watk"));
-                            equip.setWdef((short) rs.getInt("wdef"));
-                            equip.setUpgradeSlots((byte) rs.getInt("upgradeslots"));
-                            equip.setLevel((byte) rs.getInt("level"));
-                            equip.setItemLevel(rs.getByte("itemlevel"));
-                            equip.setItemExp(rs.getInt("itemexp"));
-                            equip.setRingId(rs.getInt("ringid"));
-                            equip.setExpiration(rs.getLong("expiration"));
-                            equip.setGiftFrom(rs.getString("giftFrom"));
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                try (Cursor rs = con.rawQuery("SELECT * FROM mts_items WHERE tab = 1 AND transfer = 0 ORDER BY id DESC LIMIT 16, 16",  null)) {
+                    if (rs != null) {
+                        while (rs.moveToNext()) {
+                            int typeColumn = rs.getColumnIndex("type");
+                            int itemIdColumn = rs.getColumnIndex("itemid");
+                            int quantityColumn = rs.getColumnIndex("quantity");
+                            int positionColumn = rs.getColumnIndex("position");
+                            int priceColumn = rs.getColumnIndex("price");
+                            int idColumn = rs.getColumnIndex("id");
+                            int sellerColumn = rs.getColumnIndex("seller");
+                            int sellerNameColumn = rs.getColumnIndex("sellername");
+                            int sellEndsColumn = rs.getColumnIndex("sell_ends");
+                            int ownerColumn = rs.getColumnIndex("owner");
+                            int accColumn = rs.getColumnIndex("acc");
+                            int avoidColumn = rs.getColumnIndex("avoid");
+                            int dexColumn = rs.getColumnIndex("dex");
+                            int handsColumn = rs.getColumnIndex("hands");
+                            int hpColumn = rs.getColumnIndex("hp");
+                            int intColumn = rs.getColumnIndex("int");
+                            int jumpColumn = rs.getColumnIndex("jump");
+                            int viciousColumn = rs.getColumnIndex("vicious");
+                            int lukColumn = rs.getColumnIndex("luk");
+                            int matkColumn = rs.getColumnIndex("matk");
+                            int mdefColumn = rs.getColumnIndex("mdef");
+                            int mpColumn = rs.getColumnIndex("mp");
+                            int speedColumn = rs.getColumnIndex("speed");
+                            int strColumn = rs.getColumnIndex("str");
+                            int watkColumn = rs.getColumnIndex("watk");
+                            int wdefColumn = rs.getColumnIndex("wdef");
+                            int upgradeSlotsColumn = rs.getColumnIndex("upgradeslots");
+                            int levelColumn = rs.getColumnIndex("level");
+                            int itemLevelColumn = rs.getColumnIndex("itemlevel");
+                            int itemExpColumn = rs.getColumnIndex("itemexp");
+                            int ringIdColumn = rs.getColumnIndex("ringid");
+                            int flagColumn = rs.getColumnIndex("flag");
+                            int expirationColumn = rs.getColumnIndex("expiration");
+                            int giftFromColumn = rs.getColumnIndex("giftFrom");
 
-                            items.add(new MTSItemInfo(equip, rs.getInt("price") + 100 + (int) (rs.getInt("price") * 0.1), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
+                            if (rs.getInt(typeColumn) != 1) {
+                                Item i = new Item(rs.getInt(itemIdColumn), (short) 0, (short) rs.getInt(quantityColumn));
+                                i.setOwner(rs.getString(ownerColumn));
+                                items.add(new MTSItemInfo(i, rs.getInt(priceColumn) + 100 + (int) (rs.getInt(priceColumn) * 0.1), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
+                            } else {
+                                Equip equip = new Equip(rs.getInt(itemIdColumn), (byte) rs.getInt(positionColumn), -1);
+                                equip.setOwner(rs.getString(ownerColumn));
+                                equip.setQuantity((short) 1);
+                                equip.setAcc((short) rs.getInt(accColumn));
+                                equip.setAvoid((short) rs.getInt(avoidColumn));
+                                equip.setDex((short) rs.getInt(dexColumn));
+                                equip.setHands((short) rs.getInt(handsColumn));
+                                equip.setHp((short) rs.getInt(hpColumn));
+                                equip.setInt((short) rs.getInt(intColumn));
+                                equip.setJump((short) rs.getInt(jumpColumn));
+                                equip.setVicious((short) rs.getInt(viciousColumn));
+                                equip.setFlag((short) rs.getInt(flagColumn));
+                                equip.setLuk((short) rs.getInt(lukColumn));
+                                equip.setMatk((short) rs.getInt(matkColumn));
+                                equip.setMdef((short) rs.getInt(mdefColumn));
+                                equip.setMp((short) rs.getInt(mpColumn));
+                                equip.setSpeed((short) rs.getInt(speedColumn));
+                                equip.setStr((short) rs.getInt(strColumn));
+                                equip.setWatk((short) rs.getInt(watkColumn));
+                                equip.setWdef((short) rs.getInt(wdefColumn));
+                                equip.setUpgradeSlots((byte) rs.getInt(upgradeSlotsColumn));
+                                equip.setLevel((byte) rs.getInt(levelColumn));
+                                equip.setItemLevel((byte) rs.getInt(itemLevelColumn));
+                                equip.setItemExp(rs.getInt(itemExpColumn));
+                                equip.setRingId(rs.getInt(ringIdColumn));
+                                equip.setExpiration(rs.getLong(expirationColumn));
+                                equip.setGiftFrom(rs.getString(giftFromColumn));
+
+                                items.add(new MTSItemInfo(equip, rs.getInt(priceColumn) + 100 + (int) (rs.getInt(priceColumn) * 0.1), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
+                            }
                         }
                     }
                 }
 
-                try (PreparedStatement ps = con.prepareStatement("SELECT COUNT(*) FROM mts_items");
-                     ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        pages = (int) Math.ceil(rs.getInt(1) / 16);
-                    }
+                try (SQLiteStatement statement = con.compileStatement("SELECT COUNT(*) FROM mts_items")) {
+                    long count = statement.simpleQueryForLong();
+                    pages = (int) Math.ceil(count / 16);
                 }
-            } catch (SQLException e) {
+            } catch (SQLiteException e) {
                 e.printStackTrace();
             }
             c.sendPacket(PacketCreator.sendMTS(items, 1, 0, 0, pages));
@@ -179,49 +217,83 @@ public final class EnterMTSHandler extends AbstractPacketHandler {
 
     private List<MTSItemInfo> getNotYetSold(int cid) {
         List<MTSItemInfo> items = new ArrayList<>();
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM mts_items WHERE seller = ? AND transfer = 0 ORDER BY id DESC")) {
-            ps.setInt(1, cid);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor rs = con.rawQuery("SELECT * FROM mts_items WHERE seller = ? AND transfer = 0 ORDER BY id DESC", new String[]{String.valueOf(cid)})) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.getInt("type") != 1) {
-                        Item i = new Item(rs.getInt("itemid"), (short) 0, (short) rs.getInt("quantity"));
-                        i.setOwner(rs.getString("owner"));
-                        items.add(new MTSItemInfo(i, rs.getInt("price"), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
+            if (rs != null) {
+                while (rs.moveToNext()) {
+                    int typeColumn = rs.getColumnIndex("type");
+                    int itemIdColumn = rs.getColumnIndex("itemid");
+                    int quantityColumn = rs.getColumnIndex("quantity");
+                    int positionColumn = rs.getColumnIndex("position");
+                    int priceColumn = rs.getColumnIndex("price");
+                    int idColumn = rs.getColumnIndex("id");
+                    int sellerColumn = rs.getColumnIndex("seller");
+                    int sellerNameColumn = rs.getColumnIndex("sellername");
+                    int sellEndsColumn = rs.getColumnIndex("sell_ends");
+                    int ownerColumn = rs.getColumnIndex("owner");
+                    int accColumn = rs.getColumnIndex("acc");
+                    int avoidColumn = rs.getColumnIndex("avoid");
+                    int dexColumn = rs.getColumnIndex("dex");
+                    int handsColumn = rs.getColumnIndex("hands");
+                    int hpColumn = rs.getColumnIndex("hp");
+                    int intColumn = rs.getColumnIndex("int");
+                    int jumpColumn = rs.getColumnIndex("jump");
+                    int viciousColumn = rs.getColumnIndex("vicious");
+                    int lukColumn = rs.getColumnIndex("luk");
+                    int matkColumn = rs.getColumnIndex("matk");
+                    int mdefColumn = rs.getColumnIndex("mdef");
+                    int mpColumn = rs.getColumnIndex("mp");
+                    int speedColumn = rs.getColumnIndex("speed");
+                    int strColumn = rs.getColumnIndex("str");
+                    int watkColumn = rs.getColumnIndex("watk");
+                    int wdefColumn = rs.getColumnIndex("wdef");
+                    int upgradeSlotsColumn = rs.getColumnIndex("upgradeslots");
+                    int levelColumn = rs.getColumnIndex("level");
+                    int itemLevelColumn = rs.getColumnIndex("itemlevel");
+                    int itemExpColumn = rs.getColumnIndex("itemexp");
+                    int ringIdColumn = rs.getColumnIndex("ringid");
+                    int flagColumn = rs.getColumnIndex("flag");
+                    int expirationColumn = rs.getColumnIndex("expiration");
+                    int giftFromColumn = rs.getColumnIndex("giftFrom");
+
+                    if (rs.getInt(typeColumn) != 1) {
+                        Item i = new Item(rs.getInt(itemIdColumn), (short) 0, (short) rs.getInt(quantityColumn));
+                        i.setOwner(rs.getString(ownerColumn));
+                        items.add(new MTSItemInfo(i, rs.getInt(priceColumn), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
                     } else {
-                        Equip equip = new Equip(rs.getInt("itemid"), (byte) rs.getInt("position"), -1);
-                        equip.setOwner(rs.getString("owner"));
+                        Equip equip = new Equip(rs.getInt(itemIdColumn), (byte) rs.getInt(positionColumn), -1);
+                        equip.setOwner(rs.getString(ownerColumn));
                         equip.setQuantity((short) 1);
-                        equip.setAcc((short) rs.getInt("acc"));
-                        equip.setAvoid((short) rs.getInt("avoid"));
-                        equip.setDex((short) rs.getInt("dex"));
-                        equip.setHands((short) rs.getInt("hands"));
-                        equip.setHp((short) rs.getInt("hp"));
-                        equip.setInt((short) rs.getInt("int"));
-                        equip.setJump((short) rs.getInt("jump"));
-                        equip.setVicious((short) rs.getInt("vicious"));
-                        equip.setLuk((short) rs.getInt("luk"));
-                        equip.setMatk((short) rs.getInt("matk"));
-                        equip.setMdef((short) rs.getInt("mdef"));
-                        equip.setMp((short) rs.getInt("mp"));
-                        equip.setSpeed((short) rs.getInt("speed"));
-                        equip.setStr((short) rs.getInt("str"));
-                        equip.setWatk((short) rs.getInt("watk"));
-                        equip.setWdef((short) rs.getInt("wdef"));
-                        equip.setUpgradeSlots((byte) rs.getInt("upgradeslots"));
-                        equip.setLevel((byte) rs.getInt("level"));
-                        equip.setItemLevel(rs.getByte("itemlevel"));
-                        equip.setItemExp(rs.getInt("itemexp"));
-                        equip.setRingId(rs.getInt("ringid"));
-                        equip.setFlag((short) rs.getInt("flag"));
-                        equip.setExpiration(rs.getLong("expiration"));
-                        equip.setGiftFrom(rs.getString("giftFrom"));
-                        items.add(new MTSItemInfo(equip, rs.getInt("price"), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
+                        equip.setAcc((short) rs.getInt(accColumn));
+                        equip.setAvoid((short) rs.getInt(avoidColumn));
+                        equip.setDex((short) rs.getInt(dexColumn));
+                        equip.setHands((short) rs.getInt(handsColumn));
+                        equip.setHp((short) rs.getInt(hpColumn));
+                        equip.setInt((short) rs.getInt(intColumn));
+                        equip.setJump((short) rs.getInt(jumpColumn));
+                        equip.setVicious((short) rs.getInt(viciousColumn));
+                        equip.setLuk((short) rs.getInt(lukColumn));
+                        equip.setMatk((short) rs.getInt(matkColumn));
+                        equip.setMdef((short) rs.getInt(mdefColumn));
+                        equip.setMp((short) rs.getInt(mpColumn));
+                        equip.setSpeed((short) rs.getInt(speedColumn));
+                        equip.setStr((short) rs.getInt(strColumn));
+                        equip.setWatk((short) rs.getInt(watkColumn));
+                        equip.setWdef((short) rs.getInt(wdefColumn));
+                        equip.setUpgradeSlots((byte) rs.getInt(upgradeSlotsColumn));
+                        equip.setLevel((byte) rs.getInt(levelColumn));
+                        equip.setItemLevel((byte) rs.getInt(itemLevelColumn));
+                        equip.setItemExp(rs.getInt(itemExpColumn));
+                        equip.setRingId(rs.getInt(ringIdColumn));
+                        equip.setFlag((short) rs.getInt(flagColumn));
+                        equip.setExpiration(rs.getLong(expirationColumn));
+                        equip.setGiftFrom(rs.getString(giftFromColumn));
+                        items.add(new MTSItemInfo(equip, rs.getInt(priceColumn), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return items;
@@ -229,49 +301,82 @@ public final class EnterMTSHandler extends AbstractPacketHandler {
 
     private List<MTSItemInfo> getTransfer(int cid) {
         List<MTSItemInfo> items = new ArrayList<>();
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM mts_items WHERE transfer = 1 AND seller = ? ORDER BY id DESC")) {
-            ps.setInt(1, cid);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor rs = con.rawQuery("SELECT * FROM mts_items WHERE transfer = 1 AND seller = ? ORDER BY id DESC", new String[]{String.valueOf(cid)})) {
+            if (rs != null) {
+                while (rs.moveToNext()) {
+                    int typeColumn = rs.getColumnIndex("type");
+                    int itemIdColumn = rs.getColumnIndex("itemid");
+                    int quantityColumn = rs.getColumnIndex("quantity");
+                    int positionColumn = rs.getColumnIndex("position");
+                    int priceColumn = rs.getColumnIndex("price");
+                    int idColumn = rs.getColumnIndex("id");
+                    int sellerColumn = rs.getColumnIndex("seller");
+                    int sellerNameColumn = rs.getColumnIndex("sellername");
+                    int sellEndsColumn = rs.getColumnIndex("sell_ends");
+                    int ownerColumn = rs.getColumnIndex("owner");
+                    int accColumn = rs.getColumnIndex("acc");
+                    int avoidColumn = rs.getColumnIndex("avoid");
+                    int dexColumn = rs.getColumnIndex("dex");
+                    int handsColumn = rs.getColumnIndex("hands");
+                    int hpColumn = rs.getColumnIndex("hp");
+                    int intColumn = rs.getColumnIndex("int");
+                    int jumpColumn = rs.getColumnIndex("jump");
+                    int viciousColumn = rs.getColumnIndex("vicious");
+                    int lukColumn = rs.getColumnIndex("luk");
+                    int matkColumn = rs.getColumnIndex("matk");
+                    int mdefColumn = rs.getColumnIndex("mdef");
+                    int mpColumn = rs.getColumnIndex("mp");
+                    int speedColumn = rs.getColumnIndex("speed");
+                    int strColumn = rs.getColumnIndex("str");
+                    int watkColumn = rs.getColumnIndex("watk");
+                    int wdefColumn = rs.getColumnIndex("wdef");
+                    int upgradeSlotsColumn = rs.getColumnIndex("upgradeslots");
+                    int levelColumn = rs.getColumnIndex("level");
+                    int itemLevelColumn = rs.getColumnIndex("itemlevel");
+                    int itemExpColumn = rs.getColumnIndex("itemexp");
+                    int ringIdColumn = rs.getColumnIndex("ringid");
+                    int flagColumn = rs.getColumnIndex("flag");
+                    int expirationColumn = rs.getColumnIndex("expiration");
+                    int giftFromColumn = rs.getColumnIndex("giftFrom");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.getInt("type") != 1) {
-                        Item i = new Item(rs.getInt("itemid"), (short) 0, (short) rs.getInt("quantity"));
-                        i.setOwner(rs.getString("owner"));
-                        items.add(new MTSItemInfo(i, rs.getInt("price"), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
+                    if (rs.getInt(typeColumn) != 1) {
+                        Item i = new Item(rs.getInt(itemIdColumn), (short) 0, (short) rs.getInt(quantityColumn));
+                        i.setOwner(rs.getString(ownerColumn));
+                        items.add(new MTSItemInfo(i, rs.getInt(priceColumn), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
                     } else {
-                        Equip equip = new Equip(rs.getInt("itemid"), (byte) rs.getInt("position"), -1);
-                        equip.setOwner(rs.getString("owner"));
+                        Equip equip = new Equip(rs.getInt(itemIdColumn), (byte) rs.getInt(positionColumn), -1);
+                        equip.setOwner(rs.getString(ownerColumn));
                         equip.setQuantity((short) 1);
-                        equip.setAcc((short) rs.getInt("acc"));
-                        equip.setAvoid((short) rs.getInt("avoid"));
-                        equip.setDex((short) rs.getInt("dex"));
-                        equip.setHands((short) rs.getInt("hands"));
-                        equip.setHp((short) rs.getInt("hp"));
-                        equip.setInt((short) rs.getInt("int"));
-                        equip.setJump((short) rs.getInt("jump"));
-                        equip.setVicious((short) rs.getInt("vicious"));
-                        equip.setLuk((short) rs.getInt("luk"));
-                        equip.setMatk((short) rs.getInt("matk"));
-                        equip.setMdef((short) rs.getInt("mdef"));
-                        equip.setMp((short) rs.getInt("mp"));
-                        equip.setSpeed((short) rs.getInt("speed"));
-                        equip.setStr((short) rs.getInt("str"));
-                        equip.setWatk((short) rs.getInt("watk"));
-                        equip.setWdef((short) rs.getInt("wdef"));
-                        equip.setUpgradeSlots((byte) rs.getInt("upgradeslots"));
-                        equip.setLevel((byte) rs.getInt("level"));
-                        equip.setItemLevel(rs.getByte("itemlevel"));
-                        equip.setItemExp(rs.getInt("itemexp"));
-                        equip.setRingId(rs.getInt("ringid"));
-                        equip.setFlag((short) rs.getInt("flag"));
-                        equip.setExpiration(rs.getLong("expiration"));
-                        equip.setGiftFrom(rs.getString("giftFrom"));
-                        items.add(new MTSItemInfo(equip, rs.getInt("price"), rs.getInt("id"), rs.getInt("seller"), rs.getString("sellername"), rs.getString("sell_ends")));
+                        equip.setAcc((short) rs.getInt(accColumn));
+                        equip.setAvoid((short) rs.getInt(avoidColumn));
+                        equip.setDex((short) rs.getInt(dexColumn));
+                        equip.setHands((short) rs.getInt(handsColumn));
+                        equip.setHp((short) rs.getInt(hpColumn));
+                        equip.setInt((short) rs.getInt(intColumn));
+                        equip.setJump((short) rs.getInt(jumpColumn));
+                        equip.setVicious((short) rs.getInt(viciousColumn));
+                        equip.setLuk((short) rs.getInt(lukColumn));
+                        equip.setMatk((short) rs.getInt(matkColumn));
+                        equip.setMdef((short) rs.getInt(mdefColumn));
+                        equip.setMp((short) rs.getInt(mpColumn));
+                        equip.setSpeed((short) rs.getInt(speedColumn));
+                        equip.setStr((short) rs.getInt(strColumn));
+                        equip.setWatk((short) rs.getInt(watkColumn));
+                        equip.setWdef((short) rs.getInt(wdefColumn));
+                        equip.setUpgradeSlots((byte) rs.getInt(upgradeSlotsColumn));
+                        equip.setLevel((byte) rs.getInt(levelColumn));
+                        equip.setItemLevel((byte) rs.getInt(itemLevelColumn));
+                        equip.setItemExp(rs.getInt(itemExpColumn));
+                        equip.setRingId(rs.getInt(ringIdColumn));
+                        equip.setFlag((short) rs.getInt(flagColumn));
+                        equip.setExpiration(rs.getLong(expirationColumn));
+                        equip.setGiftFrom(rs.getString(giftFromColumn));
+                        items.add(new MTSItemInfo(equip, rs.getInt(priceColumn), rs.getInt(idColumn), rs.getInt(sellerColumn), rs.getString(sellerNameColumn), rs.getString(sellEndsColumn)));
                     }
                 }
             }
-        } catch (SQLException e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
         return items;

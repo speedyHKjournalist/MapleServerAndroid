@@ -1752,7 +1752,7 @@ public class ItemInformationProvider {
          }
          }
          }
-         } catch (SQLException ex) {
+         } catch (SQLiteException ex) {
             ex.printStackTrace();
          }*/
         int tdex = chr.getDex(), tstr = chr.getStr(), tint = chr.getInt(), tluk = chr.getLuk(), fame = chr.getFame();
@@ -1838,7 +1838,7 @@ public class ItemInformationProvider {
          }
          }
          }
-         } catch (SQLException ex) {
+         } catch (SQLiteException ex) {
             ex.printStackTrace();
          }*/
 
@@ -2011,15 +2011,15 @@ public class ItemInformationProvider {
                 return null;
             }
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT stat, value FROM makerreagentdata WHERE itemid = ?")) {
-                ps.setInt(1, itemId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        String statType = rs.getString("stat");
-                        int statGain = rs.getInt("value");
-
+            String selectQuery = "SELECT stat, value FROM makerreagentdata WHERE itemid = ?";
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor ps = con.rawQuery(selectQuery, new String[]{String.valueOf(itemId)})) {
+                if (ps.moveToFirst()) {
+                    int statIdx = ps.getColumnIndex("stat");
+                    int valueIdx = ps.getColumnIndex("value");
+                    if (statIdx != -1 && valueIdx != -1) {
+                        String statType = ps.getString(statIdx);
+                        int statGain = ps.getInt(valueIdx);
                         statUpgd = new Pair<>(statType, statGain);
                     }
                 }
@@ -2042,13 +2042,14 @@ public class ItemInformationProvider {
 
             itemid = -1;
 
-            try (Connection con = DatabaseConnection.getConnection();
-                 PreparedStatement ps = con.prepareStatement("SELECT dropperid FROM drop_data WHERE itemid = ? ORDER BY dropperid;")) {
-                ps.setInt(1, leftoverId);
+            String selectQuery = "SELECT dropperid FROM drop_data WHERE itemid = ? ORDER BY dropperid";
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        int dropperid = rs.getInt("dropperid");
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.rawQuery(selectQuery, new String[]{String.valueOf(leftoverId)})) {
+                if (cursor.moveToFirst()) {
+                    int dropperidIdx = cursor.getColumnIndex("dropperid");
+                    if (dropperidIdx != -1) {
+                        int dropperid = cursor.getInt(dropperidIdx);
                         itemid = getCrystalForLevel(LifeFactory.getMonsterLevel(dropperid) - 1);
                     }
                 }
@@ -2069,19 +2070,26 @@ public class ItemInformationProvider {
         if ((makerEntry = makerItemCache.get(toCreate)) != null) {
             return new MakerItemCreateEntry(makerEntry);
         } else {
-            try (Connection con = DatabaseConnection.getConnection()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 int reqLevel = -1;
                 int reqMakerLevel = -1;
                 int cost = -1;
                 int toGive = -1;
-                try (PreparedStatement ps = con.prepareStatement("SELECT req_level, req_maker_level, req_meso, quantity FROM makercreatedata WHERE itemid = ?")) {
-                    ps.setInt(1, toCreate);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            reqLevel = rs.getInt("req_level");
-                            reqMakerLevel = rs.getInt("req_maker_level");
-                            cost = rs.getInt("req_meso");
-                            toGive = rs.getInt("quantity");
+                String selectQuery = "SELECT req_level, req_maker_level, req_meso, quantity FROM makercreatedata WHERE itemid = ?";
+                try (Cursor cursor = con.rawQuery(selectQuery, new String[]{String.valueOf(toCreate)})) {
+                    if (cursor.moveToFirst()) {
+                        int req_levelIdx = cursor.getColumnIndex("req_level");
+                        int req_maker_levelIdx = cursor.getColumnIndex("req_maker_level");
+                        int req_mesoIdx = cursor.getColumnIndex("req_meso");
+                        int quantityIdx = cursor.getColumnIndex("quantity");
+                        if (req_levelIdx != -1 &&
+                                req_maker_levelIdx != -1 &&
+                                req_mesoIdx != -1 &&
+                                quantityIdx != -1) {
+                            reqLevel = cursor.getInt(req_levelIdx);
+                            reqMakerLevel = cursor.getInt(req_maker_levelIdx);
+                            cost = cursor.getInt(req_mesoIdx);
+                            toGive = cursor.getInt(quantityIdx);
                         }
                     }
                 }
@@ -2089,17 +2097,21 @@ public class ItemInformationProvider {
                 makerEntry = new MakerItemCreateEntry(cost, reqLevel, reqMakerLevel);
                 makerEntry.addGainItem(toCreate, toGive);
 
-                try (PreparedStatement ps = con.prepareStatement("SELECT req_item, count FROM makerrecipedata WHERE itemid = ?")) {
-                    ps.setInt(1, toCreate);
 
-                    try (ResultSet rs = ps.executeQuery()) {
-                        while (rs.next()) {
-                            makerEntry.addReqItem(rs.getInt("req_item"), rs.getInt("count"));
+                try (Cursor ps = con.rawQuery("SELECT req_item, count FROM makerrecipedata WHERE itemid = ?", new String[]{String.valueOf(toCreate)})) {
+
+                    while (ps.moveToNext()) {
+                        int req_itemIdx = ps.getColumnIndex("req_item");
+                        int countIdx = ps.getColumnIndex("count");
+                        if (req_itemIdx != -1 && countIdx != -1) {
+                            int reqItem = ps.getInt(req_itemIdx);
+                            int count = ps.getInt(countIdx);
+                            makerEntry.addReqItem(reqItem, count);
                         }
                     }
                 }
                 makerItemCache.put(toCreate, new MakerItemCreateEntry(makerEntry));
-            } catch (SQLException sqle) {
+            } catch (SQLiteException sqle) {
                 sqle.printStackTrace();
                 makerEntry = null;
             }
@@ -2131,13 +2143,15 @@ public class ItemInformationProvider {
     public List<Pair<Integer, Integer>> getMakerDisassembledItems(Integer itemId) {
         List<Pair<Integer, Integer>> items = new LinkedList<>();
 
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT req_item, count FROM makerrecipedata WHERE itemid = ? AND req_item >= 4260000 AND req_item < 4270000")) {
-            ps.setInt(1, itemId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    items.add(new Pair<>(rs.getInt("req_item"), rs.getInt("count") / 2));   // return to the player half of the crystals needed
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT req_item, count FROM makerrecipedata WHERE itemid = ? AND req_item >= 4260000 AND req_item < 4270000", new String[]{String.valueOf(itemId)})) {
+            while (cursor.moveToNext()) {
+                int req_itemIdx = cursor.getColumnIndex("req_item");
+                int countIdx = cursor.getColumnIndex("count");
+                if (req_itemIdx != -1 && countIdx != -1) {
+                    int reqItem = cursor.getInt(req_itemIdx);
+                    int count = cursor.getInt(countIdx) / 2; // return to the player half of the crystals needed
+                    items.add(new Pair<>(reqItem, count));
                 }
             }
         } catch (Exception e) {
@@ -2149,18 +2163,19 @@ public class ItemInformationProvider {
 
     public int getMakerDisassembledFee(Integer itemId) {
         int fee = -1;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT req_meso FROM makercreatedata WHERE itemid = ?")) {
-            ps.setInt(1, itemId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {   // cost is 13.6363~ % of the original value, trim by 1000.
-                    float val = (float) (rs.getInt("req_meso") * 0.13636363636364);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT req_meso FROM makercreatedata WHERE itemid = ?", new String[]{String.valueOf(itemId)})) {
+            if (ps.moveToNext()) {
+                int req_mesoIdx = ps.getColumnIndex("req_meso");
+                if (req_mesoIdx != -1) {
+                    int reqMeso = ps.getInt(req_mesoIdx);
+                    float val = (float) (reqMeso * 0.13636363636364);
                     fee = (int) (val / 1000);
                     fee *= 1000;
                 }
             }
-        } catch (Exception e) {
+
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 
@@ -2189,19 +2204,19 @@ public class ItemInformationProvider {
 
     public Set<String> getWhoDrops(Integer itemId) {
         Set<String> list = new HashSet<>();
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50")) {
-            ps.setInt(1, itemId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String resultName = MonsterInformationProvider.getInstance().getMobNameFromId(rs.getInt("dropperid"));
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor ps = con.rawQuery("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50", new String[]{String.valueOf(itemId)})) {
+            while (ps.moveToNext()) {
+                int dropperidIdx = ps.getColumnIndex("dropperid");
+                if (dropperidIdx != -1) {
+                    int dropperId = ps.getInt(dropperidIdx);
+                    String resultName = MonsterInformationProvider.getInstance().getMobNameFromId(dropperId);
                     if (!resultName.isEmpty()) {
                         list.add(resultName);
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch (SQLiteException e) {
             e.printStackTrace();
         }
 

@@ -21,6 +21,9 @@
 */
 package client;
 
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import client.inventory.manipulator.CashIdGenerator;
 import tools.DatabaseConnection;
 import tools.Pair;
@@ -51,17 +54,25 @@ public class Ring implements Comparable<Ring> {
 
     public static Ring loadFromDb(int ringId) {
         Ring ret = null;
-        try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT * FROM rings WHERE id = ?")) {
-            ps.setInt(1, ringId);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.rawQuery("SELECT * FROM rings WHERE id = ?", new String[]{String.valueOf(ringId)})) {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    ret = new Ring(ringId, rs.getInt("partnerRingId"), rs.getInt("partnerChrId"), rs.getInt("itemid"), rs.getString("partnerName"));
+            int partnerRingIdIdx = cursor.getColumnIndex("partnerRingId");
+            int partnerChrIdIdx = cursor.getColumnIndex("partnerChrId");
+            int itemidIdx = cursor.getColumnIndex("itemid");
+            int partnerNameIdx = cursor.getColumnIndex("partnerName");
+
+            if (partnerRingIdIdx != -1 &&
+                    partnerChrIdIdx != -1 &&
+                    itemidIdx != -1 &&
+                    partnerNameIdx != -1) {
+                if (cursor.moveToFirst()) {
+                    ret = new Ring(ringId, cursor.getInt(partnerRingIdIdx), cursor.getInt(partnerChrIdIdx), cursor.getInt(itemidIdx), cursor.getString(partnerNameIdx));
                 }
             }
+
             return ret;
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
             return null;
         }
@@ -73,31 +84,22 @@ public class Ring implements Comparable<Ring> {
                 return;
             }
 
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("DELETE FROM rings WHERE id=?")) {
-                    ps.setInt(1, ring.getRingId());
-                    ps.addBatch();
-
-                    ps.setInt(1, ring.getPartnerRingId());
-                    ps.addBatch();
-
-                    ps.executeBatch();
-                }
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
+                con.beginTransaction();
+                con.execSQL("DELETE FROM rings WHERE id=?", new Object[]{ring.getRingId()});
+                con.execSQL("DELETE FROM rings WHERE id=?", new Object[]{ring.getPartnerRingId()});
 
                 CashIdGenerator.freeCashId(ring.getRingId());
                 CashIdGenerator.freeCashId(ring.getPartnerRingId());
 
-                try (PreparedStatement ps = con.prepareStatement("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?")) {
-                    ps.setInt(1, ring.getRingId());
-                    ps.addBatch();
-
-                    ps.setInt(1, ring.getPartnerRingId());
-                    ps.addBatch();
-
-                    ps.executeBatch();
-                }
+                con.execSQL("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?", new Object[]{ring.getRingId()});
+                con.execSQL("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?", new Object[]{ring.getPartnerRingId()});
+                con.setTransactionSuccessful();
+            } finally {
+                con.endTransaction();
             }
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
         }
     }
@@ -114,27 +116,18 @@ public class Ring implements Comparable<Ring> {
             ringID[0] = CashIdGenerator.generateCashId();
             ringID[1] = CashIdGenerator.generateCashId();
 
-            try (Connection con = DatabaseConnection.getConnection()) {
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, ringID[0]);
-                    ps.setInt(2, itemid);
-                    ps.setInt(3, ringID[1]);
-                    ps.setInt(4, partner2.getId());
-                    ps.setString(5, partner2.getName());
-                    ps.executeUpdate();
-                }
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                con.beginTransaction();
+                con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
+                        new Object[]{ringID[0], itemid, ringID[1], partner2.getId(), partner2.getName()});
 
-                try (PreparedStatement ps = con.prepareStatement("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, ringID[1]);
-                    ps.setInt(2, itemid);
-                    ps.setInt(3, ringID[0]);
-                    ps.setInt(4, partner1.getId());
-                    ps.setString(5, partner1.getName());
-                    ps.executeUpdate();
-                }
+                con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
+                        new Object[]{ringID[1], itemid, ringID[0], partner1.getId(), partner1.getName()});
+                con.setTransactionSuccessful();
+                con.endTransaction();
             }
             return new Pair<>(ringID[0], ringID[1]);
-        } catch (SQLException ex) {
+        } catch (SQLiteException ex) {
             ex.printStackTrace();
             return new Pair<>(-1, -1);
         }
