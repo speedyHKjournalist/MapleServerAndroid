@@ -42,7 +42,7 @@ function cancelSchedule() {
 }
 
 function start() {
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var labSecretBasementPath = em.getChannelServer().getMapFactory().getMap(261030000);
     var chimera = LifeFactory.getMonster(8220002);
 
@@ -54,11 +54,11 @@ function start() {
     var posX;
     var posY = 180;
     posX = (Math.floor(Math.random() * 900) - 900);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     labSecretBasementPath.spawnMonsterOnGroundBelow(chimera, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     labSecretBasementPath.broadcastMessage(PacketCreator.serverNotice(6, "Kimera has appeared out of the darkness of the underground with a glitter in her eyes."));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

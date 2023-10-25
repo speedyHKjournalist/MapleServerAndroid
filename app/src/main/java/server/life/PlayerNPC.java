@@ -506,7 +506,6 @@ public class PlayerNPC extends AbstractMapObject {
                     e.printStackTrace(); // Handle any potential SQL exceptions
                 } finally {
                     con.endTransaction();
-                    con.close();
                 }
 
                 try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs WHERE id = ?", new String[]{String.valueOf(npcId)})) {

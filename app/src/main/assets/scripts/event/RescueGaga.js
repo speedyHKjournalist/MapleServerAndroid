@@ -87,7 +87,7 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (!(hasLeader && eligible.length >= minPlayers && eligible.length <= maxPlayers)) {
         eligible = [];
     }
-    return Java.to(eligible, Java.type('net.server.world.PartyCharacter[]'));
+    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
 }
 
 function setup(level, lobbyid) {
@@ -111,7 +111,7 @@ function playerEntry(eim, player) {
     var map = eim.getMapInstance(entryMap);
     player.changeMap(map, map.getPortal(0));
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     player.sendPacket(PacketCreator.showEffect("event/space/start"));
     player.startMapEffect("Please rescue Gaga within the time limit.", 5120027);
 }
@@ -208,7 +208,7 @@ function clearPQ(eim) {
 }
 
 function spawnGrandpaBunny(eim) {
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     eim.spawnNpc(9001105, new Point(175, -20), eim.getInstanceMap(maxMapId));
 }
 

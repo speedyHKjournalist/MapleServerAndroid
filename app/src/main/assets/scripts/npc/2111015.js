@@ -21,7 +21,7 @@
 var status;
 
 function isPillUsed(ch) {
-    const BuffStat = Java.type('client.BuffStat');
+    const BuffStat = importPackage('client.BuffStat');
     return ch.getBuffSource(BuffStat.HPREC) == 2022198;
 }
 

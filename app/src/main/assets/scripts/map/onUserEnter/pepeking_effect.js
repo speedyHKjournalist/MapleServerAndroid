@@ -3,7 +3,7 @@ function start(ms) {
     var player = ms.getPlayer();
     var map = player.getMap();
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     map.spawnMonsterOnGroundBelow(LifeFactory.getMonster(mobId), new Point(-28, -67));
 }

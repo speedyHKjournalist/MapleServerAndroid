@@ -308,7 +308,7 @@ function writeAllFeatures() {
 }
 
 function start() {
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     cm.getPlayer().sendPacket(PacketCreator.musicChange(anthemSong));
     status = -1;
     writeAllFeatures();
@@ -316,7 +316,7 @@ function start() {
 }
 
 function action(mode, type, selection) {
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     if (mode == -1) {
         cm.getPlayer().sendPacket(PacketCreator.musicChange(ambientSong));
         cm.dispose();

@@ -9,8 +9,8 @@ function start(ms) {
             return;
         }
 
-        const LifeFactory = Java.type('server.life.LifeFactory');
-        const Point = Java.type('java.awt.Point');
+        importPackage(Packages.server.life);
+        importClass(android.graphics.Point);
         map.spawnMonsterOnGroundBelow(LifeFactory.getMonster(mobId), new Point(-1027, 216));
     }
 }

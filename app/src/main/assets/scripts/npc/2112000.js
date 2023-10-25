@@ -93,8 +93,8 @@ function action(mode, type, selection) {
                 } else {
                     var state = eim.getIntProperty("yuletePassed");
 
-                    const LifeFactory = Java.type('server.life.LifeFactory');
-                    const Point = Java.type('java.awt.Point');
+                    importPackage(Packages.server.life);
+                    importClass(android.graphics.Point);
                     if (state == -1) {
                         cm.sendOk("Behold! The pinnacle of Magatia's alchemy studies! Hahahahahahaha...");
                     } else if (state == 0) {

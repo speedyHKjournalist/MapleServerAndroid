@@ -44,7 +44,7 @@ function cancelSchedule() {
 
 function start() {
     var theSeaweedTower = em.getChannelServer().getMapFactory().getMap(230020100);
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var seruf = LifeFactory.getMonster(4220001);
 
     if (theSeaweedTower.getMonsterById(4220001) != null) {
@@ -55,11 +55,11 @@ function start() {
     var posX;
     var posY = 520;
     posX = Math.floor((Math.random() * 2300) - 1500);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     theSeaweedTower.spawnMonsterOnGroundBelow(seruf, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     theSeaweedTower.broadcastMessage(PacketCreator.serverNotice(6, "A strange shell has appeared from a grove of seaweed"));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

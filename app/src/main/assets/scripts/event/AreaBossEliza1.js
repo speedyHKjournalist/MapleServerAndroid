@@ -44,7 +44,7 @@ function cancelSchedule() {
 }
 
 function start() {
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var eliza = LifeFactory.getMonster(8220000);
     var stairwayToTheSky2 = em.getChannelServer().getMapFactory().getMap(200010300);
 
@@ -53,8 +53,8 @@ function start() {
         return;
     }
 
-    const PacketCreator = Java.type('tools.PacketCreator');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.tools);
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(208, 83);
     stairwayToTheSky2.spawnMonsterOnGroundBelow(eliza, spawnpoint);
     stairwayToTheSky2.broadcastMessage(PacketCreator.serverNotice(6, "Eliza has appeared with a black whirlwind."));

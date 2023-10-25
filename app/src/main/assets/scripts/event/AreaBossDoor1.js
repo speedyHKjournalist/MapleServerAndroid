@@ -49,9 +49,9 @@ function start() {
         return;
     }
 
-    const Point = Java.type('java.awt.Point');
-    const PacketCreator = Java.type('tools.PacketCreator');
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importClass(android.graphics.Point);
+    importPackage(Packages.tools);
+    importPackage(Packages.server.life);
 
     var boss = LifeFactory.getMonster(bossMobid);
     var bossPos = new Point(467, 0);

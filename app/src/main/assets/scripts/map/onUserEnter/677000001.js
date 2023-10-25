@@ -1,5 +1,5 @@
 function start(ms) {
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     var pos = new Point(461, 61);
     var mobId = 9400612;
     var mobName = "Marbas";
@@ -11,7 +11,7 @@ function start(ms) {
         return;
     }
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     map.spawnMonsterOnGroundBelow(LifeFactory.getMonster(mobId), pos);
     player.message(mobName + " has appeared!");
 }

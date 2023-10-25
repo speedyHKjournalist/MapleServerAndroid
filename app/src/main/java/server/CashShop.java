@@ -201,8 +201,8 @@ public class CashShop {
 
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
             String query = "SELECT * FROM specialcashitems";
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
-                 Cursor cursor = con.rawQuery(query, null)) {
+            SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+            try (Cursor cursor = con.rawQuery(query, null)) {
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         do {

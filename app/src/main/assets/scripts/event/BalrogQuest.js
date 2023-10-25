@@ -63,7 +63,7 @@ function playerEntry(eim, player) {
     player.changeMap(entryMap, 1);
     em.setProperty("noEntry", "true");
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     player.sendPacket(PacketCreator.getClock(eventTime * 60));
     eim.startEventTimer(eventTime * 60000);
 }
@@ -98,7 +98,7 @@ function isBalrog(mob) {
 
 function monsterKilled(mob, eim) {
     if (isBalrog(mob)) {
-        const Point = Java.type('java.awt.Point');
+        importClass(android.graphics.Point);
         eim.spawnNpc(1061015, new Point(0, 115), mob.getMap());
     }
 }

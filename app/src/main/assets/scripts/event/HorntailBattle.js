@@ -102,8 +102,8 @@ function setup(channel) {
     eim.getInstanceMap(240060100).resetPQ(level);
     eim.getInstanceMap(240060200).resetPQ(level);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     var map, mob;
     map = eim.getInstanceMap(240060000);
     mob = LifeFactory.getMonster(8810000);

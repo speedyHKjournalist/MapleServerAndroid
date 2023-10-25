@@ -42,7 +42,7 @@ function cancelSchedule() {
 
 function start() {
     var whirlpoolOfTime = em.getChannelServer().getMapFactory().getMap(220050100);
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var timer1 = LifeFactory.getMonster(5220003);
 
     if (whirlpoolOfTime.getMonsterById(5220003) != null) {
@@ -53,11 +53,11 @@ function start() {
     var posX;
     var posY = 1030;
     posX = Math.floor((Math.random() * 770) - 770);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     whirlpoolOfTime.spawnMonsterOnGroundBelow(timer1, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     whirlpoolOfTime.broadcastMessage(PacketCreator.serverNotice(6, "Tick-Tock Tick-Tock! Timer makes it's presence known."));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

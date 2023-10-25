@@ -46,7 +46,7 @@ function action(mode, type, selection) {
         }
 
         if (status == 0) {
-            const PacketCreator = Java.type('tools.PacketCreator');
+            importPackage(Packages.tools);
             cm.getMap().broadcastMessage(PacketCreator.playSound("orbis/" + harpSounds[cm.getNpc() - 2012027]));
 
             if (cm.isQuestStarted(3114)) {

@@ -233,8 +233,6 @@ public class CouponInstaller {
 
             installRateCoupons(COUPON_INPUT_FILE_1);
             installRateCoupons(COUPON_INPUT_FILE_2);
-
-            con.close();
         } catch (SQLiteException e) {
             System.out.println("Warning: Could not establish connection to database to change card chance rate.");
             System.out.println(e.getMessage());

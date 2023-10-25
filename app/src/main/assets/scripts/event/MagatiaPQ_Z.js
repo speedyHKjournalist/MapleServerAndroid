@@ -108,7 +108,7 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (!(hasLeader && eligible.length >= minPlayers && eligible.length <= maxPlayers)) {
         eligible = [];
     }
-    return Java.to(eligible, Java.type('net.server.world.PartyCharacter[]'));
+    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
 }
 
 function setup(level, lobbyid) {
@@ -153,7 +153,7 @@ function setup(level, lobbyid) {
     eim.getInstanceMap(926100201).shuffleReactors(2518000, 2612004);
     eim.getInstanceMap(926100202).shuffleReactors(2518000, 2612004);
 
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     eim.spawnNpc(2112000, new Point(252, 243), eim.getInstanceMap(926100203));
     eim.spawnNpc(2112000, new Point(200, 100), eim.getInstanceMap(926100401));
     eim.spawnNpc(2112001, new Point(200, 100), eim.getInstanceMap(926100500));
@@ -254,8 +254,8 @@ function respawnStages(eim) {
         var mapobj = eim.getMapInstance(926100401);
         var mobcount = mapobj.countMonster(9300150);
         var mobobj;
-        const LifeFactory = Java.type('server.life.LifeFactory');
-        const Point = Java.type('java.awt.Point');
+        importPackage(Packages.server.life);
+        importClass(android.graphics.Point);
         if (mobcount == 0) {
             mobobj = LifeFactory.getMonster(9300150);
             mapobj.spawnMonsterOnGroundBelow(mobobj, new Point(-278, -126));
@@ -323,8 +323,8 @@ function yuleteAction(eim) {
 
     mapobj.destroyNPC(2112000);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     var mobobj1, mobobj2;
     for (var i = 0; i < 5; i++) {
         mobobj1 = LifeFactory.getMonster(mob1);

@@ -41,7 +41,7 @@ function cancelSchedule() {
 }
 
 function start() {
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var mapObj = em.getChannelServer().getMapFactory().getMap(800020120);   // original mapid was 251010101
     var mobObj = LifeFactory.getMonster(6090002);
 
@@ -50,8 +50,8 @@ function start() {
         return;
     }
 
-    const Point = Java.type('java.awt.Point');
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importClass(android.graphics.Point);
+    importPackage(Packages.tools);
     mapObj.spawnMonsterOnGroundBelow(mobObj, new Point(560, 50));
     mapObj.broadcastMessage(PacketCreator.serverNotice(6, "From amongst the ruins shrouded by the mists, Bamboo Warrior appears."));
     em.schedule("start", 3 * 60 * 60 * 1000);

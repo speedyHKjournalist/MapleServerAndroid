@@ -7,8 +7,8 @@ function enter(pi) {
             mapobj1.resetPQ(1);
             mapobj2.resetPQ(1);
 
-            const LifeFactory = Java.type('server.life.LifeFactory');
-            const Point = Java.type('java.awt.Point');
+            importPackage(Packages.server.life);
+            importClass(android.graphics.Point);
             mapobj2.spawnMonsterOnGroundBelow(LifeFactory.getMonster(9300348), new Point(591, -34));
 
             pi.playPortalSound();

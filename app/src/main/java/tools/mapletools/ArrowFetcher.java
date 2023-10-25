@@ -203,7 +203,6 @@ public class ArrowFetcher {
                 throw new Exception("NO DATA");
             }
             cursor.close();
-            con.close();
 
             System.out.println("done!");
 

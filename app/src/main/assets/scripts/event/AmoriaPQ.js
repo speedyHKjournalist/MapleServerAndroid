@@ -123,7 +123,7 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (onlyMarriedPlayers && hasNotMarried) {
         eligible = [];
     }
-    return Java.to(eligible, Java.type('net.server.world.PartyCharacter[]'));
+    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
 }
 
 function setup(level, lobbyid) {
@@ -164,8 +164,8 @@ function setup(level, lobbyid) {
 
     var mapObj = eim.getInstanceMap(670010700);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     var mobObj = LifeFactory.getMonster(9400536);
     mapObj.spawnMonsterOnGroundBelow(mobObj, new Point(942, 478));
 

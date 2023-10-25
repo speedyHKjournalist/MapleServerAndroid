@@ -48,9 +48,9 @@ function start() {
         return;
     }
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const PacketCreator = Java.type('tools.PacketCreator');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importPackage(Packages.tools);
+    importClass(android.graphics.Point);
 
     var faust1 = LifeFactory.getMonster(5220002);
     const spawnpoint = new Point(456, 278);

@@ -108,8 +108,8 @@ function setup(channel) {
     eim.getInstanceMap(270050200).resetPQ(level);
     eim.getInstanceMap(270050300).resetPQ(level);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     var mob = LifeFactory.getMonster(8820000);
     mob.disableDrops();
     eim.getInstanceMap(270050100).spawnMonsterOnGroundBelow(mob, new Point(0, -42));
@@ -238,7 +238,7 @@ function spawnJrBoss(mobObj, gotKilled) {
         spawnid = mobObj.getId() - 17;
     }
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var mob = LifeFactory.getMonster(spawnid);
     mobObj.getMap().spawnMonsterOnGroundBelow(mob, mobObj.getPosition());
 }
@@ -258,7 +258,7 @@ function monsterKilled(mob, eim) {
 
             if (stage == 5) {
                 var iid = 4001193;
-                const Item = Java.type('client.inventory.Item');
+                const Item = importPackage('client.inventory.Item');
                 var itemObj = new Item(iid, 0, 1);
                 var mapObj = eim.getMapFactory().getMap(270050100);
                 var reactObj = mapObj.getReactorById(2708000);

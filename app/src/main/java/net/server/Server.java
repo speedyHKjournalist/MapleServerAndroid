@@ -636,8 +636,8 @@ public class Server {
                     couponRates.put(cid, rate);
                 }
             } while (cursor.moveToNext());
-            cursor.close();
         }
+        cursor.close();
     }
 
     public List<Integer> getActiveCoupons() {
@@ -910,8 +910,8 @@ public class Server {
 
         final int worldCount = Math.min(GameConstants.WORLD_NAMES.length, YamlConfig.config.server.WORLDS);
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-             SQLiteDatabase db = mapledb.getWritableDatabase()) {
+        SQLiteDatabase db = MapleDBHelper.getInstance(this.context).getWritableDatabase();
+        try {
             setAllLoggedOut(db);
             setAllMerchantsInactive(db);
             cleanNxcodeCoupons(db);
@@ -1665,7 +1665,7 @@ public class Server {
                     }
                 } while (cursor.moveToNext());
             }
-
+            con.setTransactionSuccessful();
             //log
             for (Pair<String, String> namePair : changedNames) {
                 log.info("Name change applied - from: \"{}\" to \"{}\"", namePair.getLeft(), namePair.getRight());
@@ -1679,10 +1679,9 @@ public class Server {
     }
 
     private static void applyAllWorldTransfers(SQLiteDatabase con) throws SQLiteException {
+        con.beginTransaction();
         try (Cursor cursor = con.rawQuery("SELECT * FROM worldtransfers WHERE completionTime IS NULL", null)) {
             List<Integer> removedTransfers = new LinkedList<>();
-
-            con.beginTransaction();
             try {
                 if (cursor != null && cursor.moveToFirst()) {
                     do {
@@ -1742,6 +1741,7 @@ public class Server {
                         log.info("World transfer applied - character id {} from world {} to world {}", charId, oldWorld, newWorld);
                     }
                 }
+                con.setTransactionSuccessful();
             } finally {
                 con.endTransaction();
             }

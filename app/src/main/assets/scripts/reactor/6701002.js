@@ -30,7 +30,7 @@ function act() {
     var startId = 9400523;
     var mobObj, mapObj = rm.getMap();
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     for (var i = 0; i < 7; i++) {
         mobObj = LifeFactory.getMonster(startId + Math.floor(Math.random() * 3));
         mapObj.spawnMonsterOnGroundBelow(mobObj, rm.getReactor().getPosition());

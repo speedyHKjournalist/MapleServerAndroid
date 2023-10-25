@@ -20,14 +20,14 @@ function action(mode, type, selection) {
         }
 
         if (status == 0) {
-            const InventoryType = Java.type('client.inventory.InventoryType');
+            const InventoryType = importPackage('client.inventory.InventoryType');
             if (cm.getPlayer().getInventory(InventoryType.ETC).getNumFreeSlot() < 1) {
                 cm.sendNext("Check for a available slot on your ETC inventory.");
                 cm.dispose();
                 return;
             }
 
-            const PacketCreator = Java.type('tools.PacketCreator');
+            importPackage(Packages.tools);
             cm.getClient().sendPacket(PacketCreator.openRPSNPC());
             cm.dispose();
         }

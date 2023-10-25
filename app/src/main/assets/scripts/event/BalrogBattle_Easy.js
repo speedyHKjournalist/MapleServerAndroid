@@ -113,7 +113,7 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (!(hasLeader && eligible.length >= minPlayers && eligible.length <= maxPlayers)) {
         eligible = [];
     }
-    return Java.to(eligible, Java.type('net.server.world.PartyCharacter[]'));
+    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
 }
 
 function setup(level, lobbyid) {
@@ -145,15 +145,15 @@ function releaseLeftClaw(eim) {
 function spawnBalrog(eim) {
     var mapObj = eim.getInstanceMap(entryMap);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     mapObj.spawnFakeMonsterOnGroundBelow(LifeFactory.getMonster(8830007), new Point(412, 258));
     mapObj.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8830009), new Point(412, 258));
     mapObj.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8830013), new Point(412, 258));
 }
 
 function spawnSealedBalrog(eim) {
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     eim.getInstanceMap(entryMap).spawnMonsterOnGroundBelow(LifeFactory.getMonster(bossMobId), new Point(412, 258));
 }
 

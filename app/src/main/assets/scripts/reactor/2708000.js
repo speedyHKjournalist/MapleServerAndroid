@@ -24,7 +24,7 @@ function spawnJrBoss(mobObj) {
     mobObj.getMap().killMonster(mobObj.getId());
     var spawnid = mobObj.getId() - 17;
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var mob = LifeFactory.getMonster(spawnid);
     mobObj.getMap().spawnMonsterOnGroundBelow(mob, mobObj.getPosition());
 }

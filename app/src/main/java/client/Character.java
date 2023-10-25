@@ -10986,7 +10986,6 @@ public class Character extends AbstractCharacterObject {
         } finally {
             db.endTransaction();
         }
-        db.close();
     }
 
 //    public static void doNameChange(int characterId, String oldName, String newName, int nameChangeId) { //Don't do this while player is online

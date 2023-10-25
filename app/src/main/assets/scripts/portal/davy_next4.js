@@ -7,7 +7,7 @@ function enter(pi) {
             var chests = parseInt(eim.getProperty("openedChests"));
             var boss;
 
-            const LifeFactory = Java.type('server.life.LifeFactory');
+            importPackage(Packages.server.life);
             if (chests == 0) {
                 boss = LifeFactory.getMonster(9300119);
             }//lord pirate
@@ -20,7 +20,7 @@ function enter(pi) {
 
             boss.changeDifficulty(level, true);
 
-            const Point = Java.type('java.awt.Point');
+            importClass(android.graphics.Point);
             pi.getMap(925100500).spawnMonsterOnGroundBelow(boss, new Point(777, 140));
             eim.setProperty("spawnedBoss", "true");
         }

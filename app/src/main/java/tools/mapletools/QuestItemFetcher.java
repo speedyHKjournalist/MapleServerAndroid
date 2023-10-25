@@ -460,7 +460,6 @@ public class QuestItemFetcher {
             List<Pair<Integer, Integer>> itemsWithQuest = getPairsQuestItem();
 
             filterQuestDropsOnDB(itemsWithQuest);
-            con.close();
 
             System.out.println("Filtering drops on project files...");
             // finally, filter whether this item is mentioned on the source code or not.

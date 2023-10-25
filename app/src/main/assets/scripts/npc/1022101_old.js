@@ -118,7 +118,7 @@ function action(mode, type, selection) {
                 useVP = true;
             }
 
-            const InventoryType = Java.type('client.inventory.InventoryType');
+            const InventoryType = importPackage('client.inventory.InventoryType');
             if (choice == 0) {
                 // VP Exchange
                 if (!cm.canHold(itemToUse)) {
@@ -139,7 +139,7 @@ function action(mode, type, selection) {
                 }
 
                 cm.getPlayer().getCashShop().gainCash(1, nxAmount);
-                const PacketCreator = Java.type('tools.PacketCreator');
+                importPackage(Packages.tools);
                 cm.getPlayer().sendPacket(PacketCreator.earnTitleMessage("You have earned " + nxAmount + " NX"));
                 cm.logLeaf(nxAmount + " NX");
                 cm.dispose();

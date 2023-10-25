@@ -90,7 +90,6 @@ public class SkillbookChanceFetcher {
                 }
             }
             cursor.close();
-            con.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

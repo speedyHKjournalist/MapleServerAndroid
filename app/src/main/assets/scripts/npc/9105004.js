@@ -129,8 +129,8 @@ function insidePqAction(mode, type, selection) {
             }
         }
     } else if (status == 1) {
-        const LifeFactory = Java.type('server.life.LifeFactory');
-        const Point = Java.type('java.awt.Point');
+        importPackage(Packages.server.life);
+        importClass(android.graphics.Point);
 
         if (stg == -1) {
             if (!cm.isEventLeader()) {

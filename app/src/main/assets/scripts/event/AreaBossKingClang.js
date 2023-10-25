@@ -50,16 +50,16 @@ function start() {
         return;
     }
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var kingClang = LifeFactory.getMonster(5220001);
     var posX;
     var posY = 140;
     posX = Math.floor((Math.random() * 2400) - 1600);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     hotSand.spawnMonsterOnGroundBelow(kingClang, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     hotSand.broadcastMessage(PacketCreator.serverNotice(6, "A strange turban shell has appeared on the beach."));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

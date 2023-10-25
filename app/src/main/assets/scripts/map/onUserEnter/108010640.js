@@ -19,7 +19,7 @@
 */
 
 var npcid = 1104104;
-const Point = Java.type('java.awt.Point');
+importClass(android.graphics.Point);
 var spawnPos = new Point(372, 70);
 
 function start(ms) {

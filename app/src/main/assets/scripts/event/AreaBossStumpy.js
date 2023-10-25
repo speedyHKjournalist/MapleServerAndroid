@@ -43,7 +43,7 @@ function cancelSchedule() {
 
 function start() {
     var eastRockyMountain5 = em.getChannelServer().getMapFactory().getMap(101030404);
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var stumpy = LifeFactory.getMonster(3220000);
 
     if (eastRockyMountain5.getMonsterById(3220000) != null) {
@@ -54,11 +54,11 @@ function start() {
     var posX;
     var posY = 1280;
     posX = Math.floor((Math.random() * 800) + 400);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     eastRockyMountain5.spawnMonsterOnGroundBelow(stumpy, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     eastRockyMountain5.broadcastMessage(PacketCreator.serverNotice(6, "Stumpy has appeared with a stumping sound that rings the Stone Mountain."));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

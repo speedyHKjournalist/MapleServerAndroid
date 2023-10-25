@@ -48,9 +48,9 @@ function start() {
         return;
     }
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
+    importPackage(Packages.tools);
 
     var deo = LifeFactory.getMonster(3220001);
     royalCatthusDesert.spawnMonsterOnGroundBelow(deo, new Point(645, 275));

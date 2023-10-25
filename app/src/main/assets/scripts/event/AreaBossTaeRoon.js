@@ -43,7 +43,7 @@ function cancelSchedule() {
 
 function start() {
     var territoryOfWanderingBear = em.getChannelServer().getMapFactory().getMap(250010304);
-    const LifeFactory = Java.type('server.life.LifeFactory');
+    importPackage(Packages.server.life);
     var taeRoon = LifeFactory.getMonster(7220000);
 
     if (territoryOfWanderingBear.getMonsterById(7220000) != null) {
@@ -54,11 +54,11 @@ function start() {
     var posX;
     var posY = 390;
     posX = Math.floor((Math.random() * 700) - 800);
-    const Point = Java.type('java.awt.Point');
+    importClass(android.graphics.Point);
     const spawnpoint = new Point(posX, posY);
     territoryOfWanderingBear.spawnMonsterOnGroundBelow(taeRoon, spawnpoint);
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     territoryOfWanderingBear.broadcastMessage(PacketCreator.serverNotice(6, "Tae Roon has appeared with a soft whistling sound."));
     em.schedule("start", 3 * 60 * 60 * 1000);
 }

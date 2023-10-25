@@ -36,7 +36,7 @@ function stopEntry() {
 }
 
 function takeoff() {
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
 
     //sound src: https://www.soundjay.com/transportation/metro-door-close-01.mp3
     KC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
@@ -53,7 +53,7 @@ function arrived() {
     Subway_to_NLC.warpEveryone(NLC_docked.getId(), 0);
     scheduleNew();
 
-    const PacketCreator = Java.type('tools.PacketCreator');
+    importPackage(Packages.tools);
     KC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
     NLC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
 }

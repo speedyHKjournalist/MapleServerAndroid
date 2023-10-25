@@ -110,7 +110,7 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (!(hasLeader && eligible.length >= minPlayers && eligible.length <= maxPlayers)) {
         eligible = [];
     }
-    return Java.to(eligible, Java.type('net.server.world.PartyCharacter[]'));
+    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
 }
 
 function setup(level, lobbyid) {
@@ -265,7 +265,7 @@ function monsterKilled(mob, eim) {
         }
 
         var mapObj = mob.getMap();
-        const Item = Java.type('client.inventory.Item');
+        const Item = importPackage('client.inventory.Item');
         var itemObj = new Item(4001007, 0, 1);
         var dropper = eim.getPlayers().get(0);
 

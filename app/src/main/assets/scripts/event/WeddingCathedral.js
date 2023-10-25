@@ -72,8 +72,8 @@ function setEventRewards(eim) {
 function spawnCakeBoss(eim) {
     var mapObj = eim.getMapInstance(680000400);
 
-    const LifeFactory = Java.type('server.life.LifeFactory');
-    const Point = Java.type('java.awt.Point');
+    importPackage(Packages.server.life);
+    importClass(android.graphics.Point);
     var mobObj = LifeFactory.getMonster(9400606);
     mapObj.spawnMonsterOnGroundBelow(mobObj, new Point(777, -177));
 }
@@ -129,7 +129,7 @@ function stopBlessings(eim) {
 
 function sendWeddingAction(eim, type) {
     var chr = eim.getLeader();
-    const Wedding = Java.type('tools.packets.Wedding');
+    const Wedding = importPackage('tools.packets.Wedding');
     if (chr.getGender() == 0) {
         chr.getMap().broadcastMessage(Wedding.OnWeddingProgress(type == 2, eim.getIntProperty("groomId"), eim.getIntProperty("brideId"), type + 1));
     } else {
@@ -142,13 +142,13 @@ function hidePriestMsg(eim) {
 }
 
 function showStartMsg(eim) {
-    const Wedding = Java.type('tools.packets.Wedding');
+    const Wedding = importPackage('tools.packets.Wedding');
     eim.getMapInstance(entryMap + 10).broadcastMessage(Wedding.OnWeddingProgress(false, 0, 0, 0));
     eim.schedule("hidePriestMsg", forceHideMsgTime * 1000);
 }
 
 function showBlessMsg(eim) {
-    const Wedding = Java.type('tools.packets.Wedding');
+    const Wedding = importPackage('tools.packets.Wedding');
     eim.getMapInstance(entryMap + 10).broadcastMessage(Wedding.OnWeddingProgress(false, 0, 0, 1));
     eim.setIntProperty("guestBlessings", 1);
     eim.schedule("hidePriestMsg", forceHideMsgTime * 1000);
