@@ -33,7 +33,7 @@ public class DatabaseConnection {
     private static Jdbi jdbi;
 
     public static SQLiteDatabase getConnection() throws SQLiteException {
-        SQLiteDatabase dataSource = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        SQLiteDatabase dataSource = MapleDBHelper.getInstance().getWritableDatabase();
         if (dataSource == null) {
             throw new IllegalStateException("Unable to get connection - connection pool is uninitialized");
         }
@@ -83,7 +83,7 @@ public class DatabaseConnection {
      * @return true if connection to the database initiated successfully, false if not successful
      */
     public static boolean initializeConnectionPool() {
-        SQLiteDatabase dataSource = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        SQLiteDatabase dataSource = getConnection();
         if (dataSource != null) {
             return true;
         }

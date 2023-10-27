@@ -201,8 +201,8 @@ public class CashShop {
 
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
             String query = "SELECT * FROM specialcashitems";
-            SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
-            try (Cursor cursor = con.rawQuery(query, null)) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                 Cursor cursor = con.rawQuery(query, null)) {
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         do {
@@ -308,30 +308,29 @@ public class CashShop {
             factory = ItemFactory.CASH_OVERALL;
         }
 
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            try (Cursor ps = con.rawQuery("SELECT `nxCredit`, `maplePoint`, `nxPrepaid` FROM `accounts` WHERE `id` = ?", new String[] { String.valueOf(accountId) })) {
-                if (ps.moveToNext()) {
-                    int nxCreditIdx = ps.getColumnIndex("nxCredit");
-                    int maplePointIdx =ps.getColumnIndex("maplePoint");
-                    int nxPrepaidIdx = ps.getColumnIndex("nxPrepaid");
-                    if (nxCreditIdx != -1 && maplePointIdx != -1 && nxPrepaidIdx != -1) {
-                        this.nxCredit = ps.getInt(nxCreditIdx);
-                        this.maplePoint = ps.getInt(maplePointIdx);
-                        this.nxPrepaid = ps.getInt(nxPrepaidIdx);
-                    }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT nxCredit, maplePoint, nxPrepaid FROM accounts WHERE id = ?", new String[] { String.valueOf(accountId) })) {
+            if (ps.moveToNext()) {
+                int nxCreditIdx = ps.getColumnIndex("nxCredit");
+                int maplePointIdx =ps.getColumnIndex("maplePoint");
+                int nxPrepaidIdx = ps.getColumnIndex("nxPrepaid");
+                if (nxCreditIdx != -1 && maplePointIdx != -1 && nxPrepaidIdx != -1) {
+                    this.nxCredit = ps.getInt(nxCreditIdx);
+                    this.maplePoint = ps.getInt(maplePointIdx);
+                    this.nxPrepaid = ps.getInt(nxPrepaidIdx);
                 }
             }
+        }
 
-            for (Pair<Item, InventoryType> item : factory.loadItems(accountId, false)) {
-                inventory.add(item.getLeft());
-            }
+        for (Pair<Item, InventoryType> item : factory.loadItems(accountId, false)) {
+            inventory.add(item.getLeft());
+        }
 
-            try (Cursor cursor = con.rawQuery("SELECT `sn` FROM `wishlists` WHERE `charid` = ?", new String[] { String.valueOf(characterId) })) {
-                while (cursor.moveToNext()) {
-                    int snIdx = cursor.getColumnIndex("sn");
-                    if (snIdx != -1) {
-                        wishList.add(cursor.getInt(snIdx));
-                    }
+        try (Cursor cursor = con.rawQuery("SELECT sn FROM wishlists WHERE charid = ?", new String[] { String.valueOf(characterId) })) {
+            while (cursor.moveToNext()) {
+                int snIdx = cursor.getColumnIndex("sn");
+                if (snIdx != -1) {
+                    wishList.add(cursor.getInt(snIdx));
                 }
             }
         }

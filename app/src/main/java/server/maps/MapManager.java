@@ -19,7 +19,11 @@
 */
 package server.maps;
 
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
+import android.util.Log;
 import scripting.event.EventInstanceManager;
+import tools.DatabaseConnection;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +63,7 @@ public class MapManager {
     }
 
     private synchronized MapleMap loadMapFromWz(int mapid, boolean cache) {
-        MapleMap map;
+        MapleMap map = null;
 
         if (cache) {
             mapsRLock.lock();
@@ -73,8 +77,8 @@ public class MapManager {
                 return map;
             }
         }
-
-        map = MapFactory.loadMapFromWz(mapid, world, channel, event);
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        map = MapFactory.loadMapFromWz(mapid, world, channel, event, con);
 
         if (cache) {
             mapsWLock.lock();

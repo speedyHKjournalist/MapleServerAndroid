@@ -77,8 +77,7 @@ public class Storage {
         values.put("slots", 4);
         values.put("meso", 0);
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             con.insert("storages", null, values);
         }
 
@@ -87,10 +86,8 @@ public class Storage {
 
     public static Storage loadOrCreateFromDB(int id, int world) {
         Storage ret;
-
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getWritableDatabase();
-             Cursor cursor = con.rawQuery("SELECT storageid, slots, meso FROM storages WHERE accountid = ? " +
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT storageid, slots, meso FROM storages WHERE accountid = ? " +
                      "AND world = ?", new String[] { String.valueOf(id), String.valueOf(world) })) {
 
             if (cursor.moveToNext()) {

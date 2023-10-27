@@ -43,8 +43,7 @@ public class CouponTask implements Runnable {
         try {
             Context context = Server.getInstance().getContext();
 
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(context);
-                 SQLiteDatabase con = mapledb.getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 Server.getInstance().updateActiveCoupons(con);
             }
             Server.getInstance().commitActiveCoupons();

@@ -54,8 +54,8 @@ public class Ring implements Comparable<Ring> {
 
     public static Ring loadFromDb(int ringId) {
         Ring ret = null;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT * FROM rings WHERE id = ?", new String[]{String.valueOf(ringId)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT * FROM rings WHERE id = ?", new String[]{String.valueOf(ringId)})) {
 
             int partnerRingIdIdx = cursor.getColumnIndex("partnerRingId");
             int partnerChrIdIdx = cursor.getColumnIndex("partnerChrId");
@@ -79,13 +79,12 @@ public class Ring implements Comparable<Ring> {
     }
 
     public static void removeRing(final Ring ring) {
-        try {
-            if (ring == null) {
-                return;
-            }
+        if (ring == null) {
+            return;
+        }
 
-            SQLiteDatabase con = DatabaseConnection.getConnection();
-            try {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
                 con.beginTransaction();
                 con.execSQL("DELETE FROM rings WHERE id=?", new Object[]{ring.getRingId()});
                 con.execSQL("DELETE FROM rings WHERE id=?", new Object[]{ring.getPartnerRingId()});
@@ -96,38 +95,38 @@ public class Ring implements Comparable<Ring> {
                 con.execSQL("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?", new Object[]{ring.getRingId()});
                 con.execSQL("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?", new Object[]{ring.getPartnerRingId()});
                 con.setTransactionSuccessful();
-            } finally {
-                con.endTransaction();
-            }
         } catch (SQLiteException ex) {
             ex.printStackTrace();
+        } finally {
+            con.endTransaction();
+            con.close();
         }
     }
 
     public static Pair<Integer, Integer> createRing(int itemid, final Character partner1, final Character partner2) {
+        if (partner1 == null) {
+            return new Pair<>(-3, -3);
+        } else if (partner2 == null) {
+            return new Pair<>(-2, -2);
+        }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
         try {
-            if (partner1 == null) {
-                return new Pair<>(-3, -3);
-            } else if (partner2 == null) {
-                return new Pair<>(-2, -2);
-            }
-
+            con.beginTransaction();
             int[] ringID = new int[2];
             ringID[0] = CashIdGenerator.generateCashId();
             ringID[1] = CashIdGenerator.generateCashId();
+            con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
+                    new Object[]{ringID[0], itemid, ringID[1], partner2.getId(), partner2.getName()});
 
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                con.beginTransaction();
-                con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
-                        new Object[]{ringID[0], itemid, ringID[1], partner2.getId(), partner2.getName()});
-
-                con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
-                        new Object[]{ringID[1], itemid, ringID[0], partner1.getId(), partner1.getName()});
-                con.setTransactionSuccessful();
-                con.endTransaction();
-            }
+            con.execSQL("INSERT INTO rings (id, itemid, partnerRingId, partnerChrId, partnername) VALUES (?, ?, ?, ?, ?)",
+                    new Object[]{ringID[1], itemid, ringID[0], partner1.getId(), partner1.getName()});
+            con.setTransactionSuccessful();
+            con.endTransaction();
+            con.close();
             return new Pair<>(ringID[0], ringID[1]);
         } catch (SQLiteException ex) {
+            con.endTransaction();
+            con.close();
             ex.printStackTrace();
             return new Pair<>(-1, -1);
         }

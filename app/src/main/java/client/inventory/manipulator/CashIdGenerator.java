@@ -70,9 +70,7 @@ public class CashIdGenerator {
         runningCashid++;
         if (runningCashid >= 777000000) {
             existentCashids.clear();
-            Context context = Server.getInstance().getContext();
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(context);
-                 SQLiteDatabase con = mapledb.getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 loadExistentCashIdsFromDb(con);
             } catch (SQLiteException e) {
                 log.warn("Failed to reset overflowing cash ids", e);

@@ -252,7 +252,8 @@ public class NewYearCardRecord {
     }
 
     public static void loadPlayerNewYearCards(Character chr) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String[] projection = {
                     "senderid",
                     "sendername",

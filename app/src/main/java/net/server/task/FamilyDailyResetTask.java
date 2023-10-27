@@ -41,8 +41,7 @@ public class FamilyDailyResetTask implements Runnable {
         resetTime.set(Calendar.MINUTE, 0);
         resetTime.set(Calendar.SECOND, 0);
         resetTime.set(Calendar.MILLISECOND, 0);
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(context);
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
 
             String whereClause = "lastresettime <= ?";
             String[] whereArgs = {String.valueOf(resetTime.getTimeInMillis())};

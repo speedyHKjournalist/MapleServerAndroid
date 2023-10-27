@@ -91,12 +91,11 @@ public class MapFactory {
         }
     }
 
-    private static void loadLifeFromDb(MapleMap map) {
+    private static void loadLifeFromDb(MapleMap map, SQLiteDatabase con) {
         int mapId = map.getId();
         int worldId = map.getWorld();
         String selectQuery = "SELECT * FROM plife WHERE map = ? AND world = ?";
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
-             Cursor cursor = con.rawQuery(selectQuery, new String[]{String.valueOf(mapId), String.valueOf(worldId)})) {
+        try (Cursor cursor = con.rawQuery(selectQuery, new String[]{String.valueOf(mapId), String.valueOf(worldId)})) {
             while (cursor.moveToNext()) {
                 int lifeIdx = cursor.getColumnIndex("life");
                 int typeIdx = cursor.getColumnIndex("type");
@@ -160,7 +159,7 @@ public class MapFactory {
         }
     }
 
-    public static MapleMap loadMapFromWz(int mapid, int world, int channel, EventInstanceManager event) {
+    public static MapleMap loadMapFromWz(int mapid, int world, int channel, EventInstanceManager event, SQLiteDatabase con) {
         MapleMap map;
 
         String mapName = getMapName(mapid);
@@ -269,23 +268,21 @@ public class MapFactory {
             map.setSeats(seats);
         }
         if (event == null) {
-            String[] selectionArgs = {String.valueOf(mapid), String.valueOf(world)};
-            String query = "SELECT * FROM playernpcs WHERE map = ? AND world = ?";
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-                 SQLiteDatabase con = mapledb.getWritableDatabase();
-                 Cursor cursor = con.rawQuery(query, selectionArgs)) {
-                if (cursor != null) {
-                    while (cursor.moveToNext()) {
-                        map.addPlayerNPCMapObject(new PlayerNPC(cursor));
+                String[] selectionArgs = {String.valueOf(mapid), String.valueOf(world)};
+                String query = "SELECT * FROM playernpcs WHERE map = ? AND world = ?";
+                try (Cursor cursor = con.rawQuery(query, selectionArgs)) {
+                    if (cursor != null) {
+                        while (cursor.moveToNext()) {
+                            map.addPlayerNPCMapObject(new PlayerNPC(cursor));
+                        }
                     }
+                } catch (SQLiteException e) {
+                    e.printStackTrace();
                 }
-            } catch (SQLiteException e) {
-                e.printStackTrace();
-            }
         }
 
         loadLifeFromWz(map, mapData);
-        loadLifeFromDb(map);
+        loadLifeFromDb(map, con);
 
         if (map.isCPQMap()) {
             Data mcData = mapData.getChildByPath("monsterCarnival");

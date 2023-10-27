@@ -183,8 +183,8 @@ public class SkillbookInformationProvider {
         String selection = "itemid >= ? AND itemid < ?";
         String[] selectionArgs = { String.valueOf(SKILLBOOK_MIN_ITEMID), String.valueOf(SKILLBOOK_MAX_ITEMID) };
 
-        SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
-        try (Cursor cursor = con.query("reactordrops", columns, selection, selectionArgs, null, null, null)) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+             Cursor cursor = con.query("reactordrops", columns, selection, selectionArgs, null, null, null)) {
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     do {

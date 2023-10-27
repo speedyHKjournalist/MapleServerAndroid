@@ -56,9 +56,9 @@ import net.server.guild.Guild;
 import net.server.guild.GuildCharacter;
 import net.server.task.*;
 import net.server.world.World;
-import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.log4j.LogManager;
 import server.CashShop.CashItemFactory;
 import server.SkillbookInformationProvider;
 import server.ThreadManager;
@@ -225,8 +225,7 @@ public class Server {
     private void loadPlayerNpcMapStepFromDb() {
         final List<World> wlist = this.getWorlds();
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-             SQLiteDatabase con = mapledb.getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.rawQuery("SELECT * FROM playernpcs_field", null)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
@@ -625,19 +624,19 @@ public class Server {
     private void loadCouponRates(SQLiteDatabase c) throws SQLiteException {
         String sqlInsertStatement = "SELECT couponid, rate FROM nxcoupons";
 
-        Cursor cursor = c.rawQuery(sqlInsertStatement, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                int couponIdIndex = cursor.getColumnIndex("couponid");
-                int rateIndex = cursor.getColumnIndex("rate");
-                if (couponIdIndex != -1 && rateIndex != -1) {
-                    int cid = cursor.getInt(couponIdIndex);
-                    int rate = cursor.getInt(rateIndex);
-                    couponRates.put(cid, rate);
-                }
-            } while (cursor.moveToNext());
+        try(Cursor cursor = c.rawQuery(sqlInsertStatement, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    int couponIdIndex = cursor.getColumnIndex("couponid");
+                    int rateIndex = cursor.getColumnIndex("rate");
+                    if (couponIdIndex != -1 && rateIndex != -1) {
+                        int cid = cursor.getInt(couponIdIndex);
+                        int rate = cursor.getInt(rateIndex);
+                        couponRates.put(cid, rate);
+                    }
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
     }
 
     public List<Integer> getActiveCoupons() {
@@ -830,8 +829,7 @@ public class Server {
     private List<Pair<Integer, List<Pair<String, Integer>>>> loadPlayerRankingFromDB(int worldid) {
         List<Pair<Integer, List<Pair<String, Integer>>>> rankSystem = new ArrayList<>();
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             String worldQuery;
             if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
                 if (worldid >= 0) {
@@ -909,9 +907,7 @@ public class Server {
         TimeZone.setDefault(TimeZone.getTimeZone(YamlConfig.config.server.TIMEZONE));
 
         final int worldCount = Math.min(GameConstants.WORLD_NAMES.length, YamlConfig.config.server.WORLDS);
-
-        SQLiteDatabase db = MapleDBHelper.getInstance(this.context).getWritableDatabase();
-        try {
+        try(SQLiteDatabase db = DatabaseConnection.getConnection()) {
             setAllLoggedOut(db);
             setAllMerchantsInactive(db);
             cleanNxcodeCoupons(db);
@@ -939,8 +935,7 @@ public class Server {
             loadPlayerNpcMapStepFromDb();
 
             if (YamlConfig.config.server.USE_FAMILY_SYSTEM) {
-                try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-                     SQLiteDatabase con = mapledb.getWritableDatabase()) {
+                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                     Family.loadAllFamilies(con);
                 }
             }
@@ -1026,8 +1021,8 @@ public class Server {
         tMan.register(new RespawnTask(), YamlConfig.config.server.RESPAWN_INTERVAL, YamlConfig.config.server.RESPAWN_INTERVAL);
 
         timeLeft = getTimeLeftForNextDay();
-        ExpeditionBossLog.resetBossLogTable(this.context);
-        tMan.register(new BossLogTask(this.context), DAYS.toMillis(1), timeLeft);
+        ExpeditionBossLog.resetBossLogTable();
+        tMan.register(new BossLogTask(), DAYS.toMillis(1), timeLeft);
     }
 
     public static void main(String[] args, Context context) {
@@ -1581,8 +1576,7 @@ public class Server {
             }
 
             String[] columns = {"id", "world"};
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-                 SQLiteDatabase con = mapledb.getWritableDatabase();
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
                  Cursor cursor = con.query("characters", columns, "accountid = ?", new String[]{String.valueOf(accId)}, null, null, "world, id")) {
 
                 while (cursor.moveToNext()) {
@@ -1665,7 +1659,6 @@ public class Server {
                     }
                 } while (cursor.moveToNext());
             }
-            con.setTransactionSuccessful();
             //log
             for (Pair<String, String> namePair : changedNames) {
                 log.info("Name change applied - from: \"{}\" to \"{}\"", namePair.getLeft(), namePair.getRight());

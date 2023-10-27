@@ -93,7 +93,7 @@ public class ExpeditionBossLog {
 
     }
 
-    public static void resetBossLogTable(Context context) {
+    public static void resetBossLogTable() {
         /*
         Boss logs resets 12am, weekly thursday 12AM - thanks Smitty Werbenjagermanjensen (superadlez) - https://www.reddit.com/r/Maplestory/comments/61tiup/about_reset_time/
         */
@@ -114,21 +114,20 @@ public class ExpeditionBossLog {
         deltaTime -= halfDayLength;
 
         if (deltaTime < halfDayLength) {
-            ExpeditionBossLog.resetBossLogTable(true, thursday, context);
+            ExpeditionBossLog.resetBossLogTable(true, thursday);
         }
 
         now.set(Calendar.HOUR, 0);
         now.set(Calendar.MINUTE, 0);
         now.set(Calendar.SECOND, 0);
 
-        ExpeditionBossLog.resetBossLogTable(false, now, context);
+        ExpeditionBossLog.resetBossLogTable(false, now);
     }
 
-    private static void resetBossLogTable(boolean week, Calendar c, Context context) {
+    private static void resetBossLogTable(boolean week, Calendar c) {
         List<Pair<Timestamp, BossLogEntry>> resetTimestamps = BossLogEntry.getBossLogResetTimestamps(c, week);
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(context);
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             for (Pair<Timestamp, BossLogEntry> p : resetTimestamps) {
                 con.delete(getBossLogTable(week), "attempttime <= ? AND bosstype LIKE ?",
                         new String[]{String.valueOf(p.getLeft()), p.getRight().name()});

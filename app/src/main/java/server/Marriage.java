@@ -122,7 +122,7 @@ public class Marriage extends EventInstanceManager {
     public static boolean claimGiftItems(Client c, Character chr) {
         List<Item> gifts = loadGiftItemsFromDb(c, chr.getId());
         if (Inventory.checkSpot(chr, gifts)) {
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 ItemFactory.MARRIAGE_GIFTS.saveItems(new LinkedList<>(), chr.getId(), con);
             } catch (SQLiteException sqle) {
                 sqle.printStackTrace();
@@ -162,7 +162,7 @@ public class Marriage extends EventInstanceManager {
             items.add(new Pair<>(it, it.getInventoryType()));
         }
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ItemFactory.MARRIAGE_GIFTS.saveItems(items, cid, con);
         } catch (SQLiteException sqle) {
             sqle.printStackTrace();

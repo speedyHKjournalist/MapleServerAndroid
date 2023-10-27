@@ -51,7 +51,7 @@ public class RankingLoginTask implements Runnable {
     }
 
     private void updateRanking(int job, int world) throws SQLiteException {
-        String sqlCharSelect = "SELECT c.id, " + (job != -1 ? "c.jobRank, c.jobRankMove" : "c.`rank`, c.rankMove") + ", a.lastlogin AS lastlogin, a.loggedin FROM characters AS c LEFT JOIN accounts AS a ON c.accountid = a.id WHERE c.gm < 2 AND c.world = ? ";
+        String sqlCharSelect = "SELECT c.id, " + (job != -1 ? "c.jobRank, c.jobRankMove" : "c.rank, c.rankMove") + ", a.lastlogin AS lastlogin, a.loggedin FROM characters AS c LEFT JOIN accounts AS a ON c.accountid = a.id WHERE c.gm < 2 AND c.world = ? ";
         if (job != -1) {
             sqlCharSelect += "AND c.job DIV 100 = ? ";
         }
@@ -97,7 +97,8 @@ public class RankingLoginTask implements Runnable {
 
     @Override
     public void run() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
 
             try {
@@ -117,11 +118,12 @@ public class RankingLoginTask implements Runnable {
                 lastUpdate = System.currentTimeMillis();
             } catch (SQLiteException ex) {
                 throw ex;
-            } finally {
-                con.endTransaction();
             }
         } catch (SQLiteException e) {
             e.printStackTrace();
+        } finally {
+            con.endTransaction();
+            con.close();
         }
     }
 }

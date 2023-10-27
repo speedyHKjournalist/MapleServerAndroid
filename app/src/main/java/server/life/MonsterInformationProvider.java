@@ -95,7 +95,8 @@ public class MonsterInformationProvider {
     }
 
     private void retrieveGlobal() {
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (
              Cursor cursor = con.rawQuery("SELECT * FROM drop_data_global WHERE chance > 0", null)) {
             while (cursor.moveToNext()) {
                 int itemidIdx = cursor.getColumnIndex("itemid");

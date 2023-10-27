@@ -189,6 +189,7 @@ public class Alliance {
             return null;
         } finally {
             con.endTransaction();
+            con.close();
         }
         return new Alliance(name, id);
     }

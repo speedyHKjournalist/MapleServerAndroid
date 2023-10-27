@@ -109,7 +109,8 @@ public class FamilyEntry {
         Server.getInstance().getWorld(oldFamily.getWorld()).removeFamily(oldFamily.getID());
 
         //db
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
             boolean success = updateDBChangeFamily(con, getChrId(), newFamily.getID(), senior.getChrId());
             for (FamilyEntry junior : juniors) { // better to duplicate this than the SQL code
@@ -128,6 +129,9 @@ public class FamilyEntry {
             con.endTransaction();
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB when joining families", e);
+        } finally {
+            con.endTransaction();
+            con.close();
         }
     }
 
@@ -152,7 +156,8 @@ public class FamilyEntry {
         family.setMessage("", true);
         doFullCount(); //to make sure all counts are correct
         // update db
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
             boolean success = updateDBChangeFamily(con, getChrId(), getFamily().getID(), 0);
 
@@ -169,9 +174,11 @@ public class FamilyEntry {
             } else {
                 log.error("Could not fork family with new leader {}. (Old senior: {}, leader: {})", getName(), oldSenior.getName(), oldFamily.getLeader().getName());
             }
-            con.endTransaction();
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB when forking families", e);
+        } finally {
+            con.endTransaction();
+            con.close();
         }
     }
 
@@ -593,7 +600,7 @@ public class FamilyEntry {
         if (!repChanged) {
             return true;
         }
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             return saveReputation(con);
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB while saving reputation", e);

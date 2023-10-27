@@ -159,7 +159,7 @@ public class PlayerNPC extends AbstractMapObject {
                 String query = "SELECT equippos, equipid FROM playernpcs_equip WHERE npcid = ?";
                 String[] selectionArgs = {String.valueOf(objectId)};
 
-                try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+                try (SQLiteDatabase con = DatabaseConnection.getConnection();
                         Cursor cursor1 = con.rawQuery(query, selectionArgs)) {
                     if (cursor1 != null) {
                         while (cursor.moveToNext()) {
@@ -326,7 +326,7 @@ public class PlayerNPC extends AbstractMapObject {
         boolean ret = true;
 
         String[] selectionArgs = {name, String.valueOf(mapid)};
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.rawQuery("SELECT name FROM playernpcs WHERE name LIKE ? AND map = ?", selectionArgs)) {
             if (cursor.moveToFirst()) {
                 ret = false;
@@ -368,7 +368,7 @@ public class PlayerNPC extends AbstractMapObject {
             List<Integer> availables = new ArrayList<>(20);
             String query = "SELECT scriptid FROM playernpcs WHERE scriptid >= ? AND scriptid < ? ORDER BY scriptid";
             String[] selectionArgs = {String.valueOf(branchSid), String.valueOf(nextBranchSid)};
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
                  Cursor cursor = con.rawQuery(query, selectionArgs)) {
                 Set<Integer> usedScriptIds = new HashSet<>();
                 while (cursor.moveToNext()) {
@@ -452,7 +452,7 @@ public class PlayerNPC extends AbstractMapObject {
         int jobId = (chr.getJob().getId() / 100) * 100;
 
         PlayerNPC ret = null;
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             boolean createNew = false;
             String[] selectionArgs = {String.valueOf(scriptId)};
             try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs WHERE scriptid = ?", selectionArgs)) {
@@ -488,8 +488,8 @@ public class PlayerNPC extends AbstractMapObject {
                 npcId = (int) rowId;
 
                 try {
-                    SQLiteStatement statement = con.compileStatement("INSERT INTO playernpcs_equip (npcid, equipid, equippos) VALUES (?, ?, ?)");
                     con.beginTransaction();
+                    SQLiteStatement statement = con.compileStatement("INSERT INTO playernpcs_equip (npcid, equipid, equippos) VALUES (?, ?, ?)");
 
                     for (Item equip : chr.getInventory(InventoryType.EQUIPPED)) {
                         int position = Math.abs(equip.getPosition());

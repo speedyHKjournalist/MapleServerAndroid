@@ -54,6 +54,7 @@ import net.server.guild.GuildPackets;
 import net.server.world.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import provider.Data;
 import scripting.AbstractPlayerInteraction;
 import scripting.event.EventInstanceManager;
 import scripting.event.EventManager;
@@ -364,8 +365,7 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public boolean hasBannedIP() {
         boolean ret = false;
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getReadableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             String query = "SELECT COUNT(*) FROM ipbans WHERE ? LIKE ip || '%'";
 
             try (Cursor cursor = con.rawQuery(query, new String[]{remoteAddress})) {
@@ -448,8 +448,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
         sql.append(")");
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getReadableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             try (Cursor cursor = con.rawQuery(sql.toString(), macs.toArray(new String[0]))) {
                 if (cursor.moveToFirst()) {
                     int count = cursor.getInt(0);
@@ -645,8 +644,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         String selection = "name = ?";
         String[] selectionArgs = {login};
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-             SQLiteDatabase con = mapledb.getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
 
             accId = -2;
@@ -739,8 +737,7 @@ public class Client extends ChannelInboundHandlerAdapter {
     public Calendar getTempBanCalendarFromDB() {
         final Calendar lTempban = Calendar.getInstance();
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getReadableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.rawQuery("SELECT `tempban` FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
 
             if (cursor.moveToFirst()) {
@@ -844,8 +841,7 @@ public class Client extends ChannelInboundHandlerAdapter {
             SessionCoordinator.getInstance().updateOnlineClient(this);
         }
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ContentValues values = new ContentValues();
             values.put("loggedin", newState);
             values.put("lastlogin", Server.getInstance().getCurrentTime());
@@ -866,8 +862,7 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public int getLoginState() {  // 0 = LOGIN_NOTLOGGEDIN, 1= LOGIN_SERVER_TRANSITION, 2 = LOGIN_LOGGEDIN
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.rawQuery("SELECT loggedin, lastlogin, birthday FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
             int state = 0;
             if (cursor.moveToFirst()) {
@@ -1238,8 +1233,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         boolean disconnect = false;
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-             SQLiteDatabase con = mapledb.getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.rawQuery("SELECT tos FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
             int tosIdx = cursor.getColumnIndex("tos");
             if (tosIdx != -1) {
@@ -1449,7 +1443,7 @@ public class Client extends ChannelInboundHandlerAdapter {
     public void setGender(byte m) {
         this.gender = m;
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ContentValues values = new ContentValues();
             values.put("gender", gender);
             con.update("accounts", values, "id = ?", new String[]{String.valueOf(accId)});

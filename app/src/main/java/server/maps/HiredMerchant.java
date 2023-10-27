@@ -664,7 +664,7 @@ public class HiredMerchant extends AbstractMapObject {
             }
         }
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ItemFactory.MERCHANT.saveItems(itemsWithType, bundles, this.ownerId, con);
         }
 

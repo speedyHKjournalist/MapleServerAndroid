@@ -259,8 +259,8 @@ public class CodeCouponGenerator {
         }
         List<Integer> keys = getGeneratedKeys(con);
 
-        SQLiteStatement ps2 = con.compileStatement("INSERT INTO `nxcode_items` (`codeid`, `type`, `item`, `quantity`) VALUES (?, ?, ?, ?)");
         con.beginTransaction();
+        SQLiteStatement ps2 = con.compileStatement("INSERT INTO `nxcode_items` (`codeid`, `type`, `item`, `quantity`) VALUES (?, ?, ?, ?)");
 
         if (!recipe.itemList.isEmpty()) {
             for (Pair<Integer, Integer> p : recipe.itemList) {

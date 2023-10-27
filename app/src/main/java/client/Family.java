@@ -312,7 +312,8 @@ public class Family {
     }
 
     public void saveAllMembersRep() { //was used for autosave task, but character autosave should be enough
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
             boolean success = true;
             for (FamilyEntry entry : members.values()) {
@@ -329,9 +330,11 @@ public class Family {
             for (FamilyEntry entry : members.values()) {
                 entry.savedSuccessfully();
             }
-            con.endTransaction();
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB while saving all members rep", e);
+        } finally {
+            con.endTransaction();
+            con.close();
         }
     }
 }

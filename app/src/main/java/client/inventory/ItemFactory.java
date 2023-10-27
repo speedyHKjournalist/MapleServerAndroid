@@ -170,8 +170,7 @@ public enum ItemFactory {
         query.append("` = ?");
         query.append(login ? " AND `inventorytype` = " + InventoryType.EQUIPPED.getType() : "");
 
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase con = mapledb.getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             String[] selectionArgs = {String.valueOf(id)};
             try (Cursor cursor = con.rawQuery(query.toString(), selectionArgs)) {
                 while (cursor.moveToNext()) {
@@ -199,10 +198,8 @@ public enum ItemFactory {
             query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
         }
         String[] selectionArgs = {String.valueOf(value), String.valueOf(id)};
-
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase db = mapledb.getWritableDatabase();
-             Cursor cursor = db.rawQuery(query.toString(), selectionArgs)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery(query.toString(), selectionArgs)) {
             while (cursor.moveToNext()) {
                 int inventorytypeIdx = cursor.getColumnIndex("inventorytype");
                 if (inventorytypeIdx != -1) {
@@ -261,7 +258,6 @@ public enum ItemFactory {
         Lock lock = locks[id % lockCount];
         lock.lock();
         try {
-            con.beginTransaction();
             String query = "DELETE FROM inventoryitems " +
                     "WHERE inventoryitemid IN (SELECT inventoryitemid " +
                     "FROM inventoryequipment " +
@@ -328,9 +324,7 @@ public enum ItemFactory {
             } catch (SQLiteException e) {
                 throw new RuntimeException(e);
             }
-            con.setTransactionSuccessful();
         } finally {
-            con.endTransaction();
             lock.unlock();
         }
     }
@@ -345,21 +339,20 @@ public enum ItemFactory {
             query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
         }
         String[] selectionArgs = { String.valueOf(value), String.valueOf(id) };
-
-        try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-             SQLiteDatabase db = mapledb.getWritableDatabase();
-             Cursor cursor = db.rawQuery(query.toString(), selectionArgs)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery(query.toString(), selectionArgs)) {
 
             while (cursor.moveToNext()) {
                 short bundles = 0;
                 int inventoryitemidIdx = cursor.getColumnIndex("inventoryitemid");
                 if (inventoryitemidIdx != -1) {
-                    Cursor cursor2 = db.rawQuery("SELECT bundles FROM inventorymerchant WHERE inventoryitemid = ?", new String[]{String.valueOf(cursor.getInt(inventoryitemidIdx))});
-
-                    if (cursor2.moveToNext()) {
-                        int bundlesIdx = cursor2.getColumnIndex("bundles");
-                        if (bundlesIdx != -1) {
-                            bundles = cursor2.getShort(bundlesIdx);
+                    try(Cursor cursor2 = con.rawQuery("SELECT bundles FROM inventorymerchant WHERE inventoryitemid = ?",
+                            new String[]{String.valueOf(cursor.getInt(inventoryitemidIdx))})) {
+                        if (cursor2.moveToNext()) {
+                            int bundlesIdx = cursor2.getColumnIndex("bundles");
+                            if (bundlesIdx != -1) {
+                                bundles = cursor2.getShort(bundlesIdx);
+                            }
                         }
                     }
                     int inventorytypeIdx = cursor.getColumnIndex("inventorytype");
@@ -405,7 +398,6 @@ public enum ItemFactory {
                             }
                         }
                     }
-                    cursor2.close();
                 }
             }
         }
@@ -416,7 +408,6 @@ public enum ItemFactory {
         Lock lock = locks[id % lockCount];
         lock.lock();
         try {
-            con.beginTransaction();
             String deleteQuery = "DELETE FROM inventorymerchant WHERE characterid = ?";
             con.execSQL(deleteQuery, new String[] { String.valueOf(id) });
 
@@ -508,10 +499,8 @@ public enum ItemFactory {
                     }
                 }
             }
-            con.setTransactionSuccessful();
         } finally {
             lock.unlock();
-            con.endTransaction();
         }
     }
 }

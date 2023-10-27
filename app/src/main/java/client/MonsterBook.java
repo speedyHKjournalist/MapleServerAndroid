@@ -153,10 +153,10 @@ public final class MonsterBook {
         }
     }
 
-    public void loadCards(final int charid) throws SQLiteException {
+    public void loadCards(final int charid, SQLiteDatabase con) throws SQLiteException {
         lock.lock();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT cardid, level FROM monsterbook WHERE charid = ? ORDER BY cardid ASC", new String[]{String.valueOf(charid)})) {
+        try (Cursor ps = con.rawQuery("SELECT cardid, level FROM monsterbook WHERE charid = ? ORDER BY cardid ASC",
+                     new String[]{String.valueOf(charid)})) {
             int cardid;
             int level;
 

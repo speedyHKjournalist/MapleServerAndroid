@@ -281,14 +281,14 @@ public class ItemInformationProvider {
         for (DataDirectoryEntry topDir : root.getSubdirectories()) {
             for (DataFileEntry iFile : topDir.getFiles()) {
                 if (iFile.getName().equals(idStr.substring(0, 4) + ".img")) {
-                    ret = itemData.getData(topDir.getName() + "/" + iFile.getName());
+                    ret = itemData.getData(topDir.getName() + "/" + idStr.substring(0, 4) + ".img");
                     if (ret == null) {
                         return null;
                     }
                     ret = ret.getChildByPath(idStr);
                     return ret;
                 } else if (iFile.getName().equals(idStr.substring(1) + ".img")) {
-                    return itemData.getData(topDir.getName() + "/" + iFile.getName());
+                    return itemData.getData(topDir.getName() + "/" + idStr.substring(1) + ".img");
                 }
             }
         }
@@ -296,7 +296,7 @@ public class ItemInformationProvider {
         for (DataDirectoryEntry topDir : root.getSubdirectories()) {
             for (DataFileEntry iFile : topDir.getFiles()) {
                 if (iFile.getName().equals(idStr + ".img")) {
-                    return equipData.getData(topDir.getName() + "/" + iFile.getName());
+                    return equipData.getData(topDir.getName() + "/" + idStr + ".img");
                 }
             }
         }
@@ -1520,7 +1520,7 @@ public class ItemInformationProvider {
         String monsterCardDataTable = "monstercarddata";
         String[] columns = { "cardid", "mobid" };
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
              Cursor cursor = con.query(monsterCardDataTable, columns, null, null, null, null, null)) {
             if (cursor != null) {
                 if (cursor.moveToFirst()) {

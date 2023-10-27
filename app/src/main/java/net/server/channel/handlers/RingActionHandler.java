@@ -197,6 +197,7 @@ public final class RingActionHandler extends AbstractPacketHandler {
             log.error("Error updating offline breakup", ex);
         } finally {
             con.endTransaction();
+            con.close();
         }
     }
 

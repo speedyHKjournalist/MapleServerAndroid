@@ -147,8 +147,8 @@ public class FredrickProcessor {
 
         SQLiteDatabase con = DatabaseConnection.getConnection();
         try {
-            SQLiteStatement stmt = con.compileStatement("DELETE FROM `notes` WHERE `from` LIKE ? AND `to` LIKE ?");
             con.beginTransaction();
+            SQLiteStatement stmt = con.compileStatement("DELETE FROM `notes` WHERE `from` LIKE ? AND `to` LIKE ?");
             stmt.bindString(1, "FREDRICK");
 
             for (String cname : expiredCnames) {

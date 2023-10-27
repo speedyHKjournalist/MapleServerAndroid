@@ -138,7 +138,7 @@ public class DueyProcessor {
     }
 
     private static void removePackageFromDB(int packageId) {
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             String dueyPackagesTable = "dueypackages";
             String selection = "PackageId = ?";
             String[] selectionArgs = { String.valueOf(packageId) };
@@ -227,7 +227,7 @@ public class DueyProcessor {
 
     private static boolean insertPackageItem(int packageId, Item item) {
         Pair<Item, InventoryType> dueyItem = new Pair<>(item, InventoryType.getByType(item.getItemType()));
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ItemFactory.DUEY.saveItems(Collections.singletonList(dueyItem), packageId, con);
             return true;
         } catch (SQLiteException sqle) {

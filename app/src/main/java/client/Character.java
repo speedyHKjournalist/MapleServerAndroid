@@ -656,7 +656,7 @@ public class Character extends AbstractCharacterObject {
 
     public void ban(String reason) {
         this.isbanned = true;
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ContentValues values = new ContentValues();
             values.put("banned", 1);
             values.put("banreason", reason);
@@ -670,7 +670,7 @@ public class Character extends AbstractCharacterObject {
     }
 
     public static boolean ban(String id, String reason, boolean accountId) {
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             if (id.matches("/[0-9]{1,3}\\..*")) {
                 ContentValues values = new ContentValues();
                 values.put("ip", id);
@@ -1776,7 +1776,7 @@ public class Character extends AbstractCharacterObject {
         } else {
             skills.remove(skill);
             sendPacket(PacketCreator.updateSkill(skill.getId(), newLevel, newMasterlevel, -1)); //Shouldn't use expiration anymore :)
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 String whereClause = "skillid = ? AND characterid = ?";
                 String[] whereArgs = {String.valueOf(skill.getId()), String.valueOf(id)};
                 con.delete("skills", whereClause, whereArgs);
@@ -2116,7 +2116,7 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void deleteGuild(int guildId) {
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ContentValues updateValues = new ContentValues();
             updateValues.put("guildid", 0);
             updateValues.put("guildrank", 5);
@@ -2165,7 +2165,7 @@ public class Character extends AbstractCharacterObject {
 
         final int accId = senderAccId;
         int world = 0;
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase();
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
             Cursor cursor = con.query("characters", new String[]{"world"}, "id = ?", new String[]{String.valueOf(cid)}, null, null, null)) {
             if (cursor.moveToFirst()) {
                 int worldIdx = cursor.getColumnIndex("world");
@@ -6971,7 +6971,6 @@ public class Character extends AbstractCharacterObject {
         Character ret = new Character(Server.getInstance().getContext());
         ret.client = client;
         ret.id = charid;
-
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int mountexp = 0;
             int mountlevel = 0;
@@ -7197,7 +7196,7 @@ public class Character extends AbstractCharacterObject {
                     ret.bookCover = cursor.getInt(bookCoverIdx);
                 }
                     ret.monsterbook = new MonsterBook();
-                    ret.monsterbook.loadCards(charid);
+                    ret.monsterbook.loadCards(charid, con);
                 if (vanquisherStageIdx != -1) {
                     ret.vanquisherStage = cursor.getInt(vanquisherStageIdx);
                 }
@@ -7298,20 +7297,22 @@ public class Character extends AbstractCharacterObject {
                     //ResultSet rs2, rs3;
 
                     // Items excluded from pet loot
-                    try (Cursor cursorPets = con.rawQuery("SELECT petid FROM inventoryitems WHERE characterid = ? AND petid > -1", new String[]{String.valueOf(charid)})) {
+                    try (Cursor cursorPets = con.rawQuery("SELECT petid FROM inventoryitems WHERE characterid = ? AND petid > -1",
+                            new String[]{String.valueOf(charid)})) {
                         while (cursorPets.moveToNext()) {
                             int petidIdx = cursorPets.getColumnIndex("petid");
                             if (petidIdx != -1) {
                                 int petId = cursorPets.getInt(petidIdx);
-                                Cursor cursorExcludedItems = con.rawQuery("SELECT itemid FROM petignores WHERE petid = ?", new String[]{String.valueOf(petId)});
-                                ret.resetExcluded(petId);
-                                while (cursorExcludedItems.moveToNext()) {
-                                    int itemidIdx = cursorExcludedItems.getColumnIndex("itemid");
-                                    if (itemidIdx != -1) {
-                                        ret.addExcluded(petId, cursorExcludedItems.getInt(itemidIdx));
+                                try (Cursor cursorExcludedItems = con.rawQuery("SELECT itemid FROM petignores WHERE petid = ?",
+                                        new String[]{String.valueOf(petId)})) {
+                                    ret.resetExcluded(petId);
+                                    while (cursorExcludedItems.moveToNext()) {
+                                        int itemidIdx = cursorExcludedItems.getColumnIndex("itemid");
+                                        if (itemidIdx != -1) {
+                                            ret.addExcluded(petId, cursorExcludedItems.getInt(itemidIdx));
+                                        }
                                     }
                                 }
-                                cursorExcludedItems.close();
                             }
                         }
                     }
@@ -7405,7 +7406,7 @@ public class Character extends AbstractCharacterObject {
             }
 
             // Area info
-            try (Cursor ps = con.rawQuery("SELECT `area`,`info` FROM area_info WHERE charid = ?", new String[]{String.valueOf(ret.id)})) {
+            try (Cursor ps = con.rawQuery("SELECT area,info FROM area_info WHERE charid = ?", new String[]{String.valueOf(ret.id)})) {
                 while (ps.moveToNext()) {
                     int areaIdx = ps.getColumnIndex("area");
                     int infoIdx = ps.getColumnIndex("info");
@@ -7418,7 +7419,7 @@ public class Character extends AbstractCharacterObject {
             }
 
             // Event stats
-            try (Cursor ps = con.rawQuery("SELECT `name`,`info` FROM eventstats WHERE characterid = ?", new String[]{String.valueOf(ret.id)})) {
+            try (Cursor ps = con.rawQuery("SELECT name,info FROM eventstats WHERE characterid = ?", new String[]{String.valueOf(ret.id)})) {
                 while (ps.moveToNext()) {
                     int nameIdx = ps.getColumnIndex("name");
                     if (nameIdx != -1) {
@@ -7579,7 +7580,9 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Cooldowns (delete)
-                con.rawQuery("DELETE FROM cooldowns WHERE charid = ?", new String[]{String.valueOf(ret.getId())});
+                try (Cursor ps = con.rawQuery("DELETE FROM cooldowns WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
+
+                }
 
                 // Debuffs (load)
                 Map<Disease, Pair<Long, MobSkill>> loadedDiseases = new LinkedHashMap<>();
@@ -7617,7 +7620,8 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Debuffs (delete)
-                con.rawQuery("DELETE FROM playerdiseases WHERE charid = ?", new String[]{String.valueOf(ret.getId())});
+                try(Cursor cur = con.rawQuery("DELETE FROM playerdiseases WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
+                }
 
                 if (!loadedDiseases.isEmpty()) {
                     Server.getInstance().getPlayerBuffStorage().addDiseasesToStorage(ret.id, loadedDiseases);
@@ -7654,7 +7658,7 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Key config
-                try (Cursor ps = con.rawQuery("SELECT `key`,`type`,`action` FROM keymap WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                try (Cursor ps = con.rawQuery("SELECT key,type,action FROM keymap WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
                     while (ps.moveToNext()) {
                         int keyIdx = ps.getColumnIndex("key");
                         int typeIdx = ps.getColumnIndex("type");
@@ -7669,7 +7673,7 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Saved locations
-                try (Cursor ps = con.rawQuery("SELECT `locationtype`,`map`,`portal` FROM savedlocations WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                try (Cursor ps = con.rawQuery("SELECT locationtype,map,portal FROM savedlocations WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
                     while (ps.moveToNext()) {
                         int locationtypeIdx = ps.getColumnIndex("locationtype");
                         int mapIdx = ps.getColumnIndex("map");
@@ -7687,7 +7691,7 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Fame history
-                try (Cursor ps = con.rawQuery("SELECT `characterid_to`,`when` FROM famelog WHERE characterid = ? AND DATEDIFF(NOW(),`when`) < 30", new String[]{String.valueOf(charid)})) {
+                try (Cursor ps = con.rawQuery("SELECT characterid_to,when FROM famelog WHERE characterid = ? AND DATEDIFF(NOW(),`when`) < 30", new String[]{String.valueOf(charid)})) {
                     ret.lastfametime = 0;
                     ret.lastmonthfameids = new ArrayList<>(31);
 
@@ -8385,7 +8389,7 @@ public class Character extends AbstractCharacterObject {
         List<PlayerCoolDownValueHolder> listcd = getAllCooldowns();
 
         if (!listcd.isEmpty()) {
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 deleteWhereCharacterId(con, "DELETE FROM cooldowns WHERE charid = ?");
                 ContentValues cooldownValues = new ContentValues();
                 cooldownValues.put("charid", getId());
@@ -8404,7 +8408,7 @@ public class Character extends AbstractCharacterObject {
 
         Map<Disease, Pair<Long, MobSkill>> listds = getAllDiseases();
         if (!listds.isEmpty()) {
-            try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
                 deleteWhereCharacterId(con, "DELETE FROM playerdiseases WHERE charid = ?");
                 ContentValues diseaseValues = new ContentValues();
                 diseaseValues.put("charid", getId());
@@ -8487,7 +8491,7 @@ public class Character extends AbstractCharacterObject {
         this.events.put("rescueGaga", new RescueGaga(0));
 
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             con.beginTransaction();
             try {
                 // Character info
@@ -8495,7 +8499,7 @@ public class Character extends AbstractCharacterObject {
                 values.put("str", str);
                 values.put("dex", dex);
                 values.put("luk", luk);
-                values.put("`int`", int_);
+                values.put("int", int_);
                 values.put("gm", gmLevel);
                 values.put("skincolor", skinColor.getId());
                 values.put("gender", gender);
@@ -8530,14 +8534,14 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 String selectLastRowIDQuery = "SELECT last_insert_rowid() AS last_id";
-                Cursor cursor = con.rawQuery(selectLastRowIDQuery, null);
-                if (cursor.moveToFirst()) {
-                    int last_idIdx = cursor.getColumnIndex("last_id");
-                    if (last_idIdx != -1) {
-                        this.id = cursor.getInt(last_idIdx);
+                try (Cursor cursor = con.rawQuery(selectLastRowIDQuery, null)) {
+                    if (cursor.moveToFirst()) {
+                        int last_idIdx = cursor.getColumnIndex("last_id");
+                        if (last_idIdx != -1) {
+                            this.id = cursor.getInt(last_idIdx);
+                        }
                     }
                 }
-                cursor.close();
 
                 // Select a keybinding method
                 int[] selectedKey;
@@ -8602,11 +8606,11 @@ public class Character extends AbstractCharacterObject {
                     }
                 }
                 con.setTransactionSuccessful();
-                con.endTransaction();
                 return true;
             } catch (SQLiteException e) {
-                con.endTransaction();
                 throw e;
+            } finally {
+                con.endTransaction();
             }
         } catch (Throwable t) {
             log.error("Error creating chr {}, level: {}, job: {}", name, level, job.getId(), t);
@@ -8642,7 +8646,7 @@ public class Character extends AbstractCharacterObject {
 
         Server.getInstance().updateCharacterEntry(this);
 
-        try (SQLiteDatabase con = MapleDBHelper.getInstance(Server.getInstance().getContext()).getWritableDatabase()) {
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             con.beginTransaction();
 
             try {
@@ -10955,8 +10959,7 @@ public class Character extends AbstractCharacterObject {
         if (!pendingNameChange) {
             return;
         }
-        MapleDBHelper mapledb = MapleDBHelper.getInstance(this.context);
-        SQLiteDatabase db = mapledb.getWritableDatabase();
+        SQLiteDatabase db = DatabaseConnection.getConnection();
 
         int nameChangeId = -1;
         String newName = null;

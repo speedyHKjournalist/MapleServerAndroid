@@ -142,7 +142,8 @@ public class BuddyList {
     }
 
     public void loadFromDb(int characterId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cursor = con.rawQuery("SELECT b.buddyid, b.pending, b.group, c.name as buddyname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?",
                     new String[]{String.valueOf(characterId)})) {
                 while (cursor.moveToNext()) {
@@ -160,7 +161,8 @@ public class BuddyList {
                     }
                 }
             }
-        con.rawQuery("DELETE FROM buddies WHERE pending = 1 AND characterid = ?", new String[]{String.valueOf(characterId)});
+            try (Cursor cur = con.rawQuery("DELETE FROM buddies WHERE pending = 1 AND characterid = ?", new String[]{String.valueOf(characterId)})) {
+            }
         } catch (SQLiteException ex) {
             ex.printStackTrace();
         }

@@ -78,8 +78,7 @@ public final class LoginPasswordHandler implements PacketHandler {
 
 
         if (YamlConfig.config.server.AUTOMATIC_REGISTER && loginok == 5) {
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-                 SQLiteDatabase con = mapledb.getWritableDatabase()) { //Jayd: Added birthday, tempban
+            try (SQLiteDatabase con = DatabaseConnection.getConnection()) { //Jayd: Added birthday, tempban
                 ContentValues values = new ContentValues();
                 values.put("name", login);
                 values.put("password", YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(12)) : hashpwSHA512(pwd));
@@ -101,8 +100,7 @@ public final class LoginPasswordHandler implements PacketHandler {
             String updateQuery = "UPDATE accounts SET password = ? WHERE name = ?";
             String[] whereArgs = {newPasswordHash, login};
 
-            try (MapleDBHelper mapledb = MapleDBHelper.getInstance(Server.getInstance().getContext());
-                 SQLiteDatabase con = mapledb.getWritableDatabase();
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
                  Cursor cursor = con.rawQuery(updateQuery, whereArgs)) {
             } catch (SQLiteException e) {
                 e.printStackTrace();

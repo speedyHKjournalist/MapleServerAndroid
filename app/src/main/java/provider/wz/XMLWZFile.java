@@ -52,7 +52,7 @@ public class XMLWZFile implements DataProvider {
         try {
             String[] stream = assetManager.list(lroot);
             for (String fileName : stream) {
-                if (isDirectory(fileName, assetManager) && !fileName.endsWith(".img")) {
+                if (isDirectory(lroot + "/" + fileName, assetManager) && !fileName.endsWith(".img")) {
                     WZDirectoryEntry newDir = new WZDirectoryEntry(fileName, 0, 0, wzdir);
                     wzdir.addDirectory(newDir);
                     fillMapleDataEntitys(lroot + "/" + fileName, newDir, assetManager);
