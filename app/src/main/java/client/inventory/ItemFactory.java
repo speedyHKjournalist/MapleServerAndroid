@@ -163,12 +163,12 @@ public enum ItemFactory {
         query.append("SELECT * FROM ");
         query.append("(SELECT id, accountid FROM characters) AS accountterm ");
         query.append("RIGHT JOIN ");
-        query.append("(SELECT * FROM (`inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`))) AS equipterm");
+        query.append("(SELECT * FROM (inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid))) AS equipterm");
         query.append(" ON accountterm.id=equipterm.characterid ");
-        query.append("WHERE accountterm.`");
+        query.append("WHERE accountterm.");
         query.append(isAccount ? "accountid" : "characterid");
-        query.append("` = ?");
-        query.append(login ? " AND `inventorytype` = " + InventoryType.EQUIPPED.getType() : "");
+        query.append(" = ?");
+        query.append(login ? " AND inventorytype = " + InventoryType.EQUIPPED.getType() : "");
 
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             String[] selectionArgs = {String.valueOf(id)};
@@ -191,11 +191,11 @@ public enum ItemFactory {
         List<Pair<Item, InventoryType>> items = new ArrayList<>();
 
         StringBuilder query = new StringBuilder();
-        query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-        query.append(account ? "accountid" : "characterid").append("` = ?");
+        query.append("SELECT * FROM inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid) WHERE type = ? AND ");
+        query.append(account ? "accountid" : "characterid").append(" = ?");
 
         if (login) {
-            query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
+            query.append(" AND inventorytype = ").append(InventoryType.EQUIPPED.getType());
         }
         String[] selectionArgs = {String.valueOf(value), String.valueOf(id)};
         SQLiteDatabase con = DatabaseConnection.getConnection();
@@ -332,11 +332,11 @@ public enum ItemFactory {
     private List<Pair<Item, InventoryType>> loadItemsMerchant(int id, boolean login) throws SQLiteException {
         List<Pair<Item, InventoryType>> items = new ArrayList<>();
         StringBuilder query = new StringBuilder();
-        query.append("SELECT * FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-        query.append(account ? "accountid" : "characterid").append("` = ?");
+        query.append("SELECT * FROM inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid) WHERE type = ? AND ");
+        query.append(account ? "accountid" : "characterid").append(" = ?");
 
         if (login) {
-            query.append(" AND `inventorytype` = ").append(InventoryType.EQUIPPED.getType());
+            query.append(" AND inventorytype = ").append(InventoryType.EQUIPPED.getType());
         }
         String[] selectionArgs = { String.valueOf(value), String.valueOf(id) };
         SQLiteDatabase con = DatabaseConnection.getConnection();
@@ -412,8 +412,8 @@ public enum ItemFactory {
             con.execSQL(deleteQuery, new String[] { String.valueOf(id) });
 
             StringBuilder query = new StringBuilder();
-            query.append("DELETE `inventoryitems`, `inventoryequipment` FROM `inventoryitems` LEFT JOIN `inventoryequipment` USING(`inventoryitemid`) WHERE `type` = ? AND `");
-            query.append(account ? "accountid" : "characterid").append("` = ?");
+            query.append("DELETE inventoryitems, inventoryequipment FROM inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid) WHERE type = ? AND ");
+            query.append(account ? "accountid" : "characterid").append(" = ?");
 
             String columnName = account ? "accountid" : "characterid";
             String[] selectionArgs = { String.valueOf(value), String.valueOf(id) };

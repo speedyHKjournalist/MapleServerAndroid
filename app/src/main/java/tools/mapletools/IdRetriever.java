@@ -110,7 +110,7 @@ public class IdRetriever {
     }
 
     private static void setupSqlTable() throws SQLiteException {
-        con.execSQL("DROP TABLE IF EXISTS `handbook`;");
+        con.execSQL("DROP TABLE IF EXISTS handbook;");
 
         String createTableQuery = "CREATE TABLE IF NOT EXISTS handbook ("
                 + "_key INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -147,7 +147,7 @@ public class IdRetriever {
                     continue;
                 }
 
-                Cursor cursor = con.rawQuery("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;", new String[]{line});
+                Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line});
 
                 StringBuilder str = new StringBuilder();
                 while (cursor.moveToNext()) {

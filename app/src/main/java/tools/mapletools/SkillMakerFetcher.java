@@ -269,9 +269,9 @@ public class SkillMakerFetcher {
         printWriter.println(" # Generated data is conformant with the ItemMake.img.xml file used to compile this.");
         printWriter.println();
 
-        StringBuilder sb_create = new StringBuilder("INSERT IGNORE INTO `makercreatedata` (`id`, `itemid`, `req_level`, `req_maker_level`, `req_meso`, `req_item`, `req_equip`, `catalyst`, `quantity`, `tuc`) VALUES\r\n");
-        StringBuilder sb_recipe = new StringBuilder("INSERT IGNORE INTO `makerrecipedata` (`itemid`, `req_item`, `count`) VALUES\r\n");
-        StringBuilder sb_reward = new StringBuilder("INSERT IGNORE INTO `makerrewarddata` (`itemid`, `rewardid`, `quantity`, `prob`) VALUES\r\n");
+        StringBuilder sb_create = new StringBuilder("INSERT IGNORE INTO makercreatedata (id, itemid, req_level, req_maker_level, req_meso, req_item, req_equip, catalyst, quantity, tuc) VALUES\r\n");
+        StringBuilder sb_recipe = new StringBuilder("INSERT IGNORE INTO makerrecipedata (itemid, req_item, count) VALUES\r\n");
+        StringBuilder sb_reward = new StringBuilder("INSERT IGNORE INTO makerrewarddata (itemid, rewardid, quantity, prob) VALUES\r\n");
 
         for (MakerItemEntry it : makerList) {
             sb_create.append("  (" + it.id + ", " + it.itemid + ", " + it.reqLevel + ", " + it.reqMakerLevel + ", " + it.reqMeso + ", " + it.reqItem + ", " + it.reqEquip + ", " + it.catalyst + ", " + it.quantity + ", " + it.tuc + "),\r\n");

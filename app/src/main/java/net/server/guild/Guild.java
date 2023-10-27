@@ -462,7 +462,7 @@ public class Guild {
                 }
             }
 
-            try (SQLiteStatement statement = con.compileStatement("INSERT INTO guilds (`leader`, `name`, `signature`) VALUES (?, ?, ?)")) {
+            try (SQLiteStatement statement = con.compileStatement("INSERT INTO guilds (leader, name, signature) VALUES (?, ?, ?)")) {
                 statement.bindLong(1, leaderId);
                 statement.bindString(2, name);
                 statement.bindLong(3, (int) System.currentTimeMillis());
@@ -776,7 +776,7 @@ public class Guild {
 
     public static void displayGuildRanks(Client c, int npcid) {
         try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT `name`, `GP`, `logoBG`, `logoBGColor`, `logo`, `logoColor` FROM guilds ORDER BY `GP` DESC LIMIT 50", null)) {
+             Cursor cursor = con.rawQuery("SELECT name, GP, logoBG, logoBGColor, logo, logoColor FROM guilds ORDER BY GP DESC LIMIT 50", null)) {
             if (cursor.getCount() > 0) {
                 cursor.moveToFirst();
                 c.sendPacket(GuildPackets.showGuildRanks(npcid, cursor));

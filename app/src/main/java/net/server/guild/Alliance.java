@@ -259,9 +259,9 @@ public class Alliance {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             con.beginTransaction();
 
-            try (SQLiteStatement updateAlliance = con.compileStatement("UPDATE `alliance` SET capacity = ?, notice = ?, rank1 = ?, rank2 = ?, rank3 = ?, rank4 = ?, rank5 = ? WHERE id = ?");
-                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?");
-                 SQLiteStatement insertAllianceGuilds = con.compileStatement("INSERT INTO `allianceguilds` (`allianceid`, `guildid`) VALUES (?, ?)")) {
+            try (SQLiteStatement updateAlliance = con.compileStatement("UPDATE alliance SET capacity = ?, notice = ?, rank1 = ?, rank2 = ?, rank3 = ?, rank4 = ?, rank5 = ? WHERE id = ?");
+                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM allianceguilds WHERE allianceid = ?");
+                 SQLiteStatement insertAllianceGuilds = con.compileStatement("INSERT INTO allianceguilds (allianceid, guildid) VALUES (?, ?)")) {
 
                 updateAlliance.bindLong(1, this.capacity);
                 updateAlliance.bindString(2, this.notice);
@@ -292,8 +292,8 @@ public class Alliance {
     public static void disbandAlliance(int allianceId) {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             con.beginTransaction();
-            try (SQLiteStatement deleteAlliance = con.compileStatement("DELETE FROM `alliance` WHERE id = ?");
-                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE allianceid = ?")) {
+            try (SQLiteStatement deleteAlliance = con.compileStatement("DELETE FROM alliance WHERE id = ?");
+                 SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM allianceguilds WHERE allianceid = ?")) {
 
                 deleteAlliance.bindLong(1, allianceId);
                 deleteAlliance.executeUpdateDelete();
@@ -315,7 +315,7 @@ public class Alliance {
 
     private static void removeGuildFromAllianceOnDb(int guildId) {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM `allianceguilds` WHERE guildid = ?");
+            SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM allianceguilds WHERE guildid = ?");
             deleteAllianceGuilds.bindLong(1, guildId);
             deleteAllianceGuilds.executeUpdateDelete();
         } catch (SQLiteException sqle) {

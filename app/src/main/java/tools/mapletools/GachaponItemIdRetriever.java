@@ -51,7 +51,7 @@ public class GachaponItemIdRetriever {
     }
 
     private static void loadHandbookUseNames() throws SQLiteException {
-        Cursor cursor = con.rawQuery("SELECT * FROM `handbook` WHERE `id` >= 2040000 AND `id` < 2050000 ORDER BY `id` ASC;", null);
+        Cursor cursor = con.rawQuery("SELECT * FROM handbook WHERE id >= 2040000 AND id < 2050000 ORDER BY id ASC;", null);
 
         if (cursor != null) {
             try {
@@ -226,7 +226,7 @@ public class GachaponItemIdRetriever {
     private static void fetchLineOnMapleHandbook(String line, String rarity) throws SQLiteException {
         String str = "";
         if (!isUpgradeScroll(line)) {
-            Cursor cursor = con.rawQuery("SELECT `id` FROM `handbook` WHERE `name` LIKE ? ORDER BY `id` ASC;", new String[]{line});
+            Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line});
             if (cursor != null) {
                 try {
                     while (cursor.moveToNext()) {

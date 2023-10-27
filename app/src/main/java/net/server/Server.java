@@ -833,16 +833,16 @@ public class Server {
             String worldQuery;
             if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
                 if (worldid >= 0) {
-                    worldQuery = (" AND `characters`.`world` = " + worldid);
+                    worldQuery = (" AND characters.world = " + worldid);
                 } else {
-                    worldQuery = (" AND `characters`.`world` >= 0 AND `characters`.`world` <= " + -worldid);
+                    worldQuery = (" AND characters.world >= 0 AND characters.world <= " + -worldid);
                 }
             } else {
-                worldQuery = (" AND `characters`.`world` >= 0 AND `characters`.`world` <= " + Math.abs(worldid));
+                worldQuery = (" AND characters.world >= 0 AND characters.world <= " + Math.abs(worldid));
             }
 
             List<Pair<String, Integer>> rankUpdate = new ArrayList<>(0);
-            try (Cursor cursor = con.rawQuery("SELECT `characters`.`name`, `characters`.`level`, `characters`.`world` FROM `characters` LEFT JOIN accounts ON accounts.id = characters.accountid WHERE `characters`.`gm` < 2 AND `accounts`.`banned` = '0'" + worldQuery + " ORDER BY " + (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING ? "world, " : "") + "level DESC, exp DESC, lastExpGainTime ASC LIMIT 50", null)) {
+            try (Cursor cursor = con.rawQuery("SELECT characters.name, characters.level, characters.world FROM characters LEFT JOIN accounts ON accounts.id = characters.accountid WHERE characters.gm < 2 AND accounts.banned = '0'" + worldQuery + " ORDER BY " + (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING ? "world, " : "") + "level DESC, exp DESC, lastExpGainTime ASC LIMIT 50", null)) {
                 if (cursor != null) {
                     if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
                         int currentWorld = -1;

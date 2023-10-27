@@ -102,7 +102,7 @@ public class MesoFetcher {
         printWriter.println(" # Only mobs with " + MIN_ITEMS + " or more items with no meso entry on the DB it was compiled are presented here.");
         printWriter.println();
 
-        printWriter.println("  INSERT IGNORE INTO drop_data (`dropperid`, `itemid`, `minimum_quantity`, `maximum_quantity`, `questid`, `chance`) VALUES");
+        printWriter.println("  INSERT IGNORE INTO drop_data (dropperid, itemid, minimum_quantity, maximum_quantity, questid, chance) VALUES");
     }
 
     private static void printSqlExceptions() {

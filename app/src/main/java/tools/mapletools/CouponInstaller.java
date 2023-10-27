@@ -219,7 +219,7 @@ public class CouponInstaller {
 
     private static void installCouponsTable() {
         try {
-            con.execSQL("DROP TABLE IF EXISTS `nxcoupons`;");
+            con.execSQL("DROP TABLE IF EXISTS nxcoupons;");
 
             String createTableQuery = "CREATE TABLE IF NOT EXISTS nxcoupons ("
                     + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
