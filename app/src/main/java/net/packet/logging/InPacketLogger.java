@@ -1,5 +1,6 @@
 package net.packet.logging;
 
+import android.util.Log;
 import constants.net.OpcodeConstants;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,10 +35,11 @@ public class InPacketLogger extends ChannelInboundHandlerAdapter implements Pack
             final String opcodeHex = Integer.toHexString(opcode).toUpperCase();
             final String opcodeName = getRecvOpcodeName(opcode);
             final String prefix = opcodeName == null ? "<UnknownPacket> " : "";
-            log.debug("{}ClientSend:{} [{}] ({}) <HEX> {} <TEXT> {}", prefix, opcodeName, opcodeHex, packetLength,
-                    HexTool.toHexString(content), HexTool.toStringFromAscii(content));
+            String inpacket = prefix + "ClientSend:" + opcodeName + "[" + opcodeHex + "]" + "(" + packetLength + ")" +
+                    " <HEX> " + HexTool.toHexString(content) + " <TEXT>" + HexTool.toStringFromAscii(content);
+            Log.i("IN PACKET", inpacket);
         } else {
-            log.debug(HexTool.toHexString(new byte[]{content[0], content[1]}) + "...");
+            Log.i("IN PACKET", HexTool.toHexString(new byte[]{content[0], content[1]}) + "...");
         }
     }
 

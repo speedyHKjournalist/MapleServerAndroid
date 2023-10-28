@@ -144,7 +144,7 @@ public class BuddyList {
     public void loadFromDb(int characterId) {
         SQLiteDatabase con = DatabaseConnection.getConnection();
         try {
-            try (Cursor cursor = con.rawQuery("SELECT b.buddyid, b.pending, b.group, c.name as buddyname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?",
+            try (Cursor cursor = con.rawQuery("SELECT b.buddyid, b.pending, b.`group`, c.name as buddyname FROM buddies as b, characters as c WHERE c.id = b.buddyid AND b.characterid = ?",
                     new String[]{String.valueOf(characterId)})) {
                 while (cursor.moveToNext()) {
                     int pendingIndex = cursor.getColumnIndex("pending");

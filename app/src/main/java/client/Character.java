@@ -7691,7 +7691,7 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Fame history
-                try (Cursor ps = con.rawQuery("SELECT characterid_to,when FROM famelog WHERE characterid = ? AND DATEDIFF(NOW(),`when`) < 30", new String[]{String.valueOf(charid)})) {
+                try (Cursor ps = con.rawQuery("SELECT `characterid_to`,`when` FROM famelog WHERE characterid = ? AND (julianday('now') - julianday(`when`)) < 30", new String[]{String.valueOf(charid)})) {
                     ret.lastfametime = 0;
                     ret.lastmonthfameids = new ArrayList<>(31);
 

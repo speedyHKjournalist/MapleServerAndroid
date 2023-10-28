@@ -26,6 +26,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.util.Log;
 import androidx.core.database.sqlite.SQLiteDatabaseKt;
 import client.inventory.InventoryType;
 import config.YamlConfig;
@@ -204,7 +205,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         final PacketHandler handler = packetProcessor.getHandler(opcode);
 
         if (YamlConfig.config.server.USE_DEBUG_SHOW_RCVD_PACKET && !LoggingUtil.isIgnoredRecvPacket(opcode)) {
-            log.debug("Received packet id {}", opcode);
+            Log.d("Received packet id {}", String.valueOf(opcode));
         }
 
         if (handler != null && handler.validateState(this)) {
@@ -844,7 +845,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             ContentValues values = new ContentValues();
             values.put("loggedin", newState);
-            values.put("lastlogin", Server.getInstance().getCurrentTime());
+            values.put("lastlogin", String.valueOf(new Timestamp(Server.getInstance().getCurrentTime())));
 
             con.update("accounts", values, "id = ?", new String[]{String.valueOf(getAccID())});
         } catch (SQLiteException e) {
@@ -880,8 +881,9 @@ public class Client extends ChannelInboundHandlerAdapter {
                 if (state == LOGIN_SERVER_TRANSITION) {
                     int lastloginIdx = cursor.getColumnIndex("lastlogin");
                     if (lastloginIdx != -1) {
-                        long lastLoginMillis = cursor.getLong(lastloginIdx);
-                        if (lastLoginMillis + 30000 < Server.getInstance().getCurrentTime()) {
+                        String lastLoginMillis = cursor.getString(lastloginIdx);
+                        Timestamp timestamp = Timestamp.valueOf(lastLoginMillis);
+                        if (timestamp.getTime() + 30000 < Server.getInstance().getCurrentTime()) {
                             int accountId = accId;
                             state = LOGIN_NOTLOGGEDIN;
                             updateLoginState(Client.LOGIN_NOTLOGGEDIN);

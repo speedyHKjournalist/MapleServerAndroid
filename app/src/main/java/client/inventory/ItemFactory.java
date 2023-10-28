@@ -161,10 +161,10 @@ public enum ItemFactory {
 
         StringBuilder query = new StringBuilder();
         query.append("SELECT * FROM ");
+        query.append("(SELECT * FROM (inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid))) AS equipterm ");
+        query.append("LEFT JOIN ");
         query.append("(SELECT id, accountid FROM characters) AS accountterm ");
-        query.append("RIGHT JOIN ");
-        query.append("(SELECT * FROM (inventoryitems LEFT JOIN inventoryequipment USING(inventoryitemid))) AS equipterm");
-        query.append(" ON accountterm.id=equipterm.characterid ");
+        query.append(" ON equipterm.characterid = accountterm.id ");
         query.append("WHERE accountterm.");
         query.append(isAccount ? "accountid" : "characterid");
         query.append(" = ?");
