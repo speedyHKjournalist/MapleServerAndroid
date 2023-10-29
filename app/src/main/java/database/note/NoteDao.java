@@ -1,55 +1,77 @@
 package database.note;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import database.DaoException;
 import model.Note;
-import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.JdbiException;
 import tools.DatabaseConnection;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class NoteDao {
 
     public void save(Note note) {
-        try (Handle handle = DatabaseConnection.getHandle()) {
-            handle.createUpdate("""
-                            INSERT INTO notes (`message`, `from`, `to`, `timestamp`, `fame`, `deleted`)
-                            VALUES (?, ?, ?, ?, ?, ?)""")
-                    .bind(0, note.message())
-                    .bind(1, note.from())
-                    .bind(2, note.to())
-                    .bind(3, note.timestamp())
-                    .bind(4, note.fame())
-                    .bind(5, 0)
-                    .execute();
-        } catch (JdbiException e) {
+        ContentValues values = new ContentValues();
+        values.put("message", note.message());
+        values.put("from", note.from());
+        values.put("to", note.to());
+        values.put("timestamp", note.timestamp());
+        values.put("fame", note.fame());
+        values.put("deleted", 0);
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            long newRowId = con.insert("notes", null, values);
+            if (newRowId == -1) {
+                throw new SQLiteException("Failed to save note");
+            }
+        } catch (SQLiteException e) {
             throw new DaoException("Failed to save note: %s" + note.toString(), e);
         }
     }
 
     public List<Note> findAllByTo(String to) {
-        try (Handle handle = DatabaseConnection.getHandle()) {
-            return handle.createQuery("""
-                            SELECT * 
-                            FROM notes
-                            WHERE `deleted` = 0
-                            AND `to` = ?""")
-                    .bind(0, to)
-                    .mapTo(Note.class)
-                    .list();
-        } catch (JdbiException e) {
+        List<Note> notes = new ArrayList<>();
+
+        try (SQLiteDatabase con = DatabaseConnection.getConnection();
+            Cursor cursor = con.rawQuery("SELECT * FROM notes WHERE `deleted` = 0 AND `to` = ?", new String[]{to})) {
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    int idIdx = cursor.getColumnIndex("_id");
+                    int toIdx = cursor.getColumnIndex("to");
+                    int fromIdx = cursor.getColumnIndex("from");
+                    int messageIdx = cursor.getColumnIndex("message");
+                    int timestampIdx = cursor.getColumnIndex("timestamp");
+                    int fameIdx = cursor.getColumnIndex("fame");
+
+                    Note note = new Note(cursor.getInt(idIdx),
+                            cursor.getString(messageIdx),
+                            cursor.getString(fromIdx),
+                            cursor.getString(toIdx),
+                            Timestamp.valueOf(cursor.getString(timestampIdx)).getTime(),
+                        cursor.getInt(fameIdx));
+
+                    notes.add(note);
+                }
+            }
+            return notes;
+        } catch (SQLiteException e) {
             throw new DaoException("Failed to find notes sent to: %s" + to, e);
         }
     }
 
     public Optional<Note> delete(int id) {
-        try (Handle handle = DatabaseConnection.getHandle()) {
-            Optional<Note> note = findById(handle, id);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            Optional<Note> note = findById(con, id);
             if (!note.isPresent()) {
                 return Optional.empty();
             }
-            deleteById(handle, id);
+            deleteById(con, id);
 
             return note;
         } catch (JdbiException e) {
@@ -57,32 +79,50 @@ public class NoteDao {
         }
     }
 
-    private Optional<Note> findById(Handle handle, int id) {
+    private Optional<Note> findById(SQLiteDatabase con, int id) {
         final Optional<Note> note;
-        try {
-            note = handle.createQuery("""
-                            SELECT *
-                            FROM notes
-                            WHERE `deleted` = 0
-                            AND `id` = ?""")
-                    .bind(0, id)
-                    .mapTo(Note.class)
-                    .findOne();
-        } catch (JdbiException e) {
+
+        String[] columns = {"_id", "to", "from", "message", "timestamp", "fame", "deleted"};
+        String selection = "id = ? AND deleted = ?";
+        String[] selectionArgs = {String.valueOf(id), "0"};
+
+        try (Cursor cursor = con.query("notes", columns, selection, selectionArgs, null, null, null)) {
+            if (cursor.moveToFirst()) {
+                int idIdx = cursor.getColumnIndex("_id");
+                int toIdx = cursor.getColumnIndex("to");
+                int fromIdx = cursor.getColumnIndex("from");
+                int messageIdx = cursor.getColumnIndex("message");
+                int timestampIdx = cursor.getColumnIndex("timestamp");
+                int fameIdx = cursor.getColumnIndex("fame");
+
+                note = Optional.of(new Note(
+                        cursor.getInt(idIdx),
+                        cursor.getString(messageIdx),
+                        cursor.getString(fromIdx),
+                        cursor.getString(toIdx),
+                        Timestamp.valueOf(cursor.getString(timestampIdx)).getTime(),
+                        cursor.getInt(fameIdx)));
+                return note;
+            }
+
+        } catch (SQLiteException e) {
             throw new DaoException("Failed find note with id %s" + id, e);
         }
-        return note;
+        return Optional.empty();
     }
 
-    private void deleteById(Handle handle, int id) {
+    private void deleteById(SQLiteDatabase con, int id) {
+        String whereClause = "id = ?";
+        String[] whereArgs = {String.valueOf(id)};
+        ContentValues values = new ContentValues();
+        values.put("deleted", 1);
+
         try {
-            handle.createUpdate("""
-                        UPDATE notes
-                        SET `deleted` = 1
-                        WHERE `id` = ?""")
-                    .bind(0, id)
-                    .execute();
-        } catch (JdbiException e) {
+            int affectedRows = con.update("notes", values, whereClause, whereArgs);
+            if (affectedRows == 0) {
+                throw new SQLiteException("Note with id " + id + " not found or could not be deleted");
+            }
+        } catch (SQLiteException e) {
             throw new DaoException("Failed to delete note with id %d" + id, e);
         }
     }

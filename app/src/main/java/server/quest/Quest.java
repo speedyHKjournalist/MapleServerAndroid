@@ -21,7 +21,6 @@
  */
 package server.quest;
 
-import android.util.Log;
 import client.Character;
 import client.QuestStatus;
 import client.QuestStatus.Status;
@@ -111,7 +110,6 @@ public class Quest {
         Data startReqData = reqData.getChildByPath("0");
         if (startReqData != null) {
             for (Data startReq : startReqData.getChildren()) {
-                Log.d("IMPORT QUEST", startReq.getName());
                 QuestRequirementType type = QuestRequirementType.getByWZName(startReq.getName());
                 switch (type) {
                 case INTERVAL:
@@ -136,7 +134,6 @@ public class Quest {
         Data completeReqData = reqData.getChildByPath("1");
         if (completeReqData != null) {
             for (Data completeReq : completeReqData.getChildren()) {
-                Log.d("IMPORT QUEST", completeReq.getName());
                 QuestRequirementType type = QuestRequirementType.getByWZName(completeReq.getName());
 
                 AbstractQuestRequirement req = this.getRequirement(type, completeReq);

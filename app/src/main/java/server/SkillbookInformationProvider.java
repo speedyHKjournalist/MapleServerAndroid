@@ -23,9 +23,7 @@ import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.util.Log;
 import client.Character;
-import database.MapleDBHelper;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +37,6 @@ import tools.DatabaseConnection;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -136,7 +126,6 @@ public class SkillbookInformationProvider {
 
         final Map<Integer, SkillBookEntry> loadedSkillbooks = new HashMap<>();
         for (Data questData : actData.getChildren()) {
-            Log.d("IMPORT QUEST", questData.getName());
             for (Data questStatusData : questData.getChildren()) {
                 for (Data questNodeData : questStatusData.getChildren()) {
                     String actNodeName = questNodeData.getName();
@@ -271,7 +260,6 @@ public class SkillbookInformationProvider {
         Map<Integer, SkillBookEntry> scriptSkillbooks = new HashMap<>();
         AssetManager assetManager = Server.getInstance().getContext().getAssets();
         for (String file : listFilesFromDirectoryRecursively("scripts", assetManager)) {
-            Log.d("IMPORT SCRIPTS", file);
             if (file.endsWith(".js")) {
                 scriptSkillbooks.putAll(fileSearchMatchingData(file, assetManager));
             }

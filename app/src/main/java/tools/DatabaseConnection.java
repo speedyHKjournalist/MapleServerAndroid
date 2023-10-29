@@ -3,22 +3,16 @@ package tools;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import config.YamlConfig;
 import database.MapleDBHelper;
 import database.note.NoteRowMapper;
-import net.server.Server;
-import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -41,13 +35,13 @@ public class DatabaseConnection {
         return dataSource;
     }
 
-    public static Handle getHandle() {
-        if (jdbi == null) {
-            throw new IllegalStateException("Unable to get handle - connection pool is uninitialized");
-        }
-
-        return jdbi.open();
-    }
+//    public static Handle getHandle() {
+//        if (jdbi == null) {
+//            throw new IllegalStateException("Unable to get handle - connection pool is uninitialized");
+//        }
+//
+//        return jdbi.open();
+//    }
 
     private static String getDbUrl() {
         // Environment variables override what's defined in the config file

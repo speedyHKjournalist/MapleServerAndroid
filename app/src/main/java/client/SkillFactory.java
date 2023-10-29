@@ -29,7 +29,6 @@ import server.life.Element;
 
 import java.util.HashMap;
 import java.util.Map;
-import android.util.Log;
 
 public class SkillFactory {
     private static volatile Map<Integer, Skill> skills = new HashMap<>();
@@ -43,7 +42,6 @@ public class SkillFactory {
         final Map<Integer, Skill> loadedSkills = new HashMap<>();
         final DataDirectoryEntry root = datasource.getRoot();
         for (DataFileEntry topDir : root.getFiles()) { // Loop thru jobs
-            Log.d("IMPORT SKILL WZ", topDir.getName());
             if (topDir.getName().length() <= 8) {
                 for (Data data : datasource.getData(topDir.getName())) { // Loop thru each jobs
                     if (data.getName().equals("skill")) {

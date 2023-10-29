@@ -25,12 +25,10 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.util.Log;
 import client.inventory.*;
 import config.YamlConfig;
 import constants.id.ItemId;
 import constants.inventory.ItemConstants;
-import database.MapleDBHelper;
 import net.server.Server;
 import provider.Data;
 import provider.DataProvider;
@@ -40,10 +38,6 @@ import provider.wz.WZFiles;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -170,7 +164,6 @@ public class CashShop {
             Map<Integer, CashItem> loadedItems = new HashMap<>();
             List<Integer> onSaleItems = new ArrayList<>();
             for (Data item : etc.getData("Commodity.img").getChildren()) {
-                Log.d("IMPORT CASH", item.getName());
                 int sn = DataTool.getIntConvert("SN", item);
                 int itemId = DataTool.getIntConvert("ItemId", item);
                 int price = DataTool.getIntConvert("Price", item, 0);
@@ -188,7 +181,6 @@ public class CashShop {
 
             Map<Integer, List<Integer>> loadedPackages = new HashMap<>();
             for (Data cashPackage : etc.getData("CashPackage.img").getChildren()) {
-                Log.d("IMPORT CASH", cashPackage.getName());
                 List<Integer> cPackage = new ArrayList<>();
 
                 for (Data item : cashPackage.getChildByPath("SN").getChildren()) {
