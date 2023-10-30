@@ -37,14 +37,14 @@ var stage1Questions = Array(
     "Here's the question. Collect the same number of coupons as the minimum level required to make the first job advancement as a magician.");
 var stage1Answers = Array(10, 35, 20, 25, 25, 30, 8);
 
-const Rectangle = importPackage('java.awt.Rectangle');
-var stage2Rects = Array(new Rectangle(-755, -132, 4, 218), new Rectangle(-721, -340, 4, 166), new Rectangle(-586, -326, 4, 150), new Rectangle(-483, -181, 4, 222));
-var stage3Rects = Array(new Rectangle(608, -180, 140, 50), new Rectangle(791, -117, 140, 45),
-    new Rectangle(958, -180, 140, 50), new Rectangle(876, -238, 140, 45),
-    new Rectangle(702, -238, 140, 45));
-var stage4Rects = Array(new Rectangle(910, -236, 35, 5), new Rectangle(877, -184, 35, 5),
-    new Rectangle(946, -184, 35, 5), new Rectangle(845, -132, 35, 5),
-    new Rectangle(910, -132, 35, 5), new Rectangle(981, -132, 35, 5));
+importPackage(android.graphics.Rect);
+var stage2Rects = Array(new Rect(-755, -132, 4, 218), new Rect(-721, -340, 4, 166), new Rect(-586, -326, 4, 150), new Rect(-483, -181, 4, 222));
+var stage3Rects = Array(new Rect(608, -180, 140, 50), new Rect(791, -117, 140, 45),
+    new Rect(958, -180, 140, 50), new Rect(876, -238, 140, 45),
+    new Rect(702, -238, 140, 45));
+var stage4Rects = Array(new Rect(910, -236, 35, 5), new Rect(877, -184, 35, 5),
+    new Rect(946, -184, 35, 5), new Rect(845, -132, 35, 5),
+    new Rect(910, -132, 35, 5), new Rect(981, -132, 35, 5));
 
 var stage2Combos = Array(Array(0, 1, 1, 1), Array(1, 0, 1, 1), Array(1, 1, 0, 1), Array(1, 1, 1, 0));
 var stage3Combos = Array(Array(0, 0, 1, 1, 1), Array(0, 1, 0, 1, 1), Array(0, 1, 1, 0, 1),

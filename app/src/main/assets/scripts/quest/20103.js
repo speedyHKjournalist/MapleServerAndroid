@@ -38,7 +38,7 @@ function end(mode, type, selection) {
                 qm.gainItem(2060000, 2000);
                 qm.gainItem(1452051, 1);
                 qm.gainItem(1142066, 1);
-                const Job = importPackage('client.Job');
+                importPackage(Packages.client);
                 qm.changeJob(Job.WINDARCHER1);
                 qm.getPlayer().resetStats();
             }

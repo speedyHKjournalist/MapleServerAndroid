@@ -132,7 +132,7 @@ public class QuestScriptManager extends AbstractScriptManager {
                     return;
                 }
 
-                // engine.put("qm", qm);
+                engine.put("qm", qm);
 
                 Invocable iv = (Invocable) engine;
                 scripts.put(c, iv);
@@ -174,7 +174,7 @@ public class QuestScriptManager extends AbstractScriptManager {
                     return;
                 }
 
-                // engine.put("qm", qm);
+                engine.put("qm", qm);
 
                 Invocable iv = (Invocable) engine;
                 scripts.put(c, iv);

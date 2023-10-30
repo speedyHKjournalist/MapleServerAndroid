@@ -28,7 +28,7 @@ var expedition;
 var expedMembers;
 var player;
 var em;
-const ExpeditionType = importPackage('server.expeditions.ExpeditionType');
+importPackage(Packages.server.expeditions);
 var exped = ExpeditionType.SHOWA;
 var expedName = "Showa Gang";
 var expedBoss = "The Boss";

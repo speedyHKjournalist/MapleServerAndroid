@@ -258,7 +258,7 @@ function monsterKilled(mob, eim) {
 
             if (stage == 5) {
                 var iid = 4001193;
-                const Item = importPackage('client.inventory.Item');
+                importPackage(Packages.client.inventory);
                 var itemObj = new Item(iid, 0, 1);
                 var mapObj = eim.getMapFactory().getMap(270050100);
                 var reactObj = mapObj.getReactorById(2708000);

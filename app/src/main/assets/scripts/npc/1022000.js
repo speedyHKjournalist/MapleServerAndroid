@@ -35,7 +35,7 @@ spawnPnpcFee = 7000000;
 jobType = 1;
 
 function start() {
-    const GameConstants = importPackage('constants.game.GameConstants');
+    importPackage(Packages.constants.game);
     if (parseInt(cm.getJobId() / 100) == jobType && cm.canSpawnPlayerNpc(GameConstants.getHallOfFameMapid(cm.getJob()))) {
         spawnPnpc = true;
 
@@ -96,8 +96,8 @@ function action(mode, type, selection) {
                     return;
                 }
 
-                const PlayerNPC = importPackage('server.life.PlayerNPC');
-                const GameConstants = importPackage('constants.game.GameConstants');
+                importPackage(Packages.server.life);
+                importPackage(Packages.constants.game);
                 if (PlayerNPC.spawnPlayerNPC(GameConstants.getHallOfFameMapid(cm.getJob()), cm.getPlayer())) {
                     cm.sendOk("There you go! Hope you will like it.");
                     cm.gainMeso(-spawnPnpcFee);

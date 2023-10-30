@@ -37,7 +37,7 @@ function end(mode, type, selection) {
 
                 qm.gainItem(1372043, 1);
                 qm.gainItem(1142066, 1);
-                const Job = importPackage('client.Job');
+                importPackage(Packages.client);
                 qm.changeJob(Job.BLAZEWIZARD1);
                 qm.getPlayer().resetStats();
             }

@@ -17,7 +17,7 @@ function end(mode, type, selection) {
 
         if (status == 0) {
             if (qm.haveItem(4031092, 10)) {
-                const InventoryType = importPackage('client.inventory.InventoryType');
+                importPackage(Packages.client.inventory);
                 if (qm.getPlayer().getInventory(InventoryType.USE).getNumFreeSlot() >= 1) {
                     qm.sendOk("Well done! You brought back all the #t4031092# that were missing. Here, take this scroll as a token of my gratitude...");
                 } else {

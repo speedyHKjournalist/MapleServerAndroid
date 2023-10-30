@@ -45,7 +45,7 @@ function end(mode, type, selection) {
         }
 
         if (status == 0) {
-            const InventoryType = importPackage('client.inventory.InventoryType');
+            importPackage(Packages.client.inventory);
             if (qm.getPlayer().getInventory(InventoryType.ETC).getNumFreeSlot() < 1) {
                 qm.sendOk("Make room on your ETC inventory first.");
                 qm.dispose();

@@ -15,7 +15,7 @@ var levels = ["Common", "Donator", "JrGM", "GM", "SuperGM", "Developer", "Admin"
 var commands;
 
 function writeHeavenMSCommands() {
-    const CommandsExecutor = importPackage('client.command.CommandsExecutor');
+    importPackage(Packages.client.command);
     commands = CommandsExecutor.getInstance().getGmCommands();
 }
 

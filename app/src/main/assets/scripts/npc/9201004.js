@@ -127,7 +127,7 @@ function action(mode, type, selection) {
             }
 
             cm.gainMeso(-divorceFee);
-            const RingActionHandler = importPackage('net.server.channel.handlers.RingActionHandler');
+            importPackage(Packages.net.server.channel.handlers);
             RingActionHandler.breakMarriageRing(cm.getPlayer(), ringObj.getItemId());
             cm.gainItem(ringObj.getItemId(), -1);
 

@@ -19,7 +19,7 @@
 */
 
 function start() {
-    const ShopFactory = importPackage('server.ShopFactory');
+    importPackage(Packages.server);
     ShopFactory.getInstance().getShop(11000).sendShop(cm.getClient());
     cm.dispose();
 }

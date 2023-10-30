@@ -27,8 +27,8 @@
 function act() {
     var denyWidth = 320, denyHeight = 150;
     var denyPos = rm.getReactor().getPosition();
-    const Rectangle = importPackage('java.awt.Rectangle');
-    var denyArea = new Rectangle(denyPos.getX() - denyWidth / 2, denyPos.getY() - denyHeight / 2, denyWidth, denyHeight);
+    importPackage(android.graphics.Rect);
+    var denyArea = new Rect(denyPos.getX() - denyWidth / 2, denyPos.getY() - denyHeight / 2, denyWidth, denyHeight);
 
     var map = rm.getReactor().getMap();
     map.setAllowSpawnPointInBox(false, denyArea);

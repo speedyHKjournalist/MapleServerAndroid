@@ -29,7 +29,7 @@ var expedition;
 var expedMembers;
 var player;
 var em;
-const ExpeditionType = importPackage('server.expeditions.ExpeditionType');
+importPackage(Packages.server.expeditions);
 const exped = ExpeditionType.ZAKUM;
 var expedName = "Zakum";
 var expedBoss = "Zakum";

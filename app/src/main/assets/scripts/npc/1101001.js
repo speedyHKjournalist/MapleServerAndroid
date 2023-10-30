@@ -5,7 +5,7 @@
 */
 
 function start() {
-    const GameConstants = importPackage('constants.game.GameConstants');
+    importPackage(Packages.constants.game);
     if (cm.getPlayer().isCygnus() && GameConstants.getJobBranch(cm.getJob()) > 2) {
         cm.useItem(2022458);
         cm.sendOk("Let me cast you my blessings, my Knight. Please protect the world of Maple....");

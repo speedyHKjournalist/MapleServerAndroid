@@ -34,9 +34,6 @@ import tools.DatabaseConnection;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -142,7 +139,7 @@ public class ReactorScriptManager extends AbstractScriptManager {
 
         Invocable iv = (Invocable) engine;
         ReactorActionManager rm = new ReactorActionManager(c, reactor, iv);
-        // engine.put("rm", rm);
+        engine.put("rm", rm);
 
         return iv;
     }

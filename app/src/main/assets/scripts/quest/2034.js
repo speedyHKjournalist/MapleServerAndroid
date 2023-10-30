@@ -12,7 +12,7 @@ function end(mode, type, selection) {
     if (status == 0) {
         qm.sendNext("I knew it ... I knew you could get it done with, quickly! You did your job well last time, and here you are again, taking care of business!! Alright, since you have done it so well, I should reward you well. #b#p1051000##k is giving you a pair of shoes in hopes of helping you out on your future traveling.");
     } else if (status == 1) {
-        const InventoryType = importPackage('client.inventory.InventoryType');
+        importPackage(Packages.client.inventory);
         if (qm.getPlayer().getInventory(InventoryType.EQUIP).getNumFreeSlot() < 1) {
             qm.sendOk("Please free a EQUIP inventory slot to receive the reward.");
             qm.dispose();
@@ -21,7 +21,7 @@ function end(mode, type, selection) {
 
         var stance = qm.getPlayer().getJobStyle();
 
-        const Job = importPackage('client.Job');
+        importPackage(Packages.client);
         if (stance == Job.WARRIOR) {
             item = 1072003;
         } else if (stance == Job.MAGICIAN) {

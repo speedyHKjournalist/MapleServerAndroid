@@ -4,7 +4,7 @@
  */
 
 function start() {
-    const YamlConfig = importPackage('config.YamlConfig');
+    importPackage(Packages.config);
     if (YamlConfig.config.server.USE_ENABLE_CUSTOM_NPC_SCRIPT) {
         cm.openShopNPC(9201101);
     } else {

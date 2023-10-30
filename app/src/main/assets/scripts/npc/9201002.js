@@ -27,7 +27,7 @@ var eim;
 var weddingEventName = "WeddingCathedral";
 var cathedralWedding = true;
 var weddingIndoors;
-const YamlConfig = importPackage('config.YamlConfig');
+importPackage(Packages.config);
 var weddingBlessingExp = YamlConfig.config.server.WEDDING_BLESS_EXP;
 
 function isWeddingIndoors(mapid) {
@@ -361,7 +361,7 @@ function action(mode, type, selection) {
                                             cm.gainItem(playerItemId, -1);
                                             cmPartner.gainItem(partnerItemId, -1);
 
-                                            const RingActionHandler = importPackage('net.server.channel.handlers.RingActionHandler');
+                                            importPackage(Packages.net.server.channel.handlers);
                                             RingActionHandler.giveMarriageRings(player, partner, marriageRingId);
                                             player.setMarriageItemId(marriageRingId);
                                             partner.setMarriageItemId(marriageRingId);

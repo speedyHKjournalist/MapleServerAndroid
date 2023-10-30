@@ -44,7 +44,7 @@ function start(mode, type, selection) {
 }
 
 function usedPotion(ch) {
-    const BuffStat = importPackage('client.BuffStat');
+    importPackage(Packages.client);
     return ch.getBuffSource(BuffStat.HPREC) == 2022337;
 }
 

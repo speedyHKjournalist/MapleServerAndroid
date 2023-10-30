@@ -55,7 +55,7 @@ function end(mode, type, selection) {
                     }
                     qm.gainItem(4032100, -30);
                     qm.gainItem(1142067, 1);
-                    const Job = importPackage('client.Job');
+                    importPackage(Packages.client);
                     qm.getPlayer().changeJob(Job.THUNDERBREAKER2);
                     qm.completeQuest();
                 }

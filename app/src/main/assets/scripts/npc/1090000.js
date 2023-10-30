@@ -36,7 +36,7 @@ jobType = 5;
 var advQuest = 0;
 
 function start() {
-    const GameConstants = importPackage('constants.game.GameConstants');
+    importPackage(Packages.constants.game);
     if (cm.isQuestStarted(6330)) {
         if (cm.getEventInstance() != null) {    // missing script for skill test found thanks to Jade™
             advQuest = 5;                       // string visibility thanks to iPunchEm & Glvelturall
@@ -145,8 +145,8 @@ function action(mode, type, selection) {
                     return;
                 }
 
-                const PlayerNPC = importPackage('server.life.PlayerNPC');
-                const GameConstants = importPackage('constants.game.GameConstants');
+                importPackage(Packages.server.life);
+                importPackage(Packages.constants.game);
                 if (PlayerNPC.spawnPlayerNPC(GameConstants.getHallOfFameMapid(cm.getJob()), cm.getPlayer())) {
                     cm.sendOk("There you go! Hope you will like it.");
                     cm.gainMeso(-spawnPnpcFee);

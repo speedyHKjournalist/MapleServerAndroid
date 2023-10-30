@@ -27,7 +27,7 @@ var status;
 var gachaMessages;
 
 function start() {
-    const Gachapon = importPackage('server.gachapon.Gachapon');
+    importPackage(Packages.server.gachapon);
     gachaMessages = Gachapon.GachaponType.getLootInfo();
     gachas = Gachapon.GachaponType.values();
 

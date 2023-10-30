@@ -28,7 +28,7 @@ var expedition;
 var expedMembers;
 var player;
 var em;
-const ExpeditionType = importPackage('server.expeditions.ExpeditionType');
+importPackage(Packages.server.expeditions);
 const exped = ExpeditionType.BALROG_NORMAL;
 var expedName = "Balrog";
 var expedBoss = "Balrog";

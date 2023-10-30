@@ -118,7 +118,7 @@ function action(mode, type, selection) {
                 useVP = true;
             }
 
-            const InventoryType = importPackage('client.inventory.InventoryType');
+            importPackage(Packages.client.inventory);
             if (choice == 0) {
                 // VP Exchange
                 if (!cm.canHold(itemToUse)) {

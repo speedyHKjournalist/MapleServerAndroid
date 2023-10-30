@@ -158,7 +158,7 @@ function getJobTierScrolls() {
     var job = cm.getPlayer().getJob();
     var jobScrolls = jobWeaponRestricted[Math.floor(cm.getPlayer().getJobStyle().getId() / 100)];
 
-    const GameConstants = importPackage('constants.game.GameConstants');
+    importPackage(Packages.constants.game);
     var jobBranch = GameConstants.getJobBranch(job);
     if (jobBranch >= 2) {
         Array.prototype.push.apply(scrolls, jobScrolls[Math.floor((job.getId() / 10) % 10) - 1]);
@@ -208,7 +208,7 @@ function getScrollTier(scrollStats) {
 function getScrollSuccessTier(scrollStats) {
     var prop = scrollStats.get("success");
 
-    const YamlConfig = importPackage('config.YamlConfig');
+    importPackage(Packages.config);
     if (prop > 90) {
         return 3;
     } else if (prop < 50) {
@@ -220,7 +220,7 @@ function getScrollSuccessTier(scrollStats) {
 
 function getAvailableScrollsPool(baseScrolls, rewardTier, successTier) {
     var scrolls = [];
-    const ItemInformationProvider = importPackage('server.ItemInformationProvider');
+    importPackage(Packages.server);
     var ii = ItemInformationProvider.getInstance();
 
     for (var i = 0; i < baseScrolls.length; i++) {
@@ -258,7 +258,7 @@ function getPlayerCardTierPower() {
 
         if (ceTier >= 8) {  // is special card
             importPackage(Packages.server.life);
-            const ItemInformationProvider = importPackage('server.ItemInformationProvider');
+            importPackage(Packages.server);
             var mobLevel = LifeFactory.getMonsterLevel(ItemInformationProvider.getInstance().getCardMobId(cardid));
             var mobTier = getLevelTier(mobLevel) - 1;
 
@@ -292,7 +292,7 @@ function calculateMobBookBuckets() {
         playerLevelTier = 8;
     }
 
-    const MonsterBook = importPackage('client.MonsterBook');
+    importPackage(Packages.client);
     var tierSize = MonsterBook.getCardTierSize();
     var playerCards = getPlayerCardTierPower();
 
@@ -434,7 +434,7 @@ function performExchange(sgItemid, sgCount) {
 }
 
 function generateRandomScroll() {
-    const InventoryType = importPackage('client.inventory.InventoryType');
+    importPackage(Packages.client.inventory);
     if (cm.getPlayer().getInventory(InventoryType.USE).getNumFreeSlot() >= 1) {
         var itemid = getRandomScroll(calculateScrollTiers());
         if (itemid != -1) {

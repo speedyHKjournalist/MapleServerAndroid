@@ -95,7 +95,7 @@ public class NPCScriptManager extends AbstractScriptManager {
                 cm.dispose();
                 return;
             }
-            // engine.put("cm", cm);
+            engine.put("cm", cm);
 
             Invocable invocable = (Invocable) engine;
             scripts.put(c, invocable);
@@ -137,7 +137,7 @@ public class NPCScriptManager extends AbstractScriptManager {
                     dispose(c);
                     return false;
                 }
-                // engine.put(engineName, cm);
+                engine.put(engineName, cm);
 
                 Invocable iv = (Invocable) engine;
                 scripts.put(c, iv);

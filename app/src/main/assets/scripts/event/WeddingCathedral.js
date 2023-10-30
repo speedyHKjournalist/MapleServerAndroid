@@ -129,7 +129,7 @@ function stopBlessings(eim) {
 
 function sendWeddingAction(eim, type) {
     var chr = eim.getLeader();
-    const Wedding = importPackage('tools.packets.Wedding');
+    importPackage(Packages.tools.packets);
     if (chr.getGender() == 0) {
         chr.getMap().broadcastMessage(Wedding.OnWeddingProgress(type == 2, eim.getIntProperty("groomId"), eim.getIntProperty("brideId"), type + 1));
     } else {
@@ -142,13 +142,13 @@ function hidePriestMsg(eim) {
 }
 
 function showStartMsg(eim) {
-    const Wedding = importPackage('tools.packets.Wedding');
+    importPackage(Packages.tools.packets);
     eim.getMapInstance(entryMap + 10).broadcastMessage(Wedding.OnWeddingProgress(false, 0, 0, 0));
     eim.schedule("hidePriestMsg", forceHideMsgTime * 1000);
 }
 
 function showBlessMsg(eim) {
-    const Wedding = importPackage('tools.packets.Wedding');
+    importPackage(Packages.tools.packets);
     eim.getMapInstance(entryMap + 10).broadcastMessage(Wedding.OnWeddingProgress(false, 0, 0, 1));
     eim.setIntProperty("guestBlessings", 1);
     eim.schedule("hidePriestMsg", forceHideMsgTime * 1000);

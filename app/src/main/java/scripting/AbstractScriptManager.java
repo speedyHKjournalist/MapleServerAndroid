@@ -28,9 +28,14 @@ import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.*;
-import java.io.*;
-import java.util.List;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineFactory;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 /**
  * @author Matze
@@ -70,7 +75,7 @@ public abstract class AbstractScriptManager {
         ScriptEngine engine = c.getScriptEngine("scripts/" + path);
         if (engine == null) {
             engine = getInvocableScriptEngine(path);
-            c.setScriptEngine(path, engine);
+            c.setScriptEngine("scripts/" + path, engine);
         }
 
         return engine;

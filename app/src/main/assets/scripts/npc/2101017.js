@@ -10,7 +10,7 @@ var arena;
 var arenaName;
 var type;
 var map;
-const ExpeditionType = importPackage('server.expeditions.ExpeditionType');
+importPackage(Packages.server.expeditions);
 var exped;
 var expedicao;
 var expedMembers;
@@ -29,7 +29,7 @@ function action(mode, type, selection) {
             return;
         }
 
-        const GameConstants = importPackage('constants.game.GameConstants');
+        importPackage(Packages.constants.game);
         if (cm.getPlayer().getMapId() == 980010100 || cm.getPlayer().getMapId() == 980010200 || cm.getPlayer().getMapId() == 980010300) {
             if (cm.getPlayer().getMapId() == 980010100) {
                 exped = ExpeditionType.ARIANT;

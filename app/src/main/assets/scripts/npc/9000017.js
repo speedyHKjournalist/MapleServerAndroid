@@ -51,7 +51,7 @@ function action(mode, type, selection) {
     }
 
     if (status == 0) {
-        const YamlConfig = importPackage('config.YamlConfig');
+        importPackage(Packages.config);
         if (!YamlConfig.config.server.USE_ENABLE_CUSTOM_NPC_SCRIPT) {
             cm.sendOk("Hi, I'm #b#p" + cm.getNpc() + "##k.");
             cm.dispose();

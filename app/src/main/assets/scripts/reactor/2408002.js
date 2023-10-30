@@ -64,7 +64,7 @@ function act() {
 
     eim.setIntProperty(vvpStage + "stageclear", 1);
 
-    const Item = importPackage('client.inventory.Item');
+    importPackage(Packages.client.inventory);
     var tehWomanfred = new Item(vvpKey, 0, 1);
     var theWomanfred = womanfred.getReactorByName("keyDrop1");
     var dropper = eim.getPlayers().get(0);

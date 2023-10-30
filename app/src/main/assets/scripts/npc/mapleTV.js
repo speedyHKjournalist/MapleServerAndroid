@@ -24,7 +24,7 @@
 var status;
 
 function start() {
-    const YamlConfig = importPackage('config.YamlConfig');
+    importPackage(Packages.config);
     if (YamlConfig.config.server.USE_ENABLE_CUSTOM_NPC_SCRIPT) {
         cm.dispose();
         cm.openNpc(9201088, "scroll_generator");

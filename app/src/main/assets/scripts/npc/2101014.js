@@ -11,7 +11,7 @@ var arena;
 var arenaName;
 var type;
 var map;
-const ExpeditionType = importPackage('server.expeditions.ExpeditionType');
+importPackage(Packages.server.expeditions);
 var exped = ExpeditionType.ARIANT;
 var exped1 = ExpeditionType.ARIANT1;
 var exped2 = ExpeditionType.ARIANT2;

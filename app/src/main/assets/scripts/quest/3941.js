@@ -22,7 +22,7 @@
  */
 
 function isTigunMorphed(ch) {
-    const BuffStat = importPackage('client.BuffStat');
+    importPackage(Packages.client);
     return ch.getBuffSource(BuffStat.MORPH) == 2210005;
 }
 

@@ -60,7 +60,7 @@ function cancelSchedule() {
 }
 
 function start() {
-    const Server = importPackage('net.server.Server');
+    importPackage(Packages.net.server);
     importPackage(Packages.tools);
     var world = Server.getInstance().getWorld(em.getChannelServer().getWorld());
     world.setExpRate(8);
@@ -68,7 +68,7 @@ function start() {
 }
 
 function stop() {
-    const Server = importPackage('net.server.Server');
+    importPackage(Packages.net.server);
     importPackage(Packages.tools);
     var world = Server.getInstance().getWorld(em.getChannelServer().getWorld());
     world.setExpRate(4);

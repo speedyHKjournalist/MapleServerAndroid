@@ -20,7 +20,7 @@ function action(mode, type, selection) {
         }
 
         if (status == 0) {
-            const InventoryType = importPackage('client.inventory.InventoryType');
+            importPackage(Packages.client.inventory);
             if (cm.getPlayer().getInventory(InventoryType.ETC).getNumFreeSlot() < 1) {
                 cm.sendNext("Check for a available slot on your ETC inventory.");
                 cm.dispose();

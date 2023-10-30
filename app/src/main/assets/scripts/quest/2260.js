@@ -60,7 +60,7 @@ function end(mode, type, selection) {
         }
 
         if (status == 0) {
-            const GameConstants = importPackage('constants.game.GameConstants');
+            importPackage(Packages.constants.game);
             if (GameConstants.getJobBranch(qm.getPlayer().getJob()) == 1) {
                 qm.sendNext("Eh, didn't you get the #r2nd job advancement#k yet?");
                 qm.dispose();

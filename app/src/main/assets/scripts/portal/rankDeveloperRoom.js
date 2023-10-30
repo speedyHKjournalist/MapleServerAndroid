@@ -1,6 +1,6 @@
 function enter(pi) {
     if (pi.getPlayer().getMapId() != 777777777) {
-        const Server = importPackage('net.server.Server');
+        importPackage(Packages.net.server);
         if (!Server.getInstance().canEnterDeveloperRoom()) {
             pi.message("The next room is currently unavailable.");
             return false;

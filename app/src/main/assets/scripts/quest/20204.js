@@ -55,7 +55,7 @@ function end(mode, type, selection) {
                     }
                     qm.gainItem(4032099, -30);
                     qm.gainItem(1142067, 1);
-                    const Job = importPackage('client.Job');
+                    importPackage(Packages.client);
                     qm.getPlayer().changeJob(Job.NIGHTWALKER2);
                     qm.completeQuest();
                 }

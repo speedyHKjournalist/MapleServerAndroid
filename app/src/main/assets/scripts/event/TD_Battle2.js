@@ -110,7 +110,8 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
     if (!(hasLeader && eligible.length >= minPlayers && eligible.length <= maxPlayers)) {
         eligible = [];
     }
-    return Java.to(eligible, importPackage('net.server.world.PartyCharacter[]'));
+    importClass(Packages.net.server.world.PartyCharacter);
+return Java.to(eligible, "net.server.world.PartyCharacter[]");
 }
 
 function setup(level, lobbyid) {

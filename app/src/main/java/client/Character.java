@@ -8738,10 +8738,10 @@ public class Character extends AbstractCharacterObject {
                         values.put("mountexp", 0);
                         values.put("mounttiredness", 0);
                     }
-                    values.put("equipslots", 1);
-                    values.put("useslots", 2);
-                    values.put("setupslots", 3);
-                    values.put("etcslots", 4);
+                    values.put("equipslots", getSlots(1));
+                    values.put("useslots", getSlots(2));
+                    values.put("setupslots", getSlots(3));
+                    values.put("etcslots", getSlots(4));
                     monsterbook.saveCards(con, id);
 
                     values.put("monsterbookcover", bookCover);

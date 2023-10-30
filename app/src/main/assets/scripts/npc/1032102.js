@@ -102,8 +102,8 @@ function action(mode, type, selection) {
             }
         } else if (status == 2) {
             if (selection == 0) {
-                const InventoryManipulator = importPackage('client.inventory.manipulator.InventoryManipulator');
-                const InventoryType = importPackage('client.inventory.InventoryType');
+                importPackage(Packages.client.inventory.manipulator);
+                importPackage(Packages.client.inventory);
                 InventoryManipulator.removeFromSlot(cm.getClient(), InventoryType.CASH, 1, 1, true);
                 cm.sendOk("Your cash first slot is removed.");
             } else if (selection == 1) {
