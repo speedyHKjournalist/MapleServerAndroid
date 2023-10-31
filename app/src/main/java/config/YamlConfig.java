@@ -2,12 +2,9 @@ package config;
 
 import android.content.Context;
 import com.esotericsoftware.yamlbeans.YamlReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+
+import java.io.*;
 import java.util.List;
-import android.content.res.AssetManager;
 
 
 public class YamlConfig {
@@ -18,9 +15,8 @@ public class YamlConfig {
 
     public static YamlConfig loadConfig(Context context) {
         try {
-            AssetManager assetManager = context.getAssets();
-            InputStream inputStream = assetManager.open("config.yaml");
-
+            File configFile = new File(context.getDataDir(), "config.yaml");
+            FileInputStream inputStream = new FileInputStream(configFile);
             YamlReader reader = new YamlReader(new InputStreamReader(inputStream))/*, CharsetConstants.CHARSET))*/;
             YamlConfig config = reader.read(YamlConfig.class);
             reader.close();

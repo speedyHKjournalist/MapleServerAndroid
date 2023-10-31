@@ -24,9 +24,9 @@ package net.server;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
 import android.database.sqlite.SQLiteException;
-import android.util.Log;
+import android.database.sqlite.SQLiteStatement;
+import androidx.compose.runtime.MutableState;
 import client.Character;
 import client.Client;
 import client.Family;
@@ -42,7 +42,6 @@ import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
 import constants.net.OpcodeConstants;
 import constants.net.ServerConstants;
-import database.MapleDBHelper;
 import database.note.NoteDao;
 import net.ChannelDependencies;
 import net.PacketProcessor;
@@ -56,9 +55,9 @@ import net.server.guild.Guild;
 import net.server.guild.GuildCharacter;
 import net.server.task.*;
 import net.server.world.World;
+import org.apache.log4j.LogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.log4j.LogManager;
 import server.CashShop.CashItemFactory;
 import server.SkillbookInformationProvider;
 import server.ThreadManager;
@@ -70,11 +69,6 @@ import service.NoteService;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -92,6 +86,7 @@ import static java.util.concurrent.TimeUnit.*;
 
 public class Server {
     private static final Logger log = LoggerFactory.getLogger(Server.class);
+    private MutableState<String> logMessage;
     private static Server instance = null;
 
     public static Server getInstance() {
@@ -101,9 +96,9 @@ public class Server {
         return instance;
     }
 
-    public static Server getInstance(Context context) {
+    public static Server getInstance(Context context, MutableState<String> logMessage) {
         if (instance == null) {
-            instance = new Server(context);
+            instance = new Server(context, logMessage);
         }
         return instance;
     }
@@ -161,7 +156,7 @@ public class Server {
         this.lgnWLock = loginLock.writeLock();
     }
 
-    private Server(Context context) {
+    private Server(Context context, MutableState<String> logMessage) {
         this.context = context;
         ReadWriteLock worldLock = new ReentrantReadWriteLock(true);
         this.wldRLock = worldLock.readLock();
@@ -170,6 +165,8 @@ public class Server {
         ReadWriteLock loginLock = new ReentrantReadWriteLock(true);
         this.lgnRLock = loginLock.readLock();
         this.lgnWLock = loginLock.writeLock();
+
+        this.logMessage = logMessage;
     }
 
     public int getCurrentTimestamp() {
@@ -886,7 +883,7 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
-        log.info("Cosmic v{} starting up.", ServerConstants.VERSION);
+        logMessage.setValue("Cosmic v" + ServerConstants.VERSION + " starting up. ");
         if (this.context != null) {
             YamlConfig.config = YamlConfig.loadConfig(this.context);
         }
@@ -919,7 +916,7 @@ public class Server {
             applyAllWorldTransfers(db);
             PlayerNPC.loadRunningRankData(db, worldCount);
         } catch (SQLiteException sqle) {
-            Log.e("Init Exception", "Failed to run all startup-bound database tasks " + sqle);
+            logMessage.setValue("Failed to run all startup-bound database tasks " + sqle);
             throw new IllegalStateException(sqle);
         }
 
@@ -940,7 +937,7 @@ public class Server {
                 }
             }
         } catch (Exception e) {
-            Log.e("Init Exception", "[SEVERE] Syntax error in 'world.ini'." + e); //For those who get errors
+            logMessage.setValue("[SEVERE] Syntax error in 'world.ini'. " + e); //For those who get errors
             System.exit(0);
         }
 
@@ -949,18 +946,18 @@ public class Server {
             try {
                 future.get();
             } catch (Exception e) {
-                Log.e("Init Exception", "Failed to run all startup-bound loading tasks" + e);
+                logMessage.setValue("Failed to run all startup-bound loading tasks" + e);
                 throw new IllegalStateException(e);
             }
         }
 
         loginServer = initLoginServer(8484);
 
-        log.info("Listening on port 8484");
+        logMessage.setValue("Listening on port 8484");
 
         online = true;
         Duration initDuration = Duration.between(beforeInit, Instant.now());
-        Log.i("Init Info", "Cosmic is now online after " + initDuration.toMillis() + " ms");
+        logMessage.setValue("Cosmic is now online after " + initDuration.toMillis() + " ms");
 
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
@@ -1025,9 +1022,9 @@ public class Server {
         tMan.register(new BossLogTask(), DAYS.toMillis(1), timeLeft);
     }
 
-    public static void main(String[] args, Context context) {
-        System.setProperty("polyglot.engine.WarnInterpreterOnly", "false"); // Mute GraalVM warning: "The polyglot context is using an implementation that does not support runtime compilation."
-        Server.getInstance(context).init();
+    public static void main(String[] args, Context context, MutableState<String> logMessage) {
+        System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
+        Server.getInstance(context, logMessage).init();
     }
 
     public Properties getSubnetInfo() {
