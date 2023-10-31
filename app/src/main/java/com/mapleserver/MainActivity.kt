@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
         logMessage.value = "Prepare to start MapleStory Server"
         try {
             CoroutineScope(Dispatchers.Main).launch {
-                Server.main(args, this@MainActivity, logMessage)
+                Server.main(args, this@MainActivity)
             }
         } catch (e: Exception) {
             e.printStackTrace()

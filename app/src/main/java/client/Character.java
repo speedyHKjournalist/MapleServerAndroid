@@ -2304,7 +2304,7 @@ public class Character extends AbstractCharacterObject {
                     }
                 }
             } catch (SQLiteException e) {
-                Log.e("error", e.toString());
+                log.error("error", e.toString());
             }
 
 

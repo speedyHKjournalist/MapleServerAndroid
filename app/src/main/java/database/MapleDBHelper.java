@@ -1,9 +1,7 @@
 package database;
 
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 import net.server.Server;
 
 import java.io.*;
@@ -27,7 +25,6 @@ public class MapleDBHelper extends SQLiteOpenHelper {
                 //Copy the database from assests
                 copyDataBase();
                 mDataBaseExist = true;
-                Log.i("Database", "createDatabase database created");
             } catch (IOException mIOException) {
                 mIOException.printStackTrace();
                 throw new Error("ErrorCopyingDataBase");
@@ -71,7 +68,6 @@ public class MapleDBHelper extends SQLiteOpenHelper {
                 sInstance = new MapleDBHelper();
                 sInstance.createDataBase();
             } catch (IOException mIOException) {
-                Log.e("Database", "createDatabase database created failed");
                 mIOException.printStackTrace();
             }
         }

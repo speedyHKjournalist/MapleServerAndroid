@@ -1,0 +1,14 @@
+<configuration>
+    <!-- Create a file appender for a log in the application's data directory -->
+    <appender name="file" class="ch.qos.logback.core.FileAppender">
+        <file>${DATA_DIR}/log/server.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Write INFO (and higher-level) messages to the log file -->
+    <root level="INFO">
+        <appender-ref ref="file" />
+    </root>
+</configuration>

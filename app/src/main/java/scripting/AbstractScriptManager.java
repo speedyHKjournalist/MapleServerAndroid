@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scripting;
 
 import android.content.res.AssetManager;
-import android.util.Log;
 import client.Client;
 import net.server.Server;
 import org.slf4j.Logger;
@@ -66,7 +65,6 @@ public abstract class AbstractScriptManager {
                 return null;
             }
         } catch (IOException ex) {
-            Log.e("FILE ERROR", path + " does not exist");
             return null;
         }
     }

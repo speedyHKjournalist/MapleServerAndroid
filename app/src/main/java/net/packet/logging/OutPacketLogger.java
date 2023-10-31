@@ -1,6 +1,5 @@
 package net.packet.logging;
 
-import android.util.Log;
 import constants.net.OpcodeConstants;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,11 +35,10 @@ public class OutPacketLogger extends ChannelOutboundHandlerAdapter implements Pa
             String opcodeHex = Integer.toHexString(opcode).toUpperCase();
             String opcodeName = getSendOpcodeName(opcode);
             String prefix = opcodeName == null ? "<UnknownPacket> " : "";
-            String outpacket = prefix + " ServerSend: " + opcodeName + " [" + opcodeHex + "] " +
-                    "("+ packetLength + ")" + " <HEX> " + HexTool.toHexString(content) + " <TEXT> " + HexTool.toStringFromAscii(content);
-            Log.i("OUT PACKET", outpacket);
+            log.debug("{}ServerSend:{} [{}] ({}) <HEX> {} <TEXT> {}", prefix, opcodeName, opcodeHex, packetLength,
+                    HexTool.toHexString(content), HexTool.toStringFromAscii(content));
         } else {
-            Log.i("OUT PACKET", HexTool.toHexString(new byte[]{content[0], content[1]}) + " ...");
+            log.debug(HexTool.toHexString(new byte[]{content[0], content[1]}) + " ...");
         }
     }
 
