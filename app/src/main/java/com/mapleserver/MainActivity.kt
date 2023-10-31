@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,10 +24,13 @@ import com.mapleserver.ui.theme.ServerConfigScreen
 import com.mapleserver.ui.theme.StartButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.server.Server
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStreamReader
 
 
 class MainActivity : ComponentActivity() {
@@ -103,12 +103,13 @@ class MainActivity : ComponentActivity() {
 
     private fun startMapleServer(logMessage: MutableState<String>) {
         val args = arrayOf("-Xmx2048m", "-Dwz-path=wz", "-Djava.net.preferIPv4Stack=true")
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
+        logMessage.value = "Prepare to start MapleStory Server"
+        try {
+            CoroutineScope(Dispatchers.Main).launch {
                 Server.main(args, this@MainActivity, logMessage)
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

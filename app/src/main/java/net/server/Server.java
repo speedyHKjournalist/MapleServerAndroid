@@ -883,7 +883,7 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
-        logMessage.setValue("Cosmic v" + ServerConstants.VERSION + " starting up. ");
+        logMessage.setValue(logMessage.getValue() + "\nCosmic v" + ServerConstants.VERSION + " starting up. ");
         if (this.context != null) {
             YamlConfig.config = YamlConfig.loadConfig(this.context);
         }
@@ -953,11 +953,11 @@ public class Server {
 
         loginServer = initLoginServer(8484);
 
-        logMessage.setValue("Listening on port 8484");
+        logMessage.setValue(logMessage.getValue() + "\nListening on port 8484");
 
         online = true;
         Duration initDuration = Duration.between(beforeInit, Instant.now());
-        logMessage.setValue("Cosmic is now online after " + initDuration.toMillis() + " ms");
+        logMessage.setValue(logMessage.getValue() + "\nCosmic is now online after " + initDuration.toMillis() + " ms");
 
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
