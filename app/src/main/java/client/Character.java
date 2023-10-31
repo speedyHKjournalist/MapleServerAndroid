@@ -27,9 +27,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import java.text.SimpleDateFormat;
-
-import android.util.Log;
+import android.graphics.Point;
 import client.autoban.AutobanManager;
 import client.creator.CharacterFactoryRecipe;
 import client.inventory.*;
@@ -49,7 +47,6 @@ import constants.id.MapId;
 import constants.id.MobId;
 import constants.inventory.ItemConstants;
 import constants.skills.*;
-import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.PlayerBuffValueHolder;
 import net.server.PlayerCoolDownValueHolder;
@@ -87,10 +84,9 @@ import tools.exceptions.NotEnabledException;
 import tools.packets.WeddingPackets;
 
 import java.lang.ref.WeakReference;
-import java.sql.*;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Date;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -103,7 +99,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.*;
-import android.graphics.Point;
 
 public class Character extends AbstractCharacterObject {
     private static final Logger log = LoggerFactory.getLogger(Character.class);
@@ -7658,7 +7653,7 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Key config
-                try (Cursor ps = con.rawQuery("SELECT key,type,action FROM keymap WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
+                try (Cursor ps = con.rawQuery("SELECT `key`, `type`, `action` FROM keymap WHERE characterid = ?", new String[]{String.valueOf(charid)})) {
                     while (ps.moveToNext()) {
                         int keyIdx = ps.getColumnIndex("key");
                         int typeIdx = ps.getColumnIndex("type");

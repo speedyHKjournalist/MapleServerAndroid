@@ -24,13 +24,10 @@ import com.mapleserver.ui.theme.ServerConfigScreen
 import com.mapleserver.ui.theme.StartButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import net.server.Server
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStreamReader
 
 
 class MainActivity : ComponentActivity() {
