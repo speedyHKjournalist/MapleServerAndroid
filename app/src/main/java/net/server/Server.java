@@ -36,6 +36,7 @@ import client.inventory.ItemFactory;
 import client.inventory.manipulator.CashIdGenerator;
 import client.newyear.NewYearCardRecord;
 import client.processor.npc.FredrickProcessor;
+import config.LogBackConfig;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.inventory.ItemConstants;
@@ -97,6 +98,7 @@ public class Server {
         if (instance == null) {
             instance = new Server(context);
         }
+        LogBackConfig.configure();
         return instance;
     }
 

@@ -41,9 +41,14 @@ public class RankingLoginTask implements Runnable {
     private long lastUpdate = System.currentTimeMillis();
 
     private void resetMoveRank(boolean job) throws SQLiteException {
-        String query = "UPDATE characters SET " + (job ? "jobRankMove = 0" : "rankMove = 0");
+        ContentValues values = new ContentValues();
+        if (job) {
+            values.put("jobRankMove", 0);
+        } else {
+            values.put("rankMove", 0);
+        }
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            con.rawQuery(query, null);
+            con.update("characters", values, null, null);
         }
     }
 

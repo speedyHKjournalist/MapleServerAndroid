@@ -36,12 +36,12 @@ function action(mode, type, selection) {
                 for (var i = 0; i < 10; i++) {
                     var mob = eim.getMonster(9400594);
                     const xPos = Math.floor(-1337 + (Math.random() * 1337))
-                    cm.getMap().spawnMonsterOnGroundBelow(mob, new java.awt.Point(xPos, 276));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob, new android.graphics.Point(xPos, 276));
                 }
                 for (var i = 0; i < 20; i++) {
                     var mob = eim.getMonster(9400582);
                     const xPos = Math.floor(-1337 + (Math.random() * 1337))
-                    cm.getMap().spawnMonsterOnGroundBelow(mob, new java.awt.Point(xPos, 276));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob, new android.graphics.Point(xPos, 276));
                 }
                 eim.setIntProperty("glpq6", 1);
                 cm.dispose();
@@ -56,19 +56,19 @@ function action(mode, type, selection) {
 
                     //Margana
                     var mob = eim.getMonster(9400590);
-                    cm.getMap().spawnMonsterOnGroundBelow(mob, new java.awt.Point(-22, 1));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob, new android.graphics.Point(-22, 1));
 
                     //Red Nirg
                     var mob2 = eim.getMonster(9400591);
-                    cm.getMap().spawnMonsterOnGroundBelow(mob2, new java.awt.Point(-22, 276));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob2, new android.graphics.Point(-22, 276));
 
                     //Hsalf
                     var mob4 = eim.getMonster(9400593);
-                    cm.getMap().spawnMonsterOnGroundBelow(mob4, new java.awt.Point(496, 276));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob4, new android.graphics.Point(496, 276));
 
                     //Rellik
                     var mob3 = eim.getMonster(9400592);
-                    cm.getMap().spawnMonsterOnGroundBelow(mob3, new java.awt.Point(-496, 276));
+                    cm.getMap().spawnMonsterOnGroundBelow(mob3, new android.graphics.Point(-496, 276));
 
                     eim.setIntProperty("glpq6", 2);
                     cm.dispose();

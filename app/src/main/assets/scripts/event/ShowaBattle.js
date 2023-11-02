@@ -199,7 +199,7 @@ function clearPQ(eim) {
 
     if (eim.getIntProperty("playerDied") == 0) {
         var mob = eim.getMonster(9400114);
-        eim.getMapInstance(801040101).spawnMonsterOnGroundBelow(mob, new java.awt.Point(500, -50));
+        eim.getMapInstance(801040101).spawnMonsterOnGroundBelow(mob, new android.graphics.Point(500, -50));
         eim.dropMessage(5, "Konpei: The Boss has been defeated with no casualties, well done! We found a suspicious machine inside, we're moving it out.");
     }
 }

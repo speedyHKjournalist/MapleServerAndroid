@@ -98,12 +98,12 @@ function invasion() {
     importPackage(Packages.server.life);
 
     var map1 = Boat_to_Ellinia;
-    var pos1 = new java.awt.Point(-538, 143);
+    var pos1 = new android.graphics.Point(-538, 143);
     map1.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8150000), pos1);
     map1.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8150000), pos1);
 
     var map2 = Boat_to_Orbis;
-    var pos2 = new java.awt.Point(339, 148);
+    var pos2 = new android.graphics.Point(339, 148);
     map2.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8150000), pos2);
     map2.spawnMonsterOnGroundBelow(LifeFactory.getMonster(8150000), pos2);
 }

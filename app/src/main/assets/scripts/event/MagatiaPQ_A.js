@@ -437,7 +437,7 @@ function monsterKilled(mob, eim) {
         eim.showClearEffect();
         eim.giveEventPlayersStageReward(7);
 
-        eim.spawnNpc(2112005, new java.awt.Point(-370, -150), map);
+        eim.spawnNpc(2112005, new android.graphics.Point(-370, -150), map);
 
         var gain = (eim.getIntProperty("escortFail") == 1) ? 90000 : ((mob.getId() == 9300139) ? 105000 : 140000);
         eim.giveEventPlayersExp(gain);

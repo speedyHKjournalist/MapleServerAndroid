@@ -25,10 +25,7 @@ import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import android.os.Handler;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -38,7 +35,7 @@ public class TimerManager implements TimerManagerMBean {
     private static final Logger log = LoggerFactory.getLogger(TimerManager.class);
     private static final TimerManager instance = new TimerManager();
 
-    private Handler handler;
+    private ScheduledExecutorService handler;
 
     public static TimerManager getInstance() {
         return instance;
@@ -47,7 +44,7 @@ public class TimerManager implements TimerManagerMBean {
     private ScheduledThreadPoolExecutor ses;
 
     private TimerManager() {
-        handler = new Handler();
+        handler = Executors.newScheduledThreadPool(1);
     }
 
     public void start() {

@@ -213,7 +213,7 @@ function setup(channel) {
     for (var z = 0; z < pos_x.length; z++) {
         var mob = em.getMonster(9400594);
         eim.registerMonster(mob);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(pos_x[z], pos_y[z]));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(pos_x[z], pos_y[z]));
     }
 
     eim.startEventTimer(eventTime * 60000);
@@ -239,7 +239,7 @@ function spawnGuardians(eim) {
     for (var i = 0; i < 20; i++) { //spawn 20 guardians
         var mob = eim.getMonster(9400594);
         eim.registerMonster(mob);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(1000, 336));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(1000, 336));
     }
 }
 

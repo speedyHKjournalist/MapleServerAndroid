@@ -141,10 +141,10 @@ function setup(level, lobbyid) {
         mob2.changeDifficulty(level, isPq);
         mob3.changeDifficulty(level, isPq);
         mob4.changeDifficulty(level, isPq);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(430, 75));
-        map.spawnMonsterOnGroundBelow(mob2, new java.awt.Point(1600, 75));
-        map.spawnMonsterOnGroundBelow(mob3, new java.awt.Point(430, 238));
-        map.spawnMonsterOnGroundBelow(mob4, new java.awt.Point(1600, 238));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(430, 75));
+        map.spawnMonsterOnGroundBelow(mob2, new android.graphics.Point(1600, 75));
+        map.spawnMonsterOnGroundBelow(mob3, new android.graphics.Point(430, 238));
+        map.spawnMonsterOnGroundBelow(mob4, new android.graphics.Point(1600, 238));
     }
     map = eim.getInstanceMap(925100201);
     map.resetPQ(level);
@@ -155,8 +155,8 @@ function setup(level, lobbyid) {
         eim.registerMonster(mob2);
         mob.changeDifficulty(level, isPq);
         mob2.changeDifficulty(level, isPq);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(0, 238));
-        map.spawnMonsterOnGroundBelow(mob2, new java.awt.Point(1700, 238));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(0, 238));
+        map.spawnMonsterOnGroundBelow(mob2, new android.graphics.Point(1700, 238));
     }
     eim.getInstanceMap(925100202).resetPQ(level);
     map = eim.getInstanceMap(925100300);
@@ -175,10 +175,10 @@ function setup(level, lobbyid) {
         mob2.changeDifficulty(level, isPq);
         mob3.changeDifficulty(level, isPq);
         mob4.changeDifficulty(level, isPq);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(430, 75));
-        map.spawnMonsterOnGroundBelow(mob2, new java.awt.Point(1600, 75));
-        map.spawnMonsterOnGroundBelow(mob3, new java.awt.Point(430, 238));
-        map.spawnMonsterOnGroundBelow(mob4, new java.awt.Point(1600, 238));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(430, 75));
+        map.spawnMonsterOnGroundBelow(mob2, new android.graphics.Point(1600, 75));
+        map.spawnMonsterOnGroundBelow(mob3, new android.graphics.Point(430, 238));
+        map.spawnMonsterOnGroundBelow(mob4, new android.graphics.Point(1600, 238));
     }
     map = eim.getInstanceMap(925100301);
     map.resetPQ(level);
@@ -189,8 +189,8 @@ function setup(level, lobbyid) {
         eim.registerMonster(mob2);
         mob.changeDifficulty(level, isPq);
         mob2.changeDifficulty(level, isPq);
-        map.spawnMonsterOnGroundBelow(mob, new java.awt.Point(0, 238));
-        map.spawnMonsterOnGroundBelow(mob2, new java.awt.Point(1700, 238));
+        map.spawnMonsterOnGroundBelow(mob, new android.graphics.Point(0, 238));
+        map.spawnMonsterOnGroundBelow(mob2, new android.graphics.Point(1700, 238));
     }
     eim.getInstanceMap(925100302).resetPQ(level);
     eim.getInstanceMap(925100400).resetPQ(level);
@@ -363,7 +363,7 @@ function monsterKilled(mob, eim) {
 
     if (isLordPirate(mob)) {  // lord pirate defeated, spawn the little fella!
         map.broadcastStringMessage(5, "As Lord Pirate dies, Wu Yang is released!");
-        eim.spawnNpc(2094001, new java.awt.Point(777, 140), mob.getMap());
+        eim.spawnNpc(2094001, new android.graphics.Point(777, 140), mob.getMap());
     }
 
     if (map.countMonsters() == 0) {

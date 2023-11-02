@@ -30,7 +30,7 @@ function act() {
 
     var eim = rm.getEventInstance();
     if (eim.getProperty("statusStgBonus") != "1") {
-        rm.spawnNpc(2013002, new java.awt.Point(46, 840));
+        rm.spawnNpc(2013002, new android.graphics.Point(46, 840));
         eim.setProperty("statusStgBonus", "1");
     }
 }

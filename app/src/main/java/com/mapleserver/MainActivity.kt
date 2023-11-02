@@ -1,31 +1,35 @@
 package com.mapleserver
 
+import ServerWorker
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.mapleserver.ui.theme.ConfigButton
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.ServerConfigScreen
 import com.mapleserver.ui.theme.StartButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import net.server.Server
 import java.io.File
 import java.io.FileOutputStream
 
@@ -58,8 +62,8 @@ class MainActivity : ComponentActivity() {
     }
     @Composable
     fun MyApp(navController: NavHostController) {
-        val logView : LogViewModel = viewModel()
-        var isStartButtonEnabled = remember { mutableStateOf(true) }
+        val logView = LogViewModel(this)
+        var isStartButtonEnabled = rememberSaveable { mutableStateOf(true) }
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -76,11 +80,11 @@ class MainActivity : ComponentActivity() {
                     ) {
                         StartButton(
                             text = "Start",
+                            isButtonEnabled = isStartButtonEnabled,
                             startMapleServer = {
                                 isStartButtonEnabled.value = false
-                                startMapleServer(logView.logMessage)
-                            },
-                            isButtonEnabled = isStartButtonEnabled
+                                startMapleServer()
+                            }
                         )
 
                         ConfigButton(text = "Server Config",
@@ -88,26 +92,31 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("config_editor_screen")
                             })
                     }
-                    Text(
-                        text = logView.logMessage.value,
-                        modifier = Modifier.padding(16.dp),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .padding(16.dp)
+                            .fillMaxSize()
+                            .scrollable(
+                                state = rememberScrollState(),
+                                orientation = Orientation.Vertical
+                            )
+                    ) {
+                        Text(
+                            text = logView.logMessage.value,
+                            modifier = Modifier.padding(16.dp),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
     }
 
-    private fun startMapleServer(logMessage: MutableState<String>) {
-        val args = arrayOf("-Xmx2048m", "-Dwz-path=wz", "-Djava.net.preferIPv4Stack=true")
-        logMessage.value = "Prepare to start MapleStory Server"
-        try {
-            CoroutineScope(Dispatchers.Main).launch {
-                Server.main(args, this@MainActivity)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    private fun startMapleServer() {
+        val serverWorkRequest = OneTimeWorkRequest.Builder(ServerWorker::class.java)
+            .build()
+        WorkManager.getInstance(this).enqueue(serverWorkRequest)
     }
 
     private fun copyAssetFileApplication(assetFileName: String) {
