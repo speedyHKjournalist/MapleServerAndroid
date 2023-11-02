@@ -3,7 +3,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import net.server.Server
 
-class ServerWorker(
+class StartServerWorker(
     context: Context,
     params: WorkerParameters
 ) : Worker(context, params) {
@@ -11,7 +11,8 @@ class ServerWorker(
     override fun doWork(): Result {
         return try {
             val args = arrayOf("-Xmx2048m", "-Dwz-path=wz", "-Djava.net.preferIPv4Stack=true")
-            Server.main(args, applicationContext)
+            Server.getInstance(applicationContext)
+            Server.main(args)
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()

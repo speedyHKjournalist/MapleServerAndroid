@@ -1,6 +1,7 @@
 package com.mapleserver
 
-import ServerWorker
+import StartServerWorker
+import StopServerWorker
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -26,10 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
-import com.mapleserver.ui.theme.ConfigButton
-import com.mapleserver.ui.theme.MapleServerTheme
-import com.mapleserver.ui.theme.ServerConfigScreen
-import com.mapleserver.ui.theme.StartButton
+import com.mapleserver.ui.theme.*
 import java.io.File
 import java.io.FileOutputStream
 
@@ -64,6 +62,7 @@ class MainActivity : ComponentActivity() {
     fun MyApp(navController: NavHostController) {
         val logView = LogViewModel(this)
         var isStartButtonEnabled = rememberSaveable { mutableStateOf(true) }
+        var isStopButtonEnabled = rememberSaveable { mutableStateOf(false) }
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -83,10 +82,19 @@ class MainActivity : ComponentActivity() {
                             isButtonEnabled = isStartButtonEnabled,
                             startMapleServer = {
                                 isStartButtonEnabled.value = false
+                                isStopButtonEnabled.value = true
                                 startMapleServer()
                             }
                         )
-
+                        StoptButton(
+                            text = "Stop",
+                            isButtonEnabled = isStopButtonEnabled,
+                            stopMapleServer = {
+                                isStartButtonEnabled.value = true
+                                isStopButtonEnabled.value = false
+                                stopMapleServer()
+                            }
+                        )
                         ConfigButton(text = "Server Config",
                             onOpenEditor = {
                                 navController.navigate("config_editor_screen")
@@ -114,9 +122,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startMapleServer() {
-        val serverWorkRequest = OneTimeWorkRequest.Builder(ServerWorker::class.java)
+        val serverWorkRequest = OneTimeWorkRequest.Builder(StartServerWorker::class.java)
             .build()
         WorkManager.getInstance(this).enqueue(serverWorkRequest)
+    }
+
+    private fun stopMapleServer() {
+//        val serverWorkRequest = OneTimeWorkRequest.Builder(StopServerWorker::class.java)
+//            .build()
+//        WorkManager.getInstance(this).enqueue(serverWorkRequest)
     }
 
     private fun copyAssetFileApplication(assetFileName: String) {

@@ -97,8 +97,8 @@ public class Server {
     public static Server getInstance(Context context) {
         if (instance == null) {
             instance = new Server(context);
+            LogBackConfig.configure();
         }
-        LogBackConfig.configure();
         return instance;
     }
 
@@ -1019,9 +1019,9 @@ public class Server {
         tMan.register(new BossLogTask(), DAYS.toMillis(1), timeLeft);
     }
 
-    public static void main(String[] args, Context context) {
+    public static void main(String[] args) {
         System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
-        Server.getInstance(context).init();
+        Server.getInstance().init();
     }
 
     public Properties getSubnetInfo() {
