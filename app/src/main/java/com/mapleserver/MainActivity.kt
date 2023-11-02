@@ -128,9 +128,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun stopMapleServer() {
-//        val serverWorkRequest = OneTimeWorkRequest.Builder(StopServerWorker::class.java)
-//            .build()
-//        WorkManager.getInstance(this).enqueue(serverWorkRequest)
+        val serverWorkRequest = OneTimeWorkRequest.Builder(StopServerWorker::class.java)
+            .build()
+        WorkManager.getInstance(this).enqueue(serverWorkRequest)
     }
 
     private fun copyAssetFileApplication(assetFileName: String) {

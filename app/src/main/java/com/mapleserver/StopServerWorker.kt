@@ -11,7 +11,7 @@ class StopServerWorker(
     override fun doWork(): Result {
         return try {
             val server = Server.getInstance()
-            server.shutdown(false)
+            server.shutdownInternal(false)
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
