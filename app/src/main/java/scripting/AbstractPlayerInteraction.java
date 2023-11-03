@@ -21,6 +21,7 @@
  */
 package scripting;
 
+import android.graphics.Point;
 import client.Character;
 import client.Character.DelayedQuestUpdate;
 import client.*;
@@ -57,7 +58,6 @@ import tools.Pair;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.DAYS;
-import android.graphics.Point;
 
 public class AbstractPlayerInteraction {
 
@@ -243,7 +243,13 @@ public class AbstractPlayerInteraction {
         List<Integer> intList = new ArrayList<>();
 
         for (Object object : objects) {
-            intList.add((Integer) object);
+            if (object instanceof Integer) {
+                intList.add((Integer) object);
+            } else if (object instanceof Double) {
+                intList.add(((Double) object).intValue());
+            } else if (object instanceof Long) {
+                intList.add(((Long) object).intValue());
+            }
         }
 
         return intList;

@@ -22,7 +22,6 @@
 package scripting.event;
 
 import client.Character;
-import javax.script.ScriptException;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import net.server.Server;
@@ -144,7 +143,13 @@ public class EventManager {
         List<Integer> intList = new ArrayList<>();
 
         for (Object object : objects) {
-            intList.add((Integer) object);
+            if (object instanceof Integer) {
+                intList.add((Integer) object);
+            } else if (object instanceof Double) {
+                intList.add(((Double) object).intValue());
+            } else if (object instanceof Long) {
+                intList.add(((Long) object).intValue());
+            }
         }
 
         return intList;

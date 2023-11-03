@@ -11,10 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * @author RonanLana
@@ -92,28 +88,27 @@ public class MobBookUpdate {
             String toPrint;
             int itemId, cont = 0;
 
-            Cursor cursor = con.rawQuery("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;", new String[]{String.valueOf(mobId)});
-            if (cursor.moveToFirst()) {
-                toPrint = "";
-                for (int k = 0; k <= status; k++) {
-                    toPrint += "  ";
-                }
+            try (Cursor cursor = con.rawQuery("SELECT itemid FROM drop_data WHERE (dropperid = ? AND itemid > 0) GROUP BY itemid;", new String[]{String.valueOf(mobId)})) {
+                if (cursor.moveToFirst()) {
+                    toPrint = "";
+                    for (int k = 0; k <= status; k++) {
+                        toPrint += "  ";
+                    }
 
-                toPrint += "<int name=\"";
-                toPrint += cont;
-                toPrint += "\" value=\"";
-                int itemidIdx = cursor.getColumnIndex("itemid");
-                if (itemidIdx != -1) {
-                    itemId = cursor.getInt(itemidIdx);
-                    toPrint += itemId;
-                    toPrint += "\" />";
+                    toPrint += "<int name=\"";
+                    toPrint += cont;
+                    toPrint += "\" value=\"";
+                    int itemidIdx = cursor.getColumnIndex("itemid");
+                    if (itemidIdx != -1) {
+                        itemId = cursor.getInt(itemidIdx);
+                        toPrint += itemId;
+                        toPrint += "\" />";
 
-                    printWriter.println(toPrint);
-                    cont++;
+                        printWriter.println(toPrint);
+                        cont++;
+                    }
                 }
             }
-
-            cursor.close();
         } catch (SQLiteException e) {
             e.printStackTrace();
         }

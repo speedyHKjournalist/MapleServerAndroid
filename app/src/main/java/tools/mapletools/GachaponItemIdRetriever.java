@@ -9,10 +9,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,10 +47,8 @@ public class GachaponItemIdRetriever {
     }
 
     private static void loadHandbookUseNames() throws SQLiteException {
-        Cursor cursor = con.rawQuery("SELECT * FROM handbook WHERE id >= 2040000 AND id < 2050000 ORDER BY id ASC;", null);
-
-        if (cursor != null) {
-            try {
+        try (Cursor cursor = con.rawQuery("SELECT * FROM handbook WHERE id >= 2040000 AND id < 2050000 ORDER BY id ASC;", null)) {
+            if (cursor != null) {
                 while (cursor.moveToNext()) {
                     int idIdx = cursor.getColumnIndex("id");
                     int nameIdx = cursor.getColumnIndex("name");
@@ -72,8 +66,6 @@ public class GachaponItemIdRetriever {
                         }
                     }
                 }
-            } finally {
-                cursor.close();
             }
         }
 
@@ -226,9 +218,8 @@ public class GachaponItemIdRetriever {
     private static void fetchLineOnMapleHandbook(String line, String rarity) throws SQLiteException {
         String str = "";
         if (!isUpgradeScroll(line)) {
-            Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line});
-            if (cursor != null) {
-                try {
+            try (Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line})) {
+                if (cursor != null) {
                     while (cursor.moveToNext()) {
                         int idIdx = cursor.getColumnIndex("id");
                         if (idIdx != -1) {
@@ -237,8 +228,6 @@ public class GachaponItemIdRetriever {
                             str += " ";
                         }
                     }
-                } finally {
-                    cursor.close();
                 }
             }
         } else {

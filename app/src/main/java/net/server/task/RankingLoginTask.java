@@ -58,14 +58,9 @@ public class RankingLoginTask implements Runnable {
             sqlCharSelect += "AND c.job/100 = ? ";
         }
         sqlCharSelect += "ORDER BY c.level DESC , c.exp DESC , c.lastExpGainTime ASC, c.fame DESC , c.meso DESC";
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            Cursor cursor;
-            if (job != -1) {
-                cursor = con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world), String.valueOf(job)});
-            } else {
-                cursor = con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world)});
-            }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = (job == -1)? con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world)}) :
+                     con.rawQuery(sqlCharSelect, new String[]{String.valueOf(world), String.valueOf(job)})) {
             int rank = 0;
             while (cursor.moveToNext()) {
                 int rankMove = 0;
@@ -93,7 +88,6 @@ public class RankingLoginTask implements Runnable {
                 String[] whereArgs = {String.valueOf(cursor.getInt(idIdx))};
                 con.update("characters", values, whereClause, whereArgs);
             }
-            cursor.close();
         }
     }
 
@@ -102,25 +96,20 @@ public class RankingLoginTask implements Runnable {
         SQLiteDatabase con = DatabaseConnection.getConnection();
         try {
             con.beginTransaction();
-
-            try {
-                if (YamlConfig.config.server.USE_REFRESH_RANK_MOVE) {
-                    resetMoveRank(true);
-                    resetMoveRank(false);
-                }
-
-                for (int j = 0; j < Server.getInstance().getWorldsSize(); j++) {
-                    updateRanking(-1, j);    //overall ranking
-                    for (int i = 0; i <= Job.getMax(); i++) {
-                        updateRanking(i, j);
-                    }
-                }
-
-                con.setTransactionSuccessful();
-                lastUpdate = System.currentTimeMillis();
-            } catch (SQLiteException ex) {
-                throw ex;
+            if (YamlConfig.config.server.USE_REFRESH_RANK_MOVE) {
+                resetMoveRank(true);
+                resetMoveRank(false);
             }
+
+            for (int j = 0; j < Server.getInstance().getWorldsSize(); j++) {
+                updateRanking(-1, j);    //overall ranking
+                for (int i = 0; i <= Job.getMax(); i++) {
+                    updateRanking(i, j);
+                }
+            }
+
+            con.setTransactionSuccessful();
+            lastUpdate = System.currentTimeMillis();
         } catch (SQLiteException e) {
             e.printStackTrace();
         } finally {

@@ -8,24 +8,11 @@ import server.ItemInformationProvider;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 
 import static tools.StringUtil.readFileContent;
 
@@ -308,31 +295,32 @@ public class QuestItemFetcher {
     }
 
     private static void filterQuestDropsOnTable(Pair<Integer, Integer> iq, List<Pair<Integer, Integer>> itemsWithQuest, boolean dropdata) throws SQLiteException {
-        Cursor cursor = con.rawQuery("SELECT questid FROM " + getTableName(dropdata) + " WHERE itemid = ?;", new String[]{String.valueOf(iq.getLeft())});
-        if (cursor.moveToFirst()) {
-            do {
-                int questidIdx = cursor.getColumnIndex("questid");
-                if (questidIdx != -1) {
-                    int curQuest = cursor.getInt(questidIdx);
-                    if (curQuest != iq.getRight()) {
-                        Set<Integer> sqSet = startQuestItems.get(curQuest);
-                        if (sqSet != null && sqSet.contains(iq.getLeft())) {
-                            continue;
+        try (Cursor cursor = con.rawQuery("SELECT questid FROM " + getTableName(dropdata) + " WHERE itemid = ?;",
+                new String[]{String.valueOf(iq.getLeft())})) {
+            if (cursor.moveToFirst()) {
+                do {
+                    int questidIdx = cursor.getColumnIndex("questid");
+                    if (questidIdx != -1) {
+                        int curQuest = cursor.getInt(questidIdx);
+                        if (curQuest != iq.getRight()) {
+                            Set<Integer> sqSet = startQuestItems.get(curQuest);
+                            if (sqSet != null && sqSet.contains(iq.getLeft())) {
+                                continue;
+                            }
+
+                            int[] mixed = new int[3];
+                            mixed[0] = iq.getLeft();
+                            mixed[1] = curQuest;
+                            mixed[2] = iq.getRight();
+
+                            mixedQuestidItems.put(iq.getLeft(), mixed);
                         }
-
-                        int[] mixed = new int[3];
-                        mixed[0] = iq.getLeft();
-                        mixed[1] = curQuest;
-                        mixed[2] = iq.getRight();
-
-                        mixedQuestidItems.put(iq.getLeft(), mixed);
                     }
-                }
-            } while (cursor.moveToNext());
+                } while (cursor.moveToNext());
 
-            itemsWithQuest.remove(iq);
+                itemsWithQuest.remove(iq);
+            }
         }
-        cursor.close();
     }
 
     private static void filterQuestDropsOnDB(List<Pair<Integer, Integer>> itemsWithQuest) throws SQLiteException {

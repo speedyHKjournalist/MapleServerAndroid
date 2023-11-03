@@ -12,10 +12,6 @@ import java.io.PrintWriter;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -217,19 +213,19 @@ public class CashDropFetcher {
     private static void filterNxDropsOnDB(boolean dropdata) throws SQLiteException {
         nxDrops.clear();
 
-        Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + getDropTableName(dropdata), null);
-        if (cursor.moveToFirst()) {
-            do {
-                int itemidIdx = cursor.getColumnIndex("itemid");
-                if (itemidIdx != -1) {
-                    int itemid = cursor.getInt(itemidIdx);
-                    if (nxItems.contains(itemid)) {
-                        nxDrops.add(itemid);
+        try (Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + getDropTableName(dropdata), null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    int itemidIdx = cursor.getColumnIndex("itemid");
+                    if (itemidIdx != -1) {
+                        int itemid = cursor.getInt(itemidIdx);
+                        if (nxItems.contains(itemid)) {
+                            nxDrops.add(itemid);
+                        }
                     }
-                }
-            } while (cursor.moveToNext());
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
     }
 
     private static List<Pair<Integer, Integer>> getNxDropsEntries(boolean dropdata) throws SQLiteException {
@@ -239,16 +235,17 @@ public class CashDropFetcher {
         Collections.sort(sortedNxDrops);
 
         for (Integer nx : sortedNxDrops) {
-            Cursor cursor = con.rawQuery("SELECT " + getDropElementName(dropdata) + " FROM " + getDropTableName(dropdata) + " WHERE itemid = ?", new String[]{String.valueOf(nx)});
-            if (cursor.moveToFirst()) {
-                do {
-                    int dropdataIdx = cursor.getColumnIndex(getDropElementName(dropdata));
-                    if (dropdataIdx != -1) {
-                        entries.add(new Pair<>(nx, cursor.getInt(dropdataIdx)));
-                    }
-                } while (cursor.moveToNext());
+            try (Cursor cursor = con.rawQuery("SELECT " + getDropElementName(dropdata) + " FROM " + getDropTableName(dropdata)
+                    + " WHERE itemid = ?", new String[]{String.valueOf(nx)})) {
+                if (cursor.moveToFirst()) {
+                    do {
+                        int dropdataIdx = cursor.getColumnIndex(getDropElementName(dropdata));
+                        if (dropdataIdx != -1) {
+                            entries.add(new Pair<>(nx, cursor.getInt(dropdataIdx)));
+                        }
+                    } while (cursor.moveToNext());
+                }
             }
-            cursor.close();
         }
 
         return entries;

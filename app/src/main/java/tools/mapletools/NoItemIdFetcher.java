@@ -9,10 +9,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -165,9 +161,8 @@ public class NoItemIdFetcher {
     }
 
     private static void evaluateDropsFromTable(String table) throws SQLiteException {
-        Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + table + ";", null);
-        if (cursor != null) {
-            try {
+        try (Cursor cursor = con.rawQuery("SELECT DISTINCT itemid FROM " + table + ";", null)) {
+            if (cursor != null) {
                 while (cursor.moveToNext()) {
                     int itemidIdx = cursor.getColumnIndex("itemid");
                     if (itemidIdx != -1) {
@@ -177,8 +172,6 @@ public class NoItemIdFetcher {
                         }
                     }
                 }
-            } finally {
-                cursor.close();
             }
         }
     }

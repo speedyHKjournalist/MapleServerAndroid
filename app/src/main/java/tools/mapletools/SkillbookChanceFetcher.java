@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,10 +53,7 @@ public class SkillbookChanceFetcher {
 
     private static void fetchSkillbookDropChances() {
         SQLiteDatabase con = SimpleDatabaseConnection.getConnection();
-
-        try {
-            Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= 2280000 AND itemid < 2300000", null);
-
+        try (Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= 2280000 AND itemid < 2300000", null)) {
             while (cursor.moveToNext()) {
                 int dropperidIdx = cursor.getColumnIndex("dropperid");
                 int citemidIdx = cursor.getColumnIndex("itemid");
@@ -89,7 +83,6 @@ public class SkillbookChanceFetcher {
                     skillbookChances.put(new Pair<>(mobid, itemid), expectedChance);
                 }
             }
-            cursor.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

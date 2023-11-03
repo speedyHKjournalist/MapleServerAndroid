@@ -21,10 +21,10 @@
  */
 package scripting.event;
 
+import android.graphics.Point;
 import client.Character;
 import client.Skill;
 import client.SkillFactory;
-import javax.script.ScriptException;
 import config.YamlConfig;
 import constants.inventory.ItemConstants;
 import net.server.coordinator.world.EventRecallCoordinator;
@@ -49,6 +49,7 @@ import server.maps.Reactor;
 import tools.PacketCreator;
 import tools.Pair;
 
+import javax.script.ScriptException;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.Lock;
@@ -57,7 +58,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import android.graphics.Point;
 
 /**
  * @author Matze
@@ -898,7 +898,13 @@ public class EventInstanceManager {
         List<Integer> intList = new ArrayList<>();
 
         for (Object object : objects) {
-            intList.add((Integer) object);
+            if (object instanceof Integer) {
+                intList.add((Integer) object);
+            } else if (object instanceof Double) {
+                intList.add(((Double) object).intValue());
+            } else if (object instanceof Long) {
+                intList.add(((Long) object).intValue());
+            }
         }
 
         return intList;

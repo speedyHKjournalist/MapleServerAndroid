@@ -518,7 +518,6 @@ public class Client extends ChannelInboundHandlerAdapter {
                                 filtered.add(filter);
                             }
                         }
-                        cursor.close();
                     }
                 }
 

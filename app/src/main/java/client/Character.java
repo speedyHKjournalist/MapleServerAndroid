@@ -2160,69 +2160,72 @@ public class Character extends AbstractCharacterObject {
 
         final int accId = senderAccId;
         int world = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-            Cursor cursor = con.query("characters", new String[]{"world"}, "id = ?", new String[]{String.valueOf(cid)}, null, null, null)) {
-            if (cursor.moveToFirst()) {
-                int worldIdx = cursor.getColumnIndex("world");
-                if (worldIdx != -1) {
-                    world = cursor.getInt(worldIdx);
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            try (Cursor cursor = con.query("characters", new String[]{"world"}, "id = ?", new String[]{String.valueOf(cid)}, null, null, null)) {
+                if (cursor.moveToFirst()) {
+                    int worldIdx = cursor.getColumnIndex("world");
+                    if (worldIdx != -1) {
+                        world = cursor.getInt(worldIdx);
+                    }
                 }
-            }
-            cursor.close();
+                try (Cursor cursor1 = con.query("buddies", new String[]{"buddyid"}, "characterid = ?", new String[]{String.valueOf(cid)}, null, null, null)) {
+                    int buddyColumnIndex = cursor1.getColumnIndex("buddyid");
+                    while (cursor1.moveToNext()) {
+                        int buddyid = cursor.getInt(buddyColumnIndex);
+                        Character buddy = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterById(buddyid);
 
-            Cursor cursor1 = con.query("buddies", new String[]{"buddyid"}, "characterid = ?", new String[]{String.valueOf(cid)}, null, null, null);
-            int buddyColumnIndex = cursor1.getColumnIndex("buddyid");
-            while (cursor1.moveToNext()) {
-                int buddyid = cursor.getInt(buddyColumnIndex);
-                Character buddy = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterById(buddyid);
-
-                if (buddy != null) {
-                    buddy.deleteBuddy(cid);
+                        if (buddy != null) {
+                            buddy.deleteBuddy(cid);
+                        }
+                    }
                 }
-            }
-            cursor1.close();
 
-            String whereClause = "characterid = ?";
-            String[] whereArgs = {String.valueOf(cid)};
-            con.delete("buddies", whereClause, whereArgs);
+                String whereClause = "characterid = ?";
+                String[] whereArgs = {String.valueOf(cid)};
+                con.delete("buddies", whereClause, whereArgs);
 
-            String selectQuery = "SELECT threadid FROM bbs_threads WHERE postercid = ?";
-            String deleteQuery = "DELETE FROM bbs_replies WHERE threadid = ?";
-            String[] selectionArgs = {String.valueOf(cid)};
-            try (Cursor cursor3 = con.rawQuery(selectQuery, selectionArgs)) {
-                if (cursor3 != null) {
-                    while (cursor3.moveToNext()) {
-                        int threadidIdx = cursor3.getColumnIndex("threadid");
-                        if (threadidIdx != -1) {
-                            int threadId = cursor.getInt(threadidIdx);
-                            String[] deleteArgs = {String.valueOf(threadId)};
-                            con.execSQL(deleteQuery, deleteArgs);
+                String selectQuery = "SELECT threadid FROM bbs_threads WHERE postercid = ?";
+                String deleteQuery = "DELETE FROM bbs_replies WHERE threadid = ?";
+                String[] selectionArgs = {String.valueOf(cid)};
+                try (Cursor cursor3 = con.rawQuery(selectQuery, selectionArgs)) {
+                    if (cursor3 != null) {
+                        while (cursor3.moveToNext()) {
+                            int threadidIdx = cursor3.getColumnIndex("threadid");
+                            if (threadidIdx != -1) {
+                                int threadId = cursor.getInt(threadidIdx);
+                                String[] deleteArgs = {String.valueOf(threadId)};
+                                con.execSQL(deleteQuery, deleteArgs);
+                            }
+                        }
+                    }
+                }
+
+                String whereClause1 = "postercid = ?";
+                String[] whereArgs1 = {String.valueOf(cid)};
+                con.delete("bbs_threads", whereClause1, whereArgs1);
+
+                try (Cursor cursor2 = con.query("characters", new String[]{"id", "guildid", "guildrank", "name", "allianceRank"}, "id = ? AND accountid = ?", new String[]{String.valueOf(cid), String.valueOf(accId)}, null, null, null)) {
+                    if (cursor2.moveToFirst()) {
+                        int guildidIdx = cursor.getColumnIndex("guildid");
+                        int nameIdx = cursor.getColumnIndex("name");
+                        int guildrankIdx = cursor.getColumnIndex("guildrank");
+                        int allianceRankIdx = cursor.getColumnIndex("allianceRank");
+                        if (guildidIdx != -1 &&
+                                nameIdx != -1 &&
+                                guildrankIdx != -1 &&
+                                allianceRankIdx != -1) {
+                            int guildId = cursor.getInt(guildidIdx);
+                            if (guildId > 0) {
+                                Server.getInstance().deleteGuildCharacter(new GuildCharacter(player, cid, 0, cursor.getString(nameIdx), (byte) -1, (byte) -1, 0, cursor.getInt(guildrankIdx), guildId, false, cursor.getInt(allianceRankIdx)));
+                            }
                         }
                     }
                 }
             }
 
-            String whereClause1 = "postercid = ?";
-            String[] whereArgs1 = {String.valueOf(cid)};
-            con.delete("bbs_threads", whereClause1, whereArgs1);
 
-            try (Cursor cursor2 = con.query("characters", new String[]{"id", "guildid", "guildrank", "name", "allianceRank"}, "id = ? AND accountid = ?", new String[]{String.valueOf(cid), String.valueOf(accId)}, null, null, null)) {
-                if (cursor2.moveToFirst()) {
-                    int guildidIdx = cursor.getColumnIndex("guildid");
-                    int nameIdx = cursor.getColumnIndex("name");
-                    int guildrankIdx = cursor.getColumnIndex("guildrank");
-                    int allianceRankIdx = cursor.getColumnIndex("allianceRank");
-                    if (guildidIdx != -1 &&
-                            nameIdx != -1 &&
-                            guildrankIdx != -1 &&
-                            allianceRankIdx != -1) {
-                        int guildId = cursor.getInt(guildidIdx);
-                        if (guildId > 0) {
-                            Server.getInstance().deleteGuildCharacter(new GuildCharacter(player, cid, 0, cursor.getString(nameIdx), (byte) -1, (byte) -1, 0, cursor.getInt(guildrankIdx), guildId, false, cursor.getInt(allianceRankIdx)));
-                        }
-                    }
-                }
-            }
+
+
 
             String whereClause2 = "charid = ?";
             String[] whereArgs2 = {String.valueOf(cid)};
@@ -2271,9 +2274,8 @@ public class Character extends AbstractCharacterObject {
                         int inventoryItemId = cursor3.getInt(inventoryitemidIdx);
                         final int petId = cursor3.getInt(petidIdx);
 
-                        Cursor equipmentCursor = con.rawQuery(selectEquipmentQuery, new String[]{String.valueOf(inventoryItemId)});
-                        if (equipmentCursor != null) {
-                            try {
+                        try (Cursor equipmentCursor = con.rawQuery(selectEquipmentQuery, new String[]{String.valueOf(inventoryItemId)})) {
+                            if (equipmentCursor != null) {
                                 while (equipmentCursor.moveToNext()) {
                                     int ringidIdx = equipmentCursor.getColumnIndex("ringid");
                                     if (ringidIdx != -1) {
@@ -2285,8 +2287,6 @@ public class Character extends AbstractCharacterObject {
                                         }
                                     }
                                 }
-                            } finally {
-                                equipmentCursor.close();
                             }
                         }
 
@@ -8957,7 +8957,7 @@ public class Character extends AbstractCharacterObject {
                         ContentValues questProgressValues = new ContentValues();
                         questProgressValues.put("characterid", id);
                         questProgressValues.put("queststatusid", statusRowId);
-                        questProgressValues.put("mob", mob);
+                        questProgressValues.put("progressid", mob);
                         questProgressValues.put("progress", qs.getProgress(mob));
                         con.insert("questprogress", null, questProgressValues);
                     }

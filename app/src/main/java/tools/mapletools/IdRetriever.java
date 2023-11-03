@@ -9,10 +9,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -147,18 +143,18 @@ public class IdRetriever {
                     continue;
                 }
 
-                Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line});
-
-                StringBuilder str = new StringBuilder();
-                while (cursor.moveToNext()) {
-                    int idIdx = cursor.getColumnIndex("id");
-                    if (idIdx != -1) {
-                        int id = cursor.getInt(idIdx);
-                        str.append(id).append(" ");
+                try (Cursor cursor = con.rawQuery("SELECT id FROM handbook WHERE name LIKE ? ORDER BY id ASC;", new String[]{line})) {
+                    StringBuilder str = new StringBuilder();
+                    while (cursor.moveToNext()) {
+                        int idIdx = cursor.getColumnIndex("id");
+                        if (idIdx != -1) {
+                            int id = cursor.getInt(idIdx);
+                            str.append(id).append(" ");
+                        }
                     }
+                    printWriter.println(str);
                 }
-                cursor.close();
-                printWriter.println(str);
+
             }
         } catch (IOException ex) {
             System.out.println(ex.getMessage());

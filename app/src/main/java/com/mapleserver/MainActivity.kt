@@ -7,10 +7,8 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -100,21 +98,23 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("config_editor_screen")
                             })
                     }
-                    Box(
-                        modifier = Modifier
-                            .background(Color.White)
-                            .padding(16.dp)
-                            .fillMaxSize()
-                            .scrollable(
-                                state = rememberScrollState(),
-                                orientation = Orientation.Vertical
-                            )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        Text(
-                            text = logView.logMessage.value,
-                            modifier = Modifier.padding(16.dp),
-                            fontWeight = FontWeight.Bold
-                        )
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.White)
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = logView.logMessage.value,
+                                    modifier = Modifier.padding(16.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }

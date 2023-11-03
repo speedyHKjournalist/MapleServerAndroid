@@ -26,10 +26,6 @@ import tools.Pair;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -151,10 +147,8 @@ public class ArrowFetcher {
 
         Map<Integer, List<Integer>> existingEntries = new HashMap<>(200);
 
-        try {
+        try (Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= " + MIN_ARROW_ID + " AND itemid <= " + MAX_ARROW_ID + " ORDER BY itemid;", null)) {
             // select all arrow drop entries on the DB, to update their values
-            Cursor cursor = con.rawQuery("SELECT dropperid, itemid FROM drop_data WHERE itemid >= " + MIN_ARROW_ID + " AND itemid <= " + MAX_ARROW_ID + " ORDER BY itemid;", null);
-
             if (cursor.moveToFirst()) {
                 do {
                     int dropperidIdx = cursor.getColumnIndex("dropperid");
@@ -198,14 +192,10 @@ public class ArrowFetcher {
                 } else {
                     throw new Exception("NO DATA");
                 }
-
             } else {
                 throw new Exception("NO DATA");
             }
-            cursor.close();
-
             System.out.println("done!");
-
         } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().equals("NO DATA")) {
                 System.out.println("failed! The DB has no arrow entry to be updated.");

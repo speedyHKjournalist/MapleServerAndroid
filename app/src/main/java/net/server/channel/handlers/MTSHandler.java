@@ -45,10 +45,6 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -400,15 +396,15 @@ public final class MTSHandler extends AbstractPacketHandler {
                     try (Cursor cursor = con.rawQuery("SELECT id FROM mts_items WHERE id = ? AND seller <> ?",
                             new String[]{ String.valueOf(id), String.valueOf(c.getPlayer().getId()) })) {// Dummy query, prevents adding to cart self owned items
                         if (cursor.moveToNext()) {
-                            Cursor cartCursor = con.rawQuery("SELECT cid FROM mts_cart WHERE cid = ? AND itemid = ?",
-                                    new String[]{ String.valueOf(c.getPlayer().getId()), String.valueOf(id) });
-                            if (!cartCursor.moveToNext()) {
-                                ContentValues values = new ContentValues();
-                                values.put("cid", c.getPlayer().getId());
-                                values.put("itemid", id);
-                                con.insert("mts_cart", null, values);
+                            try (Cursor cartCursor = con.rawQuery("SELECT cid FROM mts_cart WHERE cid = ? AND itemid = ?",
+                                    new String[]{ String.valueOf(c.getPlayer().getId()), String.valueOf(id) })) {
+                                if (!cartCursor.moveToNext()) {
+                                    ContentValues values = new ContentValues();
+                                    values.put("cid", c.getPlayer().getId());
+                                    values.put("itemid", id);
+                                    con.insert("mts_cart", null, values);
+                                }
                             }
-                            cartCursor.close();
                         }
                     }
                 } catch (SQLiteException e) {
@@ -912,20 +908,15 @@ public final class MTSHandler extends AbstractPacketHandler {
                 sqlmts += " AND type = ?";
             }
             sqlmts += " AND transfer = 0";
-            Cursor cursor;
-            if (type != 0) {
-                cursor = con.rawQuery(sqlmts, new String[]{String.valueOf(tab), String.valueOf(type)});
-            } else {
-                cursor = con.rawQuery(sqlmts, new String[]{String.valueOf(tab)});
-            }
-
-            if (cursor.moveToNext()) {
-                pages = cursor.getInt(0) / 16;
-                if (cursor.getInt(0) % 16 > 0) {
-                    pages++;
+            try (Cursor cursor = (type == 0) ? con.rawQuery(sqlmts, new String[]{String.valueOf(tab)}) :
+                    con.rawQuery(sqlmts, new String[]{String.valueOf(tab), String.valueOf(type)})) {
+                if (cursor.moveToNext()) {
+                    pages = cursor.getInt(0) / 16;
+                    if (cursor.getInt(0) % 16 > 0) {
+                        pages++;
+                    }
                 }
             }
-            cursor.close();
         } catch (SQLiteException e) {
             e.printStackTrace();
         }

@@ -44,7 +44,7 @@ public class TimerManager implements TimerManagerMBean {
     private ScheduledThreadPoolExecutor ses;
 
     private TimerManager() {
-        handler = Executors.newScheduledThreadPool(1);
+        handler = Executors.newScheduledThreadPool(3);
     }
 
     public void start() {

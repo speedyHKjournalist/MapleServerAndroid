@@ -10,10 +10,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -57,19 +53,17 @@ public class ReactorDropFetcher {
     }
 
     private static void loadReactoridsOnDB() throws SQLiteException {
-        Cursor cursor = con.rawQuery("SELECT DISTINCT reactorid FROM reactordrops;", null);
-
-        if (cursor.moveToFirst()) {
-            do {
-                int reactoridIdx = cursor.getColumnIndex("reactorid");
-                if (reactoridIdx != -1) {
-                    int reactorId = cursor.getInt(reactoridIdx);
-                    reactors.add(reactorId);
-                }
-            } while (cursor.moveToNext());
+        try (Cursor cursor = con.rawQuery("SELECT DISTINCT reactorid FROM reactordrops;", null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    int reactoridIdx = cursor.getColumnIndex("reactorid");
+                    if (reactoridIdx != -1) {
+                        int reactorId = cursor.getInt(reactoridIdx);
+                        reactors.add(reactorId);
+                    }
+                } while (cursor.moveToNext());
+            }
         }
-
-        cursor.close();
     }
 
     private static List<Integer> getSortedReactorids() {

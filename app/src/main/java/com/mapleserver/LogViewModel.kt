@@ -47,8 +47,8 @@ class LogViewModel(context: Context) {
             // Read the file line by line in reverse order and add to the list
             while (reader.readLine().also { line = it } != null) {
                 lineList.addFirst(line)
-                if (lineList.size > 20) {
-                    // Remove the oldest line if more than 20 lines have been read
+                if (lineList.size > 50) {
+                    // Remove the oldest line if more than 50 lines have been read
                     lineList.removeLast()
                 }
             }

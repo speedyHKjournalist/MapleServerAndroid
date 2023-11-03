@@ -11,7 +11,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -227,15 +226,14 @@ public class CodeCouponGenerator {
         if (generatedKeys == null) {
             generatedKeys = new ArrayList<>();
 
-            Cursor cursor = ps.rawQuery("SELECT last_insert_rowid() AS id", null);
-
-            if (cursor.moveToFirst()) {
-                int columnIndex = cursor.getColumnIndex("id");
-                do {
-                    generatedKeys.add(cursor.getInt(columnIndex));
-                } while (cursor.moveToNext());
+            try (Cursor cursor = ps.rawQuery("SELECT last_insert_rowid() AS id", null)) {
+                if (cursor.moveToFirst()) {
+                    int columnIndex = cursor.getColumnIndex("id");
+                    do {
+                        generatedKeys.add(cursor.getInt(columnIndex));
+                    } while (cursor.moveToNext());
+                }
             }
-            cursor.close();
         }
 
         return generatedKeys;
