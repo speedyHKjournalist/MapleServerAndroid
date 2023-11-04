@@ -1771,7 +1771,8 @@ public class Character extends AbstractCharacterObject {
         } else {
             skills.remove(skill);
             sendPacket(PacketCreator.updateSkill(skill.getId(), newLevel, newMasterlevel, -1)); //Shouldn't use expiration anymore :)
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 String whereClause = "skillid = ? AND characterid = ?";
                 String[] whereArgs = {String.valueOf(skill.getId()), String.valueOf(id)};
                 con.delete("skills", whereClause, whereArgs);
@@ -8640,8 +8641,8 @@ public class Character extends AbstractCharacterObject {
         log.debug("Attempting to {} chr {}", notAutosave ? "save" : "autosave", name);
 
         Server.getInstance().updateCharacterEntry(this);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
 
             try {

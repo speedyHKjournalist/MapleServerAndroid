@@ -19,17 +19,12 @@
 */
 package net.server.task;
 
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import database.MapleDBHelper;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 
 /**
  * @author Ronan
@@ -40,12 +35,8 @@ public class CouponTask implements Runnable {
 
     @Override
     public void run() {
-        try {
-            Context context = Server.getInstance().getContext();
-
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                Server.getInstance().updateActiveCoupons(con);
-            }
+        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            Server.getInstance().updateActiveCoupons(con);
             Server.getInstance().commitActiveCoupons();
         } catch (SQLiteException sqle) {
             log.error("Error updating coupon effects", sqle);

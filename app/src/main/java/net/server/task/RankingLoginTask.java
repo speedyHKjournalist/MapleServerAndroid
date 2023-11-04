@@ -47,9 +47,8 @@ public class RankingLoginTask implements Runnable {
         } else {
             values.put("rankMove", 0);
         }
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            con.update("characters", values, null, null);
-        }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        con.update("characters", values, null, null);
     }
 
     private void updateRanking(int job, int world) throws SQLiteException {
