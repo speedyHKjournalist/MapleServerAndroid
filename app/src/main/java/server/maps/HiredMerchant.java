@@ -34,7 +34,6 @@ import client.inventory.manipulator.InventoryManipulator;
 import client.inventory.manipulator.KarmaManipulator;
 import client.processor.npc.FredrickProcessor;
 import config.YamlConfig;
-import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import server.ItemInformationProvider;
@@ -43,10 +42,6 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -328,7 +323,9 @@ public class HiredMerchant extends AbstractMapObject {
                                 }
                             }
                             merchantMesos += price;
-                            con.rawQuery("UPDATE characters SET MerchantMesos = ? WHERE id = ?", new String[]{String.valueOf((int) Math.min(merchantMesos, Integer.MAX_VALUE)), String.valueOf(ownerId)});
+                            try (Cursor cur = con.rawQuery("UPDATE characters SET MerchantMesos = ? WHERE id = ?",
+                                    new String[]{String.valueOf((int) Math.min(merchantMesos, Integer.MAX_VALUE)), String.valueOf(ownerId)})) {
+                            }
                         } catch (SQLiteException e) {
                             e.printStackTrace();
                         }
@@ -394,8 +391,8 @@ public class HiredMerchant extends AbstractMapObject {
         if (player != null) {
             player.setHasMerchant(false);
         } else {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                 con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{"0", String.valueOf(ownerId)});
+            try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                Cursor cur = con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{"0", String.valueOf(ownerId)})) {
             } catch (SQLiteException ex) {
                 ex.printStackTrace();
             }
@@ -448,8 +445,8 @@ public class HiredMerchant extends AbstractMapObject {
             if (player != null) {
                 player.setHasMerchant(false);
             } else {
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                    con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{String.valueOf(0), String.valueOf(ownerId)});
+                try (SQLiteDatabase con = DatabaseConnection.getConnection();
+                    Cursor cur = con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{String.valueOf(0), String.valueOf(ownerId)})) {
                 }
             }
 
@@ -780,7 +777,6 @@ public class HiredMerchant extends AbstractMapObject {
     }
 
     public class SoldItem {
-
         int itemid, mesos;
         short quantity;
         String buyer;
