@@ -1953,7 +1953,7 @@ public class Server {
         return () -> shutdownInternal(restart);
     }
 
-    public synchronized void shutdownInternal(boolean restart) {
+    private synchronized void shutdownInternal(boolean restart) {
         log.info("{} the server!", restart ? "Restarting" : "Shutting down");
         if (getWorlds() == null) {
             return;//already shutdown

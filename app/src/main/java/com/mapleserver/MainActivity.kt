@@ -1,7 +1,9 @@
 package com.mapleserver
 
-import StartServerWorker
-import StopServerWorker
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -23,16 +25,20 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
 import com.mapleserver.ui.theme.*
 import java.io.File
 import java.io.FileOutputStream
 
-
 class MainActivity : ComponentActivity() {
+    private val CHANNEL_ID = "1"
+    private val CHANNEL_NAME = "MapleServer Notification"
+    private val notificationPendingIntent: PendingIntent by lazy {
+        val intent = Intent(this, MainActivity::class.java)
+        PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
         val preferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
         val isFirstRun = preferences.getBoolean("isFirstRun", true)
         if (isFirstRun) {
@@ -56,6 +62,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
     @Composable
     fun MyApp(navController: NavHostController) {
         val logView = LogViewModel(this)
@@ -120,19 +127,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
     private fun startMapleServer() {
-        val serverWorkRequest = OneTimeWorkRequest.Builder(StartServerWorker::class.java)
-            .build()
-        WorkManager.getInstance(this).enqueue(serverWorkRequest)
+        val serviceIntent = Intent(this, ServerService::class.java)
+        serviceIntent.putExtra("channel_id", CHANNEL_ID)
+        serviceIntent.putExtra("pending_intent", notificationPendingIntent)
+        startService(serviceIntent)
     }
-
     private fun stopMapleServer() {
-        val serverWorkRequest = OneTimeWorkRequest.Builder(StopServerWorker::class.java)
-            .build()
-        WorkManager.getInstance(this).enqueue(serverWorkRequest)
+        val serviceIntent = Intent(this, ServerService::class.java)
+        stopService(serviceIntent)
     }
-
     private fun copyAssetFileApplication(assetFileName: String) {
         try {
             val appDir: File = applicationContext.dataDir
@@ -152,5 +156,11 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT)
+        channel.description = "MapleServer"
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
     }
 }
