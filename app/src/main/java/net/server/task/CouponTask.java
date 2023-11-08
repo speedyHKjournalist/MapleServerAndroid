@@ -35,7 +35,8 @@ public class CouponTask implements Runnable {
 
     @Override
     public void run() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             Server.getInstance().updateActiveCoupons(con);
             Server.getInstance().commitActiveCoupons();
         } catch (SQLiteException sqle) {

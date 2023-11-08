@@ -822,8 +822,8 @@ public class Server {
 
     private List<Pair<Integer, List<Pair<String, Integer>>>> loadPlayerRankingFromDB(int worldid) {
         List<Pair<Integer, List<Pair<String, Integer>>>> rankSystem = new ArrayList<>();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String worldQuery;
             if (!YamlConfig.config.server.USE_WHOLE_SERVER_RANKING) {
                 if (worldid >= 0) {

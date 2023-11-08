@@ -18,8 +18,9 @@ public class SessionDAO {
 
     public static void deleteExpiredHwidAccounts() {
         final String query = "DELETE FROM hwidaccounts WHERE expiresat < CURRENT_TIMESTAMP";
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-             con.rawQuery(query, null);
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
+             con.execSQL(query);
         } catch (SQLiteException e) {
             log.warn("Failed to delete expired hwidaccounts", e);
         }
@@ -47,7 +48,6 @@ public class SessionDAO {
             throw new IllegalArgumentException("Hwid must not be null");
         }
 
-        final String query = "INSERT INTO hwidaccounts (accountid, hwid, expiresat) VALUES (?, ?, ?)";
         String tableName = "hwidaccounts";
         ContentValues values = new ContentValues();
         values.put("accountid", accountId);

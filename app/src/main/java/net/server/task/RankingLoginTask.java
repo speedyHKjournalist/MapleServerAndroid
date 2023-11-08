@@ -113,7 +113,6 @@ public class RankingLoginTask implements Runnable {
             e.printStackTrace();
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 }

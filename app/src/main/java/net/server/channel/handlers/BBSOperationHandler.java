@@ -34,11 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 public final class BBSOperationHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(BBSOperationHandler.class);
 
@@ -53,6 +48,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         }
         byte mode = p.readByte();
         int localthreadid = 0;
+        String title;
+        String text;
         switch (mode) {
             case 0:
                 boolean bEdit = p.readByte() == 1;
@@ -60,8 +57,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
                     localthreadid = p.readInt();
                 }
                 boolean bNotice = p.readByte() == 1;
-                String title = correctLength(p.readString(), 25);
-                String text = correctLength(p.readString(), 600);
+                title = correctLength(p.readString(), 25);
+                text = correctLength(p.readString(), 600);
                 int icon = p.readInt();
                 if (icon >= 0x64 && icon <= 0x6a) {
                     if (!c.getPlayer().haveItemWithId(5290000 + icon - 0x64, false)) {
@@ -296,7 +293,6 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
                 if (threadCursor.moveToNext()) {
                     int replycountIdx = threadCursor.getColumnIndex("replycount");
                     int replycount = threadCursor.getInt(replycountIdx);
-
                     Cursor repliesCursor = null;
                     if (replycount >= 0) {
                         int threadidIdx = threadCursor.getColumnIndex("threadid");
@@ -306,6 +302,9 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
                     }
                     int localthreadidIdx = threadCursor.getColumnIndex("localthreadid");
                     client.sendPacket(GuildPackets.showThread(bIsThreadIdLocal ? threadid : threadCursor.getInt(localthreadidIdx), threadCursor, repliesCursor));
+                    if (repliesCursor != null) {
+                        repliesCursor.close();
+                    }
                 }
             }
         } catch (SQLiteException se) {

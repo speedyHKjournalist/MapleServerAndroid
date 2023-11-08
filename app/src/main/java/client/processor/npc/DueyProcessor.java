@@ -39,8 +39,6 @@ import client.inventory.manipulator.KarmaManipulator;
 import config.YamlConfig;
 import constants.id.ItemId;
 import constants.inventory.ItemConstants;
-import database.MapleDBHelper;
-import net.server.Server;
 import net.server.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +49,7 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -471,8 +469,8 @@ public class DueyProcessor {
         Calendar c = Calendar.getInstance();
         c.add(Calendar.DATE, -30);
         final Timestamp ts = new Timestamp(c.getTime().getTime());
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             List<Integer> toRemove = new LinkedList<>();
             try (Cursor ps = con.rawQuery("SELECT `PackageId` FROM dueypackages WHERE `TimeStamp` < ?", new String[]{String.valueOf(ts)})) {
 

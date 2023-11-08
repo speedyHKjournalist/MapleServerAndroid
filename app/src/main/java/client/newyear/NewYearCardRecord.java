@@ -29,10 +29,6 @@ import server.TimerManager;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -354,7 +350,7 @@ public class NewYearCardRecord {
         Server.getInstance().removeNewYearCard(id);
 
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            con.rawQuery("DELETE FROM newyear WHERE id = ?", new String[]{String.valueOf(id)});
+            con.delete("newyear", "id=?", new String[]{String.valueOf(id)});
         } catch (SQLiteException sqle) {
             sqle.printStackTrace();
         }

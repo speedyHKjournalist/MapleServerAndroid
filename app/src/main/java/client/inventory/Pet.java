@@ -24,6 +24,7 @@ package client.inventory;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.inventory.manipulator.CashIdGenerator;
 import constants.game.ExpTable;
@@ -35,12 +36,7 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
-import android.graphics.Point;
 
 /**
  * @author Matze
@@ -118,7 +114,7 @@ public class Pet extends Item {
 
     public void saveToDb() {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-             con.rawQuery("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, summoned = ?, flag = ? WHERE petid = ?", new String[]{
+             con.execSQL("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, summoned = ?, flag = ? WHERE petid = ?", new String[]{
                      getName(),
                      String.valueOf(getLevel()),
                      String.valueOf(getTameness()),
@@ -135,7 +131,7 @@ public class Pet extends Item {
     public static int createPet(int itemid) {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int ret = CashIdGenerator.generateCashId();
-             con.rawQuery("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, 1, 0, 100, 0, 0)", new String[]{
+             con.execSQL("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, 1, 0, 100, 0, 0)", new String[]{
                      String.valueOf(ret),
                      ItemInformationProvider.getInstance().getName(itemid)
              });
@@ -149,7 +145,7 @@ public class Pet extends Item {
     public static int createPet(int itemid, byte level, int tameness, int fullness) {
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
             int ret = CashIdGenerator.generateCashId();
-            con.rawQuery("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, ?, ?, ?, 0, 0)", new String[]{
+            con.execSQL("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, ?, ?, ?, 0, 0)", new String[]{
                     String.valueOf(ret),
                     ItemInformationProvider.getInstance().getName(itemid),
                     String.valueOf(level),

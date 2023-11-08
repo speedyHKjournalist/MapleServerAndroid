@@ -1,6 +1,5 @@
 package com.mapleserver
 
-import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import android.os.Handler
@@ -47,7 +46,7 @@ class LogViewModel(context: Context) {
             // Read the file line by line in reverse order and add to the list
             while (reader.readLine().also { line = it } != null) {
                 lineList.addFirst(line)
-                if (lineList.size > 50) {
+                if (lineList.size > 200) {
                     // Remove the oldest line if more than 50 lines have been read
                     lineList.removeLast()
                 }

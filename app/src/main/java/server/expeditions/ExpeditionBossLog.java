@@ -20,16 +20,14 @@
 package server.expeditions;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
-import database.MapleDBHelper;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.*;
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -126,8 +124,8 @@ public class ExpeditionBossLog {
 
     private static void resetBossLogTable(boolean week, Calendar c) {
         List<Pair<Timestamp, BossLogEntry>> resetTimestamps = BossLogEntry.getBossLogResetTimestamps(c, week);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             for (Pair<Timestamp, BossLogEntry> p : resetTimestamps) {
                 con.delete(getBossLogTable(week), "attempttime <= ? AND bosstype LIKE ?",
                         new String[]{String.valueOf(p.getLeft()), p.getRight().name()});

@@ -26,6 +26,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteStatement;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.inventory.InventoryType;
@@ -33,7 +34,6 @@ import client.inventory.Item;
 import config.YamlConfig;
 import constants.game.GameConstants;
 import constants.id.NpcId;
-import database.MapleDBHelper;
 import net.server.Server;
 import net.server.channel.Channel;
 import net.server.world.World;
@@ -49,10 +49,8 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import android.graphics.Point;
 
 /**
  * @author XoticStory
@@ -346,7 +344,7 @@ public class PlayerNPC extends AbstractMapObject {
         FH = map.getFootholds().findBelow(newPos).getId();
 
         try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-             con.rawQuery("UPDATE playernpcs SET x = ?, cy = ?, fh = ?, rx0 = ?, rx1 = ? WHERE id = ?", new String[]{
+             con.execSQL("UPDATE playernpcs SET x = ?, cy = ?, fh = ?, rx0 = ?, rx1 = ? WHERE id = ?", new String[]{
                      String.valueOf(newPos.x),
                      String.valueOf(CY),
                      String.valueOf(FH),
@@ -463,7 +461,6 @@ public class PlayerNPC extends AbstractMapObject {
 
             if (createNew) {   // creates new playernpc if scriptid doesn't exist
                 final int npcId;
-                String insertQuery = "INSERT INTO playernpcs (name, hair, face, skin, gender, x, cy, world, map, scriptid, dir, fh, rx0, rx1, worldrank, overallrank, worldjobrank, job) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 ContentValues values = new ContentValues();
                 values.put("name", chr.getName());
                 values.put("hair", chr.getHair());
@@ -513,10 +510,7 @@ public class PlayerNPC extends AbstractMapObject {
                         ret = new PlayerNPC(cursor);
                     }
                 }
-            } else {
-                ret = null;
             }
-
             return ret;
         } catch (SQLiteException e) {
             e.printStackTrace();
@@ -545,10 +539,10 @@ public class PlayerNPC extends AbstractMapObject {
                             int npcId = cursor.getInt(idIdx);
 
                             // Delete rows from playernpcs table
-                            con.rawQuery(deleteQuery1, new String[]{String.valueOf(npcId)});
+                            con.execSQL(deleteQuery1, new String[]{String.valueOf(npcId)});
 
                             // Delete rows from playernpcs_equip table
-                            con.rawQuery(deleteQuery2, new String[]{String.valueOf(npcId)});
+                            con.execSQL(deleteQuery2, new String[]{String.valueOf(npcId)});
                         }
                     }
                 }

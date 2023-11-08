@@ -164,7 +164,8 @@ public class FredrickProcessor {
     }
 
     public void runFredrickSchedule() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             List<Pair<Integer, Integer>> expiredCids = new LinkedList<>();
             List<Pair<Pair<Integer, String>, Integer>> notifCids = new LinkedList<>();
             try (Cursor cursor = con.rawQuery("SELECT * FROM fredstorage f LEFT JOIN (SELECT id, name, world, lastLogoutTime FROM characters) AS c ON c.id = f.cid", null)) {
