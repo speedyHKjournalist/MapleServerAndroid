@@ -296,7 +296,7 @@ public class AbstractPlayerInteraction {
         int size = Math.min(itemids.size(), quantity.size());
 
         List<List<Pair<Integer, Integer>>> invList = new ArrayList<>(6);
-        for (int i = InventoryType.UNDEFINED.getType(); i < InventoryType.CASH.getType(); i++) {
+        for (int i = InventoryType.UNDEFINED.getType(); i <= InventoryType.CASH.getType(); i++) {
             invList.add(new LinkedList<>());
         }
 

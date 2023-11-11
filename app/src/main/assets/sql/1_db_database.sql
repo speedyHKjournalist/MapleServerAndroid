@@ -21296,6 +21296,16 @@ CREATE TABLE IF NOT EXISTS `worldtransfers` (
 ,  `requestTime` timestamp NOT NULL DEFAULT current_timestamp
 ,  `completionTime` timestamp NULL
 );
+CREATE TABLE IF NOT EXISTS `characterexplogs` (
+    `id` integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+  	`world_exp_rate` integer,
+    `exp_coupon` integer,
+    `gained_exp` integer,
+    `current_exp` integer,
+    `exp_gain_time` timestamp,
+    `charid` integer NOT NULL,
+    FOREIGN KEY (`charid`) REFERENCES `characters`(`id`) ON DELETE CASCADE
+);
 CREATE INDEX IF NOT EXISTS idx_characterid ON `worldtransfers` (`characterid`);
 
 CREATE INDEX "idx_accounts_ranking1" ON "accounts" (`id`,`banned`);
