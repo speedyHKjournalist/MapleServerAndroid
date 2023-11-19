@@ -21,6 +21,7 @@
  */
 package net.server.channel.handlers;
 
+import android.graphics.Point;
 import client.Character;
 import client.*;
 import client.autoban.AutobanFactory;
@@ -35,6 +36,8 @@ import constants.skills.*;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.PlayerBuffValueHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.AbstractPlayerInteraction;
 import server.StatEffect;
 import server.TimerManager;
@@ -50,9 +53,9 @@ import java.util.*;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import android.graphics.Point;
 
 public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
+    private static final Logger log = LoggerFactory.getLogger(AbstractDealDamageHandler.class);
 
     public static class AttackInfo {
 
@@ -511,7 +514,7 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("applyAttack error", e);
         }
     }
 

@@ -171,9 +171,8 @@ public class SkillbookInformationProvider {
         String[] columns = { "itemid" };
         String selection = "itemid >= ? AND itemid < ?";
         String[] selectionArgs = { String.valueOf(SKILLBOOK_MIN_ITEMID), String.valueOf(SKILLBOOK_MAX_ITEMID) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("reactordrops", columns, selection, selectionArgs, null, null, null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("reactordrops", columns, selection, selectionArgs, null, null, null)) {
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     do {
@@ -186,7 +185,7 @@ public class SkillbookInformationProvider {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("fetchSkillbooksFromReactors error", sqle);
         }
 
         return loadedSkillbooks;
@@ -203,8 +202,7 @@ public class SkillbookInformationProvider {
                 }
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("listFiles error", e);
         }
     }
 
@@ -234,6 +232,7 @@ public class SkillbookInformationProvider {
              Scanner scanner = new Scanner(is, encoding)) {
             text = scanner.useDelimiter("\\A").next();
         } catch (NoSuchElementException e) {
+            log.error("readFileToString error", e);
         }
 
         return text;

@@ -30,9 +30,6 @@ import client.Client;
 import client.command.Command;
 import tools.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-
 public class UnBanCommand extends Command {
     {
         setDescription("Unban a player.");
@@ -45,8 +42,8 @@ public class UnBanCommand extends Command {
             player.yellowMessage("Syntax: !unban <playername>");
             return;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             int aid = Character.getAccountIdByName(params[0]);
             ContentValues values = new ContentValues();
             values.put("banned", -1);
@@ -55,7 +52,6 @@ public class UnBanCommand extends Command {
             con.delete("ipbans", "aid = ?", new String[]{String.valueOf(aid)});
             con.delete("macbans", "aid = ?", new String[]{String.valueOf(aid)});
         } catch (Exception e) {
-            e.printStackTrace();
             player.message("Failed to unban " + params[0]);
             return;
         }

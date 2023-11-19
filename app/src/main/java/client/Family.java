@@ -24,7 +24,6 @@ package client;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import net.server.world.World;
@@ -34,10 +33,6 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -119,8 +114,8 @@ public class Family {
     public void setMessage(String message, boolean save) {
         this.preceptsMessage = message;
         if (save) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery("UPDATE family_character SET precepts = ? WHERE cid = ?",
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery("UPDATE family_character SET precepts = ? WHERE cid = ?",
                          new String[]{message, String.valueOf(getLeader().getChrId())})) {
                 if (!cursor.moveToFirst()) {
                     log.error("Could not save new precepts for family {}", getID());
@@ -334,7 +329,6 @@ public class Family {
             log.error("Could not get connection to DB while saving all members rep", e);
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 }

@@ -653,7 +653,8 @@ public class Character extends AbstractCharacterObject {
 
     public void ban(String reason) {
         this.isbanned = true;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("banned", 1);
             values.put("banreason", reason);
@@ -662,12 +663,13 @@ public class Character extends AbstractCharacterObject {
             String[] whereArgs = {String.valueOf(accountid)};
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("ban(String reason) error", e);
         }
     }
 
     public static boolean ban(String id, String reason, boolean accountId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             if (id.matches("/[0-9]{1,3}\\..*")) {
                 ContentValues values = new ContentValues();
                 values.put("ip", id);
@@ -701,7 +703,7 @@ public class Character extends AbstractCharacterObject {
             }
             return ret;
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("ban(String id, String reason, boolean accountId) error", ex);
         }
         return false;
     }
@@ -1779,7 +1781,7 @@ public class Character extends AbstractCharacterObject {
                 String[] whereArgs = {String.valueOf(skill.getId()), String.valueOf(id)};
                 con.delete("skills", whereClause, whereArgs);
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
+                log.error("changeSkillLevel error", ex);
             }
         }
     }
@@ -2114,7 +2116,8 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void deleteGuild(int guildId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues updateValues = new ContentValues();
             updateValues.put("guildid", 0);
             updateValues.put("guildrank", 5);
@@ -2126,7 +2129,7 @@ public class Character extends AbstractCharacterObject {
             String[] deleteArgs = {String.valueOf(id)};
             int rowsDeleted = con.delete("guilds", deleteWhere, deleteArgs);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("deleteGuild error", ex);
         }
     }
 
@@ -2163,7 +2166,8 @@ public class Character extends AbstractCharacterObject {
 
         final int accId = senderAccId;
         int world = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cursor = con.query("characters", new String[]{"world"}, "id = ?", new String[]{String.valueOf(cid)}, null, null, null)) {
                 if (cursor.moveToFirst()) {
                     int worldIdx = cursor.getColumnIndex("world");
@@ -2337,7 +2341,7 @@ public class Character extends AbstractCharacterObject {
             Server.getInstance().deleteCharacterEntry(accId, cid);
             return true;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("deleteCharFromDB error", e);
             return false;
         }
     }
@@ -2354,7 +2358,7 @@ public class Character extends AbstractCharacterObject {
             con.execSQL(deleteQuestProgressQuery, whereArgs);
             con.execSQL(deleteQuestStatusQuery, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("deleteQuestProgressWhereCharacterId error", e);
         }
     }
 
@@ -2368,7 +2372,7 @@ public class Character extends AbstractCharacterObject {
             String[] whereArgs = {String.valueOf(cid)};
             con.execSQL(sql, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("deleteWhereCharacterId error", e);
         }
     }
 
@@ -2538,7 +2542,7 @@ public class Character extends AbstractCharacterObject {
         try {
             Server.getInstance().disbandGuild(guildid);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("disbandGuild error", e);
         }
     }
 
@@ -3280,9 +3284,8 @@ public class Character extends AbstractCharacterObject {
 
     public static Map<String, String> getCharacterFromDatabase(String name) {
         Map<String, String> character = new LinkedHashMap<>();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT `id`, `accountid`, `name` FROM `characters` WHERE `name` = ?", new String[]{name})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT `id`, `accountid`, `name` FROM `characters` WHERE `name` = ?", new String[]{name})) {
             if (ps.moveToFirst()) {
                 for (int i = 0; i < ps.getColumnCount(); i++) {
                     String columnName = ps.getColumnName(i);
@@ -3293,7 +3296,7 @@ public class Character extends AbstractCharacterObject {
                 return null;
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("getCharacterFromDatabase", sqle);
         }
 
         return character;
@@ -5016,7 +5019,7 @@ public class Character extends AbstractCharacterObject {
         try {
             return Server.getInstance().getGuild(getGuildId(), getWorld(), this);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("getGuild error", ex);
             return null;
         }
     }
@@ -5026,7 +5029,7 @@ public class Character extends AbstractCharacterObject {
             try {
                 return Server.getInstance().getAlliance(getGuild().getAllianceId());
             } catch (Exception ex) {
-                ex.printStackTrace();
+                log.error("getAlliance error", ex);
             }
         }
 
@@ -5055,8 +5058,8 @@ public class Character extends AbstractCharacterObject {
 
     public static int getAccountIdByName(String name) {
         int id = -1;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT accountid FROM characters WHERE name = ?", new String[]{name})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT accountid FROM characters WHERE name = ?", new String[]{name})) {
             if (ps.moveToFirst()) {
                 int accountidIdx = ps.getColumnIndex("accountid");
                 if (accountidIdx != -1) {
@@ -5065,15 +5068,15 @@ public class Character extends AbstractCharacterObject {
             }
             return id;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getAccountIdByName error", e);
         }
         return -1;
     }
 
     public static int getIdByName(String name) {
         int id = -1;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT id FROM characters WHERE name = ?", new String[]{name})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT id FROM characters WHERE name = ?", new String[]{name})) {
             if (ps.moveToFirst()) {
                 int idIdx = ps.getColumnIndex("id");
                 if (idIdx != -1) {
@@ -5082,15 +5085,15 @@ public class Character extends AbstractCharacterObject {
             }
             return id;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getIdByName error", e);
         }
         return -1;
     }
 
     public static String getNameById(int id) {
         String name = null;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT name FROM characters WHERE id = ?", new String[]{String.valueOf(id)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT name FROM characters WHERE id = ?", new String[]{String.valueOf(id)})) {
             if (ps.moveToFirst()) {
                 int nameIdx = ps.getColumnIndex("name");
                 if (nameIdx != -1) {
@@ -5099,7 +5102,7 @@ public class Character extends AbstractCharacterObject {
             }
             return name;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getNameById error", e);
         }
         return null;
     }
@@ -5268,10 +5271,8 @@ public class Character extends AbstractCharacterObject {
 
     public int getMerchantNetMeso() {
         int elapsedDays = 0;
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT `timestamp` FROM `fredstorage` WHERE `cid` = ?",new String[]{String.valueOf(id)})) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT `timestamp` FROM `fredstorage` WHERE `cid` = ?",new String[]{String.valueOf(id)})) {
             if (ps.moveToFirst()) {
                 int timestampIdx = ps.getColumnIndex("timestamp");
                 if (timestampIdx != -1) {
@@ -5280,7 +5281,7 @@ public class Character extends AbstractCharacterObject {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getMerchantNetMeso error", e);
         }
 
         if (elapsedDays > 100) {
@@ -5946,13 +5947,12 @@ public class Character extends AbstractCharacterObject {
 
         try {
             Server.getInstance().memberLevelJobUpdate(this.mgc);
-            //Server.getInstance().getGuild(guildid, world, mgc).gainGP(40);
             int allianceId = getGuild().getAllianceId();
             if (allianceId > 0) {
                 Server.getInstance().allianceMessage(allianceId, GuildPackets.updateAllianceJobLevel(this), getId(), -1);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("guildUpdate error", e);
         }
     }
 
@@ -6019,11 +6019,11 @@ public class Character extends AbstractCharacterObject {
         ContentValues values = new ContentValues();
         values.put("characterid", getId());
         values.put("characterid_to", to.getId());
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.insert("famelog", null, values);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("hasGivenFame error", e);
         }
     }
 
@@ -6904,7 +6904,7 @@ public class Character extends AbstractCharacterObject {
                     }
                 }
             } catch (SQLiteException sqle) {
-                sqle.printStackTrace();
+                log.error("loadCharacterEntryFromDB error", sqle);
             }
 
             if (equipped != null) {  // players can have no equipped items at all, ofc
@@ -6914,7 +6914,7 @@ public class Character extends AbstractCharacterObject {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadCharacterEntryFromDB error", sqle);
         }
 
         return ret;
@@ -6984,7 +6984,8 @@ public class Character extends AbstractCharacterObject {
         Character ret = new Character(Server.getInstance().getContext());
         ret.client = client;
         ret.id = charid;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             int mountexp = 0;
             int mountlevel = 0;
             int mounttiredness = 0;
@@ -7593,9 +7594,10 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Cooldowns (delete)
-                try (Cursor ps = con.rawQuery("DELETE FROM cooldowns WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
-
-                }
+                String table = "cooldowns";
+                String whereClause = "charid = ?";
+                String[] whereArgs = {String.valueOf(ret.getId())};
+                con.delete(table, whereClause, whereArgs);
 
                 // Debuffs (load)
                 Map<Disease, Pair<Long, MobSkill>> loadedDiseases = new LinkedHashMap<>();
@@ -7633,8 +7635,10 @@ public class Character extends AbstractCharacterObject {
                 }
 
                 // Debuffs (delete)
-                try(Cursor cur = con.rawQuery("DELETE FROM playerdiseases WHERE charid = ?", new String[]{String.valueOf(ret.getId())})) {
-                }
+                String dieasetable = "playerdiseases";
+                String charidWhereClause = "charid = ?";
+                String[] idWhereArgs = {String.valueOf(ret.getId())};
+                con.delete(dieasetable, charidWhereClause, idWhereArgs);
 
                 if (!loadedDiseases.isEmpty()) {
                     Server.getInstance().getPlayerBuffStorage().addDiseasesToStorage(ret.id, loadedDiseases);
@@ -7759,7 +7763,7 @@ public class Character extends AbstractCharacterObject {
 
             return ret;
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            log.error("loadCharFromDB error", e);
         }
         return null;
     }
@@ -8402,7 +8406,8 @@ public class Character extends AbstractCharacterObject {
         List<PlayerCoolDownValueHolder> listcd = getAllCooldowns();
 
         if (!listcd.isEmpty()) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 deleteWhereCharacterId(con, "DELETE FROM cooldowns WHERE charid = ?");
                 ContentValues cooldownValues = new ContentValues();
                 cooldownValues.put("charid", getId());
@@ -8415,13 +8420,14 @@ public class Character extends AbstractCharacterObject {
                     con.insert(cooldownTable, null, cooldownValues);
                 }
             } catch (SQLiteException se) {
-                se.printStackTrace();
+                log.error("saveCooldowns error", se);
             }
         }
 
         Map<Disease, Pair<Long, MobSkill>> listds = getAllDiseases();
         if (!listds.isEmpty()) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 deleteWhereCharacterId(con, "DELETE FROM playerdiseases WHERE charid = ?");
                 ContentValues diseaseValues = new ContentValues();
                 diseaseValues.put("charid", getId());
@@ -8440,13 +8446,14 @@ public class Character extends AbstractCharacterObject {
                     con.insert(diseaseTable, null, diseaseValues);
                 }
             } catch (SQLiteException se) {
-                se.printStackTrace();
+                log.error("save playerdiseases error", se);
             }
         }
     }
 
     public void saveGuildStatus() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("guildid", guildid);
             values.put("guildrank", guildRank);
@@ -8455,7 +8462,7 @@ public class Character extends AbstractCharacterObject {
             String[] whereArgs = {String.valueOf(id)};
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("saveGuildStatus error", se);
         }
     }
 
@@ -8503,8 +8510,8 @@ public class Character extends AbstractCharacterObject {
 
         this.events.put("rescueGaga", new RescueGaga(0));
 
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
             try {
                 // Character info
@@ -9193,43 +9200,45 @@ public class Character extends AbstractCharacterObject {
     }
 
     public void setHasMerchant(boolean set) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("HasMerchant", set ? 1 : 0);
             String whereClause = "id=?";
             String[] whereArgs = {String.valueOf(id)};
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setHasMerchant error", e);
         }
         hasMerchant = set;
     }
 
     public void addMerchantMesos(int add) {
         final int newAmount = (int) Math.min((long) merchantmeso + add, Integer.MAX_VALUE);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("MerchantMesos", newAmount);
             String whereClause = "id=?";
             String[] whereArgs = {String.valueOf(id)};
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("addMerchantMesos error", e);
             return;
         }
         merchantmeso = newAmount;
     }
 
     public void setMerchantMeso(int set) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("MerchantMesos", set);
             String whereClause = "id=?";
             String[] whereArgs = {String.valueOf(id)};
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setMerchantMeso error", e);
             return;
         }
         merchantmeso = set;
@@ -10452,8 +10461,8 @@ public class Character extends AbstractCharacterObject {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, days);
         final Timestamp TS = new Timestamp(cal.getTimeInMillis());
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("banreason", desc);
             values.put("tempban", TS.getTime());
@@ -10462,7 +10471,7 @@ public class Character extends AbstractCharacterObject {
             String[] whereArgs = {String.valueOf(accountid)};
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("block accounts error", e);
         }
     }
 
@@ -10799,15 +10808,15 @@ public class Character extends AbstractCharacterObject {
 
     public void logOff() {
         this.loggedIn = false;
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("lastLogoutTime", System.currentTimeMillis());
             String whereClause = "id=?";
             String[] whereArgs = {String.valueOf(getId())};
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("logOff error", e);
         }
     }
 
@@ -10911,7 +10920,8 @@ public class Character extends AbstractCharacterObject {
     }
 
     public boolean registerNameChange(String newName) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             //check for pending name change
             long currentTimeMillis = System.currentTimeMillis();
                 String[] columns = {"completionTime"};
@@ -10954,7 +10964,8 @@ public class Character extends AbstractCharacterObject {
     }
 
     public boolean cancelPendingNameChange() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String whereClause = "characterid=? AND completionTime IS NULL";
             String[] whereArgs = {String.valueOf(getId())};
             int affectedRows = con.delete("namechanges", whereClause, whereArgs);
@@ -11285,7 +11296,8 @@ public class Character extends AbstractCharacterObject {
         return null;
     }
     public boolean registerWorldTransfer(int newWorld) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             //check for pending world transfer
             long currentTimeMillis = System.currentTimeMillis();
             try (Cursor ps = con.rawQuery("SELECT completionTime FROM worldtransfers WHERE characterid=?", new String[] { String.valueOf(getId())})) { //double check, just in case
@@ -11322,7 +11334,8 @@ public class Character extends AbstractCharacterObject {
     }
 
     public boolean cancelPendingWorldTranfer() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String whereClause = "characterid = ? AND completionTime IS NULL";
             String[] whereArgs = { String.valueOf(getId()) };
             int affectedRows = con.delete("worldtransfers", whereClause, whereArgs);
@@ -11384,9 +11397,9 @@ public class Character extends AbstractCharacterObject {
         String[] columns = { "rewardpoints" };
         String selection = "id = ?";
         String[] selectionArgs = { String.valueOf(accountid) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null);) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("accounts", columns, selection, selectionArgs,
+                null, null, null);) {
             int point = -1;
             if (cursor.moveToFirst()) {
                 int rewardpointsIdx = cursor.getColumnIndex("rewardpoints");
@@ -11395,7 +11408,7 @@ public class Character extends AbstractCharacterObject {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getRewardPoints error", e);
         }
         return -1;
     }
@@ -11405,11 +11418,11 @@ public class Character extends AbstractCharacterObject {
         values.put("rewardpoints", value);
         String whereClause = "id = ?";
         String[] whereArgs = { String.valueOf(accountid) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
              con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setRewardPoints error", e);
         }
     }
 
@@ -11423,11 +11436,11 @@ public class Character extends AbstractCharacterObject {
         values.put("reborns", value);
         String whereClause = "id = ?";
         String[] whereArgs = { String.valueOf(id) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setReborns error", e);
         }
     }
 
@@ -11443,9 +11456,9 @@ public class Character extends AbstractCharacterObject {
         String[] columns = { "reborns" };
         String selection = "id = ?";
         String[] selectionArgs = { String.valueOf(id) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("characters", columns, selection, selectionArgs, null, null, null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("characters", columns, selection, selectionArgs,
+                null, null, null)) {
             if (cursor.moveToFirst()) {
                 int columnIndex = cursor.getColumnIndex("reborns");
                 if (columnIndex != -1) {
@@ -11453,7 +11466,7 @@ public class Character extends AbstractCharacterObject {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getReborns error", e);
         }
         throw new RuntimeException();
     }
@@ -11648,11 +11661,11 @@ public class Character extends AbstractCharacterObject {
         values.put("language", num);
         String whereClause = "id = ?";
         String[] whereArgs = { String.valueOf(getClient().getAccID()) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setLanguage error", e);
         }
     }
 

@@ -34,7 +34,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class TimerManager implements TimerManagerMBean {
     private static final Logger log = LoggerFactory.getLogger(TimerManager.class);
     private static final TimerManager instance = new TimerManager();
-
     private ScheduledExecutorService handler;
 
     public static TimerManager getInstance() {

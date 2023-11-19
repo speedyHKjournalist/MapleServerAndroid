@@ -31,13 +31,10 @@ import constants.inventory.ItemConstants;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * @author Ronan
@@ -45,7 +42,7 @@ import java.sql.SQLException;
  * Header layout thanks to Eric
  */
 public final class NewYearCardHandler extends AbstractPacketHandler {
-
+    private static final Logger log = LoggerFactory.getLogger(NewYearCardHandler.class);
     @Override
     public final void handlePacket(InPacket p, Client c) {
         final Character player = c.getPlayer();
@@ -132,20 +129,19 @@ public final class NewYearCardHandler extends AbstractPacketHandler {
     }
 
     private static int getReceiverId(String receiver, int world) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            try (Cursor cursor = con.rawQuery("SELECT id, world FROM characters WHERE name LIKE ?", new String[]{receiver})) {
-                if (cursor.moveToFirst()) {
-                    int worldIdx = cursor.getColumnIndex("world");
-                    int idIdx = cursor.getColumnIndex("id");
-                    if (worldIdx != -1) {
-                        if (cursor.getInt(worldIdx) == world) {
-                            return cursor.getInt(idIdx);
-                        }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT id, world FROM characters WHERE name LIKE ?", new String[]{receiver})) {
+            if (cursor.moveToFirst()) {
+                int worldIdx = cursor.getColumnIndex("world");
+                int idIdx = cursor.getColumnIndex("id");
+                if (worldIdx != -1) {
+                    if (cursor.getInt(worldIdx) == world) {
+                        return cursor.getInt(idIdx);
                     }
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("getReceiverId error", sqle);
         }
 
         return -1;

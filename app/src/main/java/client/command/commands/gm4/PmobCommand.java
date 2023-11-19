@@ -26,6 +26,7 @@ package client.command.commands.gm4;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -34,11 +35,6 @@ import server.life.LifeFactory;
 import server.life.Monster;
 import server.maps.MapleMap;
 import tools.DatabaseConnection;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import android.graphics.Point;
 
 public class PmobCommand extends Command {
     {
@@ -70,7 +66,8 @@ public class PmobCommand extends Command {
             mob.setRx0(xpos + 50);
             mob.setRx1(xpos - 50);
             mob.setFh(fh);
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 ContentValues values = new ContentValues();
                 values.put("life", mobId);
                 values.put("f", 0);
@@ -95,7 +92,6 @@ public class PmobCommand extends Command {
 
                 player.yellowMessage("Pmob created.");
             } catch (SQLiteException e) {
-                e.printStackTrace();
                 player.dropMessage(5, "Failed to store pmob in the database.");
             }
         } else {

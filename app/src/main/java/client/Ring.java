@@ -25,13 +25,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.inventory.manipulator.CashIdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.Pair;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 /**
  * @author Danny
@@ -43,6 +40,7 @@ public class Ring implements Comparable<Ring> {
     private final int itemId;
     private final String partnerName;
     private boolean equipped = false;
+    private static final Logger log = LoggerFactory.getLogger(Ring.class);
 
     public Ring(int id, int id2, int partnerId, int itemid, String partnername) {
         this.ringId = id;
@@ -73,7 +71,7 @@ public class Ring implements Comparable<Ring> {
 
             return ret;
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("loadFromDb error", ex);
             return null;
         }
     }
@@ -96,10 +94,9 @@ public class Ring implements Comparable<Ring> {
                 con.execSQL("UPDATE inventoryequipment SET ringid=-1 WHERE ringid=?", new Object[]{ring.getPartnerRingId()});
                 con.setTransactionSuccessful();
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("removeRing error", ex);
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 
@@ -122,12 +119,10 @@ public class Ring implements Comparable<Ring> {
                     new Object[]{ringID[1], itemid, ringID[0], partner1.getId(), partner1.getName()});
             con.setTransactionSuccessful();
             con.endTransaction();
-            con.close();
             return new Pair<>(ringID[0], ringID[1]);
         } catch (SQLiteException ex) {
             con.endTransaction();
-            con.close();
-            ex.printStackTrace();
+            log.error("createRing error", ex);
             return new Pair<>(-1, -1);
         }
     }

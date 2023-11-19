@@ -156,9 +156,8 @@ public class PlayerNPC extends AbstractMapObject {
             if (objectId != -1) {
                 String query = "SELECT equippos, equipid FROM playernpcs_equip WHERE npcid = ?";
                 String[] selectionArgs = {String.valueOf(objectId)};
-
-                try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                        Cursor cursor1 = con.rawQuery(query, selectionArgs)) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try (Cursor cursor1 = con.rawQuery(query, selectionArgs)) {
                     if (cursor1 != null) {
                         while (cursor.moveToNext()) {
                             int equipposIdx = cursor.getColumnIndex("equippos");
@@ -171,7 +170,7 @@ public class PlayerNPC extends AbstractMapObject {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("select PlayerNPC error", e);
         }
     }
 
@@ -324,13 +323,13 @@ public class PlayerNPC extends AbstractMapObject {
         boolean ret = true;
 
         String[] selectionArgs = {name, String.valueOf(mapid)};
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT name FROM playernpcs WHERE name LIKE ? AND map = ?", selectionArgs)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT name FROM playernpcs WHERE name LIKE ? AND map = ?", selectionArgs)) {
             if (cursor.moveToFirst()) {
                 ret = false;
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("canSpawnPlayerNpc error", e);
         }
 
         return ret;
@@ -342,8 +341,8 @@ public class PlayerNPC extends AbstractMapObject {
         RX1 = newPos.x - 50;
         CY = newPos.y;
         FH = map.getFootholds().findBelow(newPos).getId();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
              con.execSQL("UPDATE playernpcs SET x = ?, cy = ?, fh = ?, rx0 = ?, rx1 = ? WHERE id = ?", new String[]{
                      String.valueOf(newPos.x),
                      String.valueOf(CY),
@@ -353,7 +352,7 @@ public class PlayerNPC extends AbstractMapObject {
                      String.valueOf(getObjectId())
              });
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("updatePlayerNPCPosition", e);
         }
     }
 
@@ -366,8 +365,8 @@ public class PlayerNPC extends AbstractMapObject {
             List<Integer> availables = new ArrayList<>(20);
             String query = "SELECT scriptid FROM playernpcs WHERE scriptid >= ? AND scriptid < ? ORDER BY scriptid";
             String[] selectionArgs = {String.valueOf(branchSid), String.valueOf(nextBranchSid)};
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery(query, selectionArgs)) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery(query, selectionArgs)) {
                 Set<Integer> usedScriptIds = new HashSet<>();
                 while (cursor.moveToNext()) {
                     usedScriptIds.add(cursor.getInt(0));
@@ -393,7 +392,7 @@ public class PlayerNPC extends AbstractMapObject {
                 list.add(availables.get(i));
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("fetchAvailableScriptIdsFromDb error", sqle);
         }
     }
 
@@ -450,7 +449,8 @@ public class PlayerNPC extends AbstractMapObject {
         int jobId = (chr.getJob().getId() / 100) * 100;
 
         PlayerNPC ret = null;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             boolean createNew = false;
             String[] selectionArgs = {String.valueOf(scriptId)};
             try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs WHERE scriptid = ?", selectionArgs)) {
@@ -500,7 +500,7 @@ public class PlayerNPC extends AbstractMapObject {
                     }
                     con.setTransactionSuccessful();
                 }  catch (SQLiteException e) {
-                    e.printStackTrace(); // Handle any potential SQL exceptions
+                    log.error("insert into playernpcs_equip error", e); // Handle any potential SQL exceptions
                 } finally {
                     con.endTransaction();
                 }
@@ -513,7 +513,7 @@ public class PlayerNPC extends AbstractMapObject {
             }
             return ret;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("createPlayerNPCInternal error", e);
             return null;
         }
     }
@@ -527,8 +527,8 @@ public class PlayerNPC extends AbstractMapObject {
         String selectQuery = "SELECT id, map FROM playernpcs WHERE name LIKE ?";
         String deleteQuery1 = "DELETE FROM playernpcs WHERE id = ?";
         String deleteQuery2 = "DELETE FROM playernpcs_equip WHERE npcid = ?";
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cursor = con.rawQuery(selectQuery, new String[]{chr.getName()})) {
                 if (cursor != null) {
                     while (cursor.moveToNext()) {
@@ -548,7 +548,7 @@ public class PlayerNPC extends AbstractMapObject {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("removePlayerNPCInternal error", e);
         }
 
         mapids.addAll(updateMapids);
@@ -642,8 +642,8 @@ public class PlayerNPC extends AbstractMapObject {
     }
 
     public static void removeAllPlayerNPC() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT DISTINCT world, map FROM playernpcs", null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT DISTINCT world, map FROM playernpcs", null)) {
             int wsize = Server.getInstance().getWorldsSize();
 
             while (cursor.moveToNext()) {
@@ -678,7 +678,7 @@ public class PlayerNPC extends AbstractMapObject {
                 w.resetPlayerNpcMapData();
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("removeAllPlayerNPC error", e);
         }
     }
 }

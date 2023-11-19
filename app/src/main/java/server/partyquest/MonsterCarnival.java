@@ -7,6 +7,8 @@ import net.server.Server;
 import net.server.channel.Channel;
 import net.server.world.Party;
 import net.server.world.PartyCharacter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.TimerManager;
 import server.maps.MapleMap;
 import server.maps.Reactor;
@@ -26,7 +28,7 @@ public class MonsterCarnival {
     public static int C = 2;
     public static int B = 1;
     public static int A = 0;
-
+    private static final Logger log = LoggerFactory.getLogger(MonsterCarnival.class);
     private Party p1, p2;
     private MapleMap map;
     private ScheduledFuture<?> timer, effectTimer, respawnTask;
@@ -105,7 +107,7 @@ public class MonsterCarnival {
 
             cs.initMonsterCarnival(cpq1, room);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("MonsterCarnival error", e);
         }
     }
 
@@ -317,7 +319,7 @@ public class MonsterCarnival {
             }
             dispose();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Monster Carnival finish error", e);
         }
     }
 

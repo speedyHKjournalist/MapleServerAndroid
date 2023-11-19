@@ -19,7 +19,6 @@
 */
 package net.server.coordinator.session;
 
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Character;
@@ -32,8 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
@@ -69,7 +66,8 @@ public class SessionCoordinator {
     }
 
     private static boolean attemptAccountAccess(int accountId, Hwid hwid, boolean routineCheck) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             List<HwidRelevance> hwidRelevances = SessionDAO.getHwidRelevance(con, accountId);
             for (HwidRelevance hwidRelevance : hwidRelevances) {
                 if (hwidRelevance.hwid().endsWith(hwid.hwid())) {
@@ -251,7 +249,8 @@ public class SessionCoordinator {
     }
 
     private static void associateHwidAccountIfAbsent(Hwid hwid, int accountId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             List<Hwid> hwids = SessionDAO.getHwidsForAccount(con, accountId);
 
             boolean containsRemoteHwid = hwids.stream().anyMatch(accountHwid -> accountHwid.equals(hwid));
@@ -281,7 +280,7 @@ public class SessionCoordinator {
             try {
                 fakeClient.setAccID(Character.loadCharFromDB(chrId, client, false).getAccountID());
             } catch (SQLiteException sqle) {
-                sqle.printStackTrace();
+                log.error("fetchInTransitionSessionClient error", sqle);
             }
         }
 

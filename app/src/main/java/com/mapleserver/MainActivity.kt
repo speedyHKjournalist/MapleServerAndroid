@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                                 stopMapleServer()
                             }
                         )
-                        ConfigButton(text = "Server Config",
+                        ConfigButton(text = "Config",
                             onOpenEditor = {
                                 navController.navigate("config_editor_screen")
                             })

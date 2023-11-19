@@ -28,10 +28,11 @@ import client.Client;
 import config.YamlConfig;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.*;
 import java.util.Calendar;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -41,7 +42,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
  * @author Ubaware
  */
 public final class TransferNameHandler extends AbstractPacketHandler {
-
+    private static final Logger log = LoggerFactory.getLogger(TransferNameHandler.class);
     @Override
     public final void handlePacket(InPacket p, Client c) {
         p.readInt(); //cid
@@ -64,8 +65,8 @@ public final class TransferNameHandler extends AbstractPacketHandler {
             return;
         }
         //sql queries
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT completionTime FROM namechanges WHERE characterid=?", new String[]{String.valueOf(chr.getId())})) { //double check, just in case
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT completionTime FROM namechanges WHERE characterid=?", new String[]{String.valueOf(chr.getId())})) { //double check, just in case
             while (cursor.moveToNext()) {
                 int completionTimeIdx = cursor.getColumnIndex("completionTime");
                 long completedTimestamp = cursor.getLong(completionTimeIdx);
@@ -82,7 +83,7 @@ public final class TransferNameHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("TransferNameHandler handlepacket error", e);
             return;
         }
         c.sendPacket(PacketCreator.sendNameTransferRules(0));

@@ -102,7 +102,7 @@ public class NPCScriptManager extends AbstractScriptManager {
             try {
                 invocable.invokeFunction("start", chrs);
             } catch (final NoSuchMethodException nsme) {
-                nsme.printStackTrace();
+                log.error("invoke start error", nsme);
             }
 
         } catch (final Exception e) {
@@ -148,7 +148,7 @@ public class NPCScriptManager extends AbstractScriptManager {
                     try {
                         iv.invokeFunction("start", chr);
                     } catch (final NoSuchMethodException nsma) {
-                        nsma.printStackTrace();
+                        log.error("invoke start script error", nsma);
                     }
                 }
             } else {

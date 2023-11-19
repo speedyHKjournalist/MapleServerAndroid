@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server.maps;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
@@ -36,6 +37,8 @@ import client.processor.npc.FredrickProcessor;
 import config.YamlConfig;
 import net.packet.Packet;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.ItemInformationProvider;
 import server.Trade;
 import tools.DatabaseConnection;
@@ -54,6 +57,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Ronan - concurrency protection
  */
 public class HiredMerchant extends AbstractMapObject {
+    private static final Logger log = LoggerFactory.getLogger(HiredMerchant.class);
     private static final int VISITOR_HISTORY_LIMIT = 10;
     private static final int BLACKLIST_LIMIT = 20;
 
@@ -315,7 +319,8 @@ public class HiredMerchant extends AbstractMapObject {
                     if (owner != null) {
                         owner.addMerchantMesos(price);
                     } else {
-                        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                        SQLiteDatabase con = DatabaseConnection.getConnection();
+                        try {
                             long merchantMesos = 0;
                             try (Cursor ps = con.rawQuery("SELECT MerchantMesos FROM characters WHERE id = ?", new String[]{String.valueOf(ownerId)})) {
                                 if (ps.moveToFirst()) {
@@ -323,11 +328,14 @@ public class HiredMerchant extends AbstractMapObject {
                                 }
                             }
                             merchantMesos += price;
-                            try (Cursor cur = con.rawQuery("UPDATE characters SET MerchantMesos = ? WHERE id = ?",
-                                    new String[]{String.valueOf((int) Math.min(merchantMesos, Integer.MAX_VALUE)), String.valueOf(ownerId)})) {
-                            }
+                            String updateQuery = "UPDATE characters SET MerchantMesos = ? WHERE id = ?";
+                            String[] updateArgs = {
+                                    String.valueOf((int) Math.min(merchantMesos, Integer.MAX_VALUE)),
+                                    String.valueOf(ownerId)
+                            };
+                            con.execSQL(updateQuery, updateArgs);
                         } catch (SQLiteException e) {
-                            e.printStackTrace();
+                            log.error("Query MerchantMesos error", e);
                         }
                     }
                 } else {
@@ -343,7 +351,7 @@ public class HiredMerchant extends AbstractMapObject {
             try {
                 this.saveItems(false);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("saveItems error", e);
             }
         }
     }
@@ -384,20 +392,23 @@ public class HiredMerchant extends AbstractMapObject {
                 items.clear();
             }
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("saveItems error", ex);
         }
 
         Character player = Server.getInstance().getWorld(world).getPlayerStorage().getCharacterById(ownerId);
         if (player != null) {
             player.setHasMerchant(false);
         } else {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                Cursor cur = con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{"0", String.valueOf(ownerId)})) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            String updateQuery = "UPDATE characters SET HasMerchant = 0 WHERE id = ?";
+            String[] updateArgs = {String.valueOf(ownerId)};
+
+            try {
+                con.execSQL(updateQuery, updateArgs);
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
+                log.error("Update characters with HasMerchant error", ex);
             }
         }
-
         map = null;
     }
 
@@ -437,7 +448,7 @@ public class HiredMerchant extends AbstractMapObject {
             try {
                 this.saveItems(timeout);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("closeShop saveItems error", e);
             }
 
             // thanks Rohenn for noticing a possible dupe scenario on closing shop
@@ -445,9 +456,12 @@ public class HiredMerchant extends AbstractMapObject {
             if (player != null) {
                 player.setHasMerchant(false);
             } else {
-                try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                    Cursor cur = con.rawQuery("UPDATE characters SET HasMerchant = 0 WHERE id = ?", new String[]{String.valueOf(0), String.valueOf(ownerId)})) {
-                }
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                ContentValues values = new ContentValues();
+                values.put("HasMerchant", 0);
+                String whereClause = "id = ?";
+                String[] whereArgs = {String.valueOf(ownerId)};
+                con.update("characters", values, whereClause, whereArgs);
             }
 
             if (YamlConfig.config.server.USE_ENFORCE_MERCHANT_SAVE) {
@@ -458,7 +472,7 @@ public class HiredMerchant extends AbstractMapObject {
                 items.clear();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("closeShop error", e);
         }
 
         Server.getInstance().getWorld(world).unregisterHiredMerchant(this);
@@ -563,7 +577,7 @@ public class HiredMerchant extends AbstractMapObject {
             try {
                 this.saveItems(false);
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
+                log.error("clearInexistentItems error", ex);
             }
         }
     }
@@ -574,7 +588,7 @@ public class HiredMerchant extends AbstractMapObject {
         try {
             this.saveItems(false);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("removeFromSlot error", ex);
         }
     }
 
@@ -660,11 +674,8 @@ public class HiredMerchant extends AbstractMapObject {
                 bundles.add(newBundle);
             }
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            ItemFactory.MERCHANT.saveItems(itemsWithType, bundles, this.ownerId, con);
-        }
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        ItemFactory.MERCHANT.saveItems(itemsWithType, bundles, this.ownerId, con);
         FredrickProcessor.insertFredrickLog(this.ownerId);
     }
 

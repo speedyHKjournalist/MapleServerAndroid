@@ -22,17 +22,17 @@
 package net.server.handlers.login;
 
 import android.content.ContentValues;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Client;
 import client.DefaultDates;
 import config.YamlConfig;
-import database.MapleDBHelper;
 import net.PacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
 import net.server.coordinator.session.Hwid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.BCrypt;
 import tools.DatabaseConnection;
 import tools.HexTool;
@@ -42,12 +42,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 public final class LoginPasswordHandler implements PacketHandler {
-
+    private static final Logger log = LoggerFactory.getLogger(LoginPasswordHandler.class);
     @Override
     public boolean validateState(Client c) {
         return !c.isLoggedIn();
@@ -78,7 +77,8 @@ public final class LoginPasswordHandler implements PacketHandler {
 
 
         if (YamlConfig.config.server.AUTOMATIC_REGISTER && loginok == 5) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) { //Jayd: Added birthday, tempban
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try { //Jayd: Added birthday, tempban
                 ContentValues values = new ContentValues();
                 values.put("name", login);
                 values.put("password", YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(12)) : hashpwSHA512(pwd));
@@ -89,7 +89,7 @@ public final class LoginPasswordHandler implements PacketHandler {
                 c.setAccID((int) accountId);
             } catch (SQLiteException | NoSuchAlgorithmException | UnsupportedEncodingException e) {
                 c.setAccID(-1);
-                e.printStackTrace();
+                log.error("insert into accounts error", e);
             } finally {
                 loginok = c.login(login, pwd, hwid);
             }
@@ -97,13 +97,17 @@ public final class LoginPasswordHandler implements PacketHandler {
 
         if (YamlConfig.config.server.BCRYPT_MIGRATION && (loginok <= -10)) { // -10 means migration to bcrypt, -23 means TOS wasn't accepted
             String newPasswordHash = BCrypt.hashpw(pwd, BCrypt.gensalt(12));
-            String updateQuery = "UPDATE accounts SET password = ? WHERE name = ?";
-            String[] whereArgs = {newPasswordHash, login};
+            SQLiteDatabase con = DatabaseConnection.getConnection();
 
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery(updateQuery, whereArgs)) {
+            ContentValues values = new ContentValues();
+            values.put("password", newPasswordHash);
+            String whereClause = "name = ?";
+            String[] whereArgs = {login};
+
+            try {
+                con.update("accounts", values, whereClause, whereArgs);
             } catch (SQLiteException e) {
-                e.printStackTrace();
+                log.error("Login update accounts error", e);
             } finally {
                 loginok = (loginok == -10) ? 0 : 23;
             }

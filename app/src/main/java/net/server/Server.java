@@ -218,9 +218,8 @@ public class Server {
 
     private void loadPlayerNpcMapStepFromDb() {
         final List<World> wlist = this.getWorlds();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT * FROM playernpcs_field", null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT * FROM playernpcs_field", null)) {
             if (cursor != null) {
                 while (cursor.moveToNext()) {
                     int worldIdx = cursor.getColumnIndex("world");
@@ -243,7 +242,7 @@ public class Server {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadPlayerNpcMapStepFromDb error", e);
         }
     }
 
@@ -872,7 +871,7 @@ public class Server {
                 }
             }
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("loadPlayerRankingFromDB error", ex);
         }
 
         return rankSystem;
@@ -887,6 +886,7 @@ public class Server {
         if (YamlConfig.config.server.SHUTDOWNHOOK) {
             Runtime.getRuntime().addShutdownHook(new Thread(shutdown(false)));
         }
+        SQLiteDatabase db = DatabaseConnection.getConnection();
         channelDependencies = registerChannelDependencies();
 
         final ExecutorService initExecutor = Executors.newFixedThreadPool(10);
@@ -901,7 +901,7 @@ public class Server {
         TimeZone.setDefault(TimeZone.getTimeZone(YamlConfig.config.server.TIMEZONE));
 
         final int worldCount = Math.min(GameConstants.WORLD_NAMES.length, YamlConfig.config.server.WORLDS);
-        try(SQLiteDatabase db = DatabaseConnection.getConnection()) {
+        try {
             setAllLoggedOut(db);
             setAllMerchantsInactive(db);
             cleanNxcodeCoupons(db);
@@ -929,9 +929,8 @@ public class Server {
             loadPlayerNpcMapStepFromDb();
 
             if (YamlConfig.config.server.USE_FAMILY_SYSTEM) {
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                    Family.loadAllFamilies(con);
-                }
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                Family.loadAllFamilies(con);
             }
         } catch (Exception e) {
             log.error("[SEVERE] Syntax error in 'world.ini'. " + e); //For those who get errors
@@ -984,7 +983,7 @@ public class Server {
         try {
             con.execSQL("UPDATE accounts SET loggedin = 0");
         } catch (SQLiteException e) {
-            e.printStackTrace(); // Handle the exception or log it as needed
+            log.error("setAllLoggedOut error", e); // Handle the exception or log it as needed
         }
     }
 
@@ -992,7 +991,7 @@ public class Server {
         try {
             con.execSQL("UPDATE characters SET HasMerchant = 0");
         } catch (SQLiteException e) {
-            e.printStackTrace(); // Handle the exception or log it as needed
+            log.error("setAllMerchantsInactive error", e); // Handle the exception or log it as needed
         }
     }
 
@@ -1570,9 +1569,9 @@ public class Server {
             }
 
             String[] columns = {"id", "world"};
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.query("characters", columns, "accountid = ?", new String[]{String.valueOf(accId)}, null, null, "world, id")) {
-
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.query("characters", columns, "accountid = ?",
+                    new String[]{String.valueOf(accId)}, null, null, "world, id")) {
                 while (cursor.moveToNext()) {
                     characterCount++;
 
@@ -1598,15 +1597,15 @@ public class Server {
 
             wchars.add(curWorld, chars);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadAccountCharactersViewFromDb error", sqle);
         }
 
         return new Pair<>(characterCount, wchars);
     }
 
     public void loadAllAccountsCharactersView() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT id FROM accounts", null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT id FROM accounts", null)) {
             while (cursor.moveToNext()) {
                 int idIdx = cursor.getColumnIndex("id");
                 if (idIdx != -1) {
@@ -1617,7 +1616,7 @@ public class Server {
                 }
             }
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("loadAllAccountsCharactersView error", se);
         }
     }
 
@@ -1961,25 +1960,6 @@ public class Server {
         for (World w : getWorlds()) {
             w.shutdown();
         }
-
-        /*for (World w : getWorlds()) {
-            while (w.getPlayerStorage().getAllCharacters().size() > 0) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    System.err.println("FUCK MY LIFE");
-                }
-            }
-        }
-        for (Channel ch : getAllChannels()) {
-            while (ch.getConnectedClients() > 0) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                    System.err.println("FUCK MY LIFE");
-                }
-            }
-        }*/
 
         List<Channel> allChannels = getAllChannels();
 

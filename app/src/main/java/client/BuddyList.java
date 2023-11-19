@@ -26,13 +26,11 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import net.packet.Packet;
 import net.server.PlayerStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 public class BuddyList {
@@ -47,6 +45,7 @@ public class BuddyList {
     private final Map<Integer, BuddylistEntry> buddies = new LinkedHashMap<>();
     private int capacity;
     private final Deque<CharacterNameAndId> pendingRequests = new LinkedList<>();
+    private static final Logger log = LoggerFactory.getLogger(BuddyList.class);
 
     public BuddyList(int capacity) {
         this.capacity = capacity;
@@ -161,10 +160,11 @@ public class BuddyList {
                     }
                 }
             }
-            try (Cursor cur = con.rawQuery("DELETE FROM buddies WHERE pending = 1 AND characterid = ?", new String[]{String.valueOf(characterId)})) {
-            }
+            String whereClause = "pending = ? AND characterid = ?";
+            String[] whereArgs = {"1", String.valueOf(characterId)};
+            con.delete("buddies", whereClause, whereArgs);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("loadFromDb error", ex);
         }
     }
 

@@ -129,7 +129,7 @@ public class CommandsExecutor {
             levelCommandsCursor.getRight().add(commandClass.getDeclaredConstructor().newInstance().getDescription());
             levelCommandsCursor.getLeft().add(name);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("addCommandInfo error", e);
         }
     }
 

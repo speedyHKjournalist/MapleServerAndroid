@@ -91,7 +91,7 @@ public class ViewAllCharSelectedWithPicHandler extends AbstractPacketHandler {
             try {
                 c.sendPacket(PacketCreator.getServerIP(InetAddress.getByName(socket[0]), Integer.parseInt(socket[1]), charId));
             } catch (UnknownHostException e) {
-                e.printStackTrace();
+                log.error("ViewAllCharSelectedWithPicHandler sendPacket error", e);
             }
 
         } else {

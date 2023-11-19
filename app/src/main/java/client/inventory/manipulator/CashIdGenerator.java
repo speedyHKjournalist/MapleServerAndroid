@@ -19,17 +19,13 @@
 */
 package client.inventory.manipulator;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import database.MapleDBHelper;
-import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -70,7 +66,8 @@ public class CashIdGenerator {
         runningCashid++;
         if (runningCashid >= 777000000) {
             existentCashids.clear();
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 loadExistentCashIdsFromDb(con);
             } catch (SQLiteException e) {
                 log.warn("Failed to reset overflowing cash ids", e);

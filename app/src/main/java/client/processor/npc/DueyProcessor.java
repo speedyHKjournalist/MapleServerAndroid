@@ -97,8 +97,8 @@ public class DueyProcessor {
 
     private static Pair<Integer, Integer> getAccountCharacterIdFromCNAME(String name) {
         Pair<Integer, Integer> ids = new Pair<>(-1, -1);
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT id,accountid FROM characters WHERE name = ?", new String[]{name})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT id,accountid FROM characters WHERE name = ?", new String[]{name})) {
             if (ps.moveToFirst()) {
                 int accountidIdx = ps.getColumnIndex("accountid");
                 int idIdx = ps.getColumnIndex("id");
@@ -106,15 +106,15 @@ public class DueyProcessor {
                     ids.right = ps.getInt(idIdx);
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getAccountCharacterIdFromCNAME error", e);
         }
 
         return ids;
     }
 
     private static void showDueyNotification(Client c, Character player) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor rs = con.rawQuery("SELECT SenderName, Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor rs = con.rawQuery("SELECT SenderName, Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
                      new String[]{String.valueOf(player.getId())})) {
             if (rs.moveToFirst()) {
                 do {
@@ -127,7 +127,7 @@ public class DueyProcessor {
                 } while (rs.moveToNext());
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("showDueyNotification error", e);
         }
     }
 
@@ -136,14 +136,15 @@ public class DueyProcessor {
     }
 
     private static void removePackageFromDB(int packageId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String dueyPackagesTable = "dueypackages";
             String selection = "PackageId = ?";
             String[] selectionArgs = { String.valueOf(packageId) };
             con.delete(dueyPackagesTable, selection, selectionArgs);
             deletePackageFromInventoryDB(con, packageId);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("removePackageFromDB error", e);
         }
     }
 
@@ -174,15 +175,15 @@ public class DueyProcessor {
 
             return dueypack;
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("getPackageFromDB error", sqle);
             return null;
         }
     }
 
     private static List<DueyPackage> loadPackages(Character chr) {
         List<DueyPackage> packages = new LinkedList<>();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE ReceiverId = ?",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE ReceiverId = ?",
                      new String[]{String.valueOf(chr.getId())})) {
             while (ps.moveToNext()) {
                 DueyPackage dueypack = getPackageFromDB(ps);
@@ -193,7 +194,7 @@ public class DueyProcessor {
             }
 
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadPackages error", e);
         }
 
         return packages;
@@ -207,8 +208,8 @@ public class DueyProcessor {
         values.put("TimeStamp", System.currentTimeMillis());
         values.put("Message", message);
         values.put("Type", quick ? 1 : 0);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             long packageId;
             packageId = con.insert("dueypackages", null, values);
             if (packageId < 1) {
@@ -217,7 +218,7 @@ public class DueyProcessor {
             }
             return (int) packageId;
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("createPackage error", sqle);
         }
 
         return -1;
@@ -225,11 +226,12 @@ public class DueyProcessor {
 
     private static boolean insertPackageItem(int packageId, Item item) {
         Pair<Item, InventoryType> dueyItem = new Pair<>(item, InventoryType.getByType(item.getItemType()));
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ItemFactory.DUEY.saveItems(Collections.singletonList(dueyItem), packageId, con);
             return true;
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("insertPackageItem error", sqle);
         }
 
         return false;
@@ -386,8 +388,8 @@ public class DueyProcessor {
             try {
                 try {
                     DueyPackage dp = null;
-                    try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                         Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE PackageId = ?", new String[]{String.valueOf(packageId)})) {
+                    SQLiteDatabase con = DatabaseConnection.getConnection();
+                    try (Cursor ps = con.rawQuery("SELECT * FROM dueypackages dp WHERE PackageId = ?", new String[]{String.valueOf(packageId)})) {
                         if (ps.moveToNext()) {
                             dp = getPackageFromDB(ps);
                         }
@@ -429,7 +431,7 @@ public class DueyProcessor {
 
                     dueyRemovePackage(c, packageId, false);
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("dueyClaimPackage error", e);
                 }
             } finally {
                 c.releaseClient();
@@ -488,7 +490,7 @@ public class DueyProcessor {
             String[] whereArgs = { String.valueOf(ts.getTime()) };
             con.delete("dueypackages", selection, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("runDueyExpireSchedule error", e);
         }
     }
 }

@@ -27,8 +27,6 @@ import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.ItemFactory;
 import constants.game.GameConstants;
-import database.MapleDBHelper;
-import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -40,10 +38,6 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -76,10 +70,8 @@ public class Storage {
         values.put("world", world);
         values.put("slots", 4);
         values.put("meso", 0);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            con.insert("storages", null, values);
-        }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        con.insert("storages", null, values);
 
         return loadOrCreateFromDB(id, world);
     }
@@ -154,7 +146,7 @@ public class Storage {
             }
             ItemFactory.STORAGE.saveItems(itemsWithType, id, con);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("saveToDB error", ex);
         }
     }
 

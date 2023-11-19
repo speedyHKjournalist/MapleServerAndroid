@@ -22,26 +22,28 @@
 package net.server.channel.handlers;
 
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.inventory.ItemFactory;
 import constants.game.GameConstants;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.maps.MapObject;
 import server.maps.MapObjectType;
 import server.maps.PlayerShop;
 import server.maps.Portal;
 import tools.PacketCreator;
 
-import java.sql.SQLException;
 import java.util.Arrays;
-import android.graphics.Point;
 
 /**
  * @author XoticStory
  */
 public final class HiredMerchantRequest extends AbstractPacketHandler {
+    private static final Logger log = LoggerFactory.getLogger(HiredMerchantRequest.class);
     @Override
     public final void handlePacket(InPacket p, Client c) {
         Character chr = c.getPlayer();
@@ -73,7 +75,7 @@ public final class HiredMerchantRequest extends AbstractPacketHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("HiredMerchantRequest handler error", e);
         }
 
         if (GameConstants.isFreeMarketRoom(chr.getMapId())) {
@@ -85,7 +87,7 @@ public final class HiredMerchantRequest extends AbstractPacketHandler {
                         chr.sendPacket(PacketCreator.retrieveFirstMessage());
                     }
                 } catch (SQLiteException ex) {
-                    ex.printStackTrace();
+                    log.error("HiredMerchantRequest handler sendPacket error", ex);
                 }
             } else {
                 chr.dropMessage(1, "You already have a store open.");

@@ -84,7 +84,8 @@ public class ReactorScriptManager extends AbstractScriptManager {
         List<ReactorDropEntry> ret = drops.get(reactorId);
         if (ret == null) {
             ret = new LinkedList<>();
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 try (Cursor ps = con.rawQuery("SELECT itemid, chance, questid FROM reactordrops WHERE reactorid = ? AND chance >= 0",
                         new String[]{String.valueOf(reactorId)})) {
                     if (ps != null) {

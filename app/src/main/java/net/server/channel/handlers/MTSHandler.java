@@ -110,8 +110,8 @@ public final class MTSHandler extends AbstractPacketHandler {
                 InventoryType invType = ItemConstants.getInventoryType(itemid);
                 Item i = c.getPlayer().getInventory(invType).getItem(slot).copy();
                 if (i != null && c.getPlayer().getMeso() >= 5000) {
-                    try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                         Cursor cursor = con.rawQuery("SELECT COUNT(*) FROM mts_items WHERE seller = ?",
+                    SQLiteDatabase con = DatabaseConnection.getConnection();
+                    try (Cursor cursor = con.rawQuery("SELECT COUNT(*) FROM mts_items WHERE seller = ?",
                                  new String[]{String.valueOf(c.getPlayer().getId())})) {
                         if (cursor.moveToFirst()) {
                             int itemCount = cursor.getInt(0);
@@ -186,7 +186,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                         }
                         InventoryManipulator.removeFromSlot(c, invType, slot, quantity, false);
                     } catch (SQLiteException e) {
-                        e.printStackTrace();
+                        log.error("Insert into mts_items error", e);
                     }
                     c.getPlayer().gainMeso(-5000, false);
                     c.sendPacket(PacketCreator.MTSConfirmSell());
@@ -246,7 +246,8 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
             case 7: { //cancel sale
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try {
                     ContentValues updateValues = new ContentValues();
                     updateValues.put("transfer", 1);
                     String updateWhere = "id = ? AND seller = ?";
@@ -257,7 +258,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                     String[] deleteArgs = { String.valueOf(id) };
                     con.delete("mts_cart", deleteWhere, deleteArgs);
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("delete from mts_cart error", e);
                 }
                 c.enableCSActions();
                 c.sendPacket(getMTS(c.getPlayer().getCurrentTab(), c.getPlayer().getCurrentType(),
@@ -268,7 +269,8 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
             case 8: { // transfer item from transfer inv.
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try {
                     try (Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE seller = ? AND transfer = 1  AND id= ? ORDER BY id DESC", new String[]{ String.valueOf(c.getPlayer().getId()), String.valueOf(id) })) {
                         if (cursor.moveToNext()) {
                             Item i;
@@ -364,7 +366,8 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
             case 9: { //add to cart
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try {
                     try (Cursor cursor = con.rawQuery("SELECT id FROM mts_items WHERE id = ? AND seller <> ?",
                             new String[]{ String.valueOf(id), String.valueOf(c.getPlayer().getId()) })) {// Dummy query, prevents adding to cart self owned items
                         if (cursor.moveToNext()) {
@@ -380,7 +383,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                         }
                     }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("insert into mts_cart error", e);
                 }
                 c.sendPacket(getMTS(c.getPlayer().getCurrentTab(), c.getPlayer().getCurrentType(), c.getPlayer().getCurrentPage()));
                 c.enableCSActions();
@@ -391,10 +394,11 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
             case 10: { //delete from cart
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try {
                     con.execSQL("DELETE FROM mts_cart WHERE itemid = ? AND cid = ?", new String[]{ String.valueOf(id), String.valueOf(c.getPlayer().getId()) });
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("delete from mts_cart error", e);
                 }
                 c.sendPacket(getCart(c.getPlayer().getId()));
                 c.enableCSActions();
@@ -410,8 +414,8 @@ public final class MTSHandler extends AbstractPacketHandler {
                 break;
             case 16: { //buy
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                     Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE id = ? ORDER BY id DESC", new String[]{ String.valueOf(id) })) {
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try (Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE id = ? ORDER BY id DESC", new String[]{ String.valueOf(id) })) {
                     if (cursor.moveToFirst()) {
                         int priceIdx = cursor.getColumnIndex("price");
                         int price = cursor.getInt(priceIdx) + 100 + (int) (cursor.getInt(priceIdx) * 0.1); // taxes
@@ -451,15 +455,15 @@ public final class MTSHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.MTSFailBuy());
                         }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("MTS Handler case 16 buy fail", e);
                     c.sendPacket(PacketCreator.MTSFailBuy());
                 }
                 break;
             }
             case 17: { //buy from cart
                 int id = p.readInt(); // id of the item
-                try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                        Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE id = ? ORDER BY id DESC",
+                SQLiteDatabase con = DatabaseConnection.getConnection();
+                try (Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE id = ? ORDER BY id DESC",
                                 new String[]{ String.valueOf(id) })) {
                     if (cursor.moveToFirst()) {
                         int priceIdx = cursor.getColumnIndex("price");
@@ -497,7 +501,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                         }
                     }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("case 17 MTSHandler buy from cart fail", e);
                     c.sendPacket(PacketCreator.MTSFailBuy());
                 }
                 break;
@@ -513,8 +517,8 @@ public final class MTSHandler extends AbstractPacketHandler {
 
     public List<MTSItemInfo> getNotYetSold(int cid) {
         List<MTSItemInfo> items = new ArrayList<>();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE seller = ? AND transfer = 0 ORDER BY id DESC",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT * FROM mts_items WHERE seller = ? AND transfer = 0 ORDER BY id DESC",
                      new String[]{ String.valueOf(cid) })) {
             while (cursor.moveToNext()) {
                 int typeIdx = cursor.getColumnIndex("type");
@@ -596,7 +600,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getNotYetSold error", e);
         }
         return items;
     }
@@ -604,7 +608,8 @@ public final class MTSHandler extends AbstractPacketHandler {
     public Packet getCart(int cid) {
         List<MTSItemInfo> items = new ArrayList<>();
         int pages = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cartCursor = con.rawQuery("SELECT * FROM mts_cart WHERE cid = ? ORDER BY id DESC", new String[]{ String.valueOf(cid) })) {
                 while (cartCursor.moveToNext()) {
                     int itemidIdx = cartCursor.getColumnIndex("itemid");
@@ -697,15 +702,15 @@ public final class MTSHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getCart error", e);
         }
         return PacketCreator.sendMTS(items, 4, 0, 0, pages);
     }
 
     public List<MTSItemInfo> getTransfer(int cid) {
         List<MTSItemInfo> items = new ArrayList<>();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor rs = con.rawQuery("SELECT * FROM mts_items WHERE transfer = 1 AND seller = ? ORDER BY id DESC", new String[]{ String.valueOf(cid) })) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor rs = con.rawQuery("SELECT * FROM mts_items WHERE transfer = 1 AND seller = ? ORDER BY id DESC", new String[]{ String.valueOf(cid) })) {
             while (rs.moveToNext()) {
                 int typeColumn = rs.getColumnIndex("type");
                 int itemIdColumn = rs.getColumnIndex("itemid");
@@ -778,7 +783,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getTransfer error", e);
         }
         return items;
     }
@@ -786,7 +791,8 @@ public final class MTSHandler extends AbstractPacketHandler {
     private static Packet getMTS(int tab, int type, int page) {
         List<MTSItemInfo> items = new ArrayList<>();
         int pages = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String sql;
             if (type != 0) {
                 sql = "SELECT * FROM mts_items WHERE tab = ? AND type = ? AND transfer = 0 ORDER BY id DESC LIMIT ?, 16";
@@ -890,7 +896,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getMTS error", e);
         }
         return PacketCreator.sendMTS(items, tab, type, page, pages); // resniff
     }
@@ -918,7 +924,8 @@ public final class MTSHandler extends AbstractPacketHandler {
         }
         int pages = 0;
         String[] selectionArgs;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()){
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String sql;
             if (type != 0) {
                 sql = "SELECT * FROM mts_items WHERE tab = ? " + listaitems + " AND type = ? AND transfer = 0 ORDER BY id DESC LIMIT ?, 16";
@@ -1014,7 +1021,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getMTSSearch error", e);
         }
         return PacketCreator.sendMTS(items, tab, type, page, pages);
     }

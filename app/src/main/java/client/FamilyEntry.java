@@ -23,7 +23,6 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import database.MapleDBHelper;
 import net.packet.Packet;
 import net.server.Server;
 import org.slf4j.Logger;
@@ -32,9 +31,6 @@ import tools.DatabaseConnection;
 import tools.PacketCreator;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -131,7 +127,6 @@ public class FamilyEntry {
             log.error("Could not get connection to DB when joining families", e);
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 
@@ -178,7 +173,6 @@ public class FamilyEntry {
             log.error("Could not get connection to DB when forking families", e);
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 
@@ -384,7 +378,8 @@ public class FamilyEntry {
     }
 
     private static boolean updateDBChangeFamily(int cid, int familyid, int seniorid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             return updateDBChangeFamily(con, cid, familyid, seniorid);
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB while changing family", e);
@@ -551,8 +546,8 @@ public class FamilyEntry {
         if (entitlements[id] >= 1) {
             return false;
         }
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("INSERT INTO family_entitlement (entitlementid, charid, timestamp) VALUES (?, ?, ?)",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("INSERT INTO family_entitlement (entitlementid, charid, timestamp) VALUES (?, ?, ?)",
                      new String[]{String.valueOf(id), String.valueOf(getChrId()), String.valueOf(System.currentTimeMillis())})) {
             if (!cursor.moveToFirst()) {
                 log.error("Could not insert a new row in 'family_entitlement' for chr {}", getName());
@@ -566,8 +561,8 @@ public class FamilyEntry {
 
     public boolean refundEntitlement(FamilyEntitlement entitlement) {
         int id = entitlement.ordinal();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("DELETE FROM family_entitlement WHERE entitlementid = ? AND charid = ?", new String[]{String.valueOf(id), String.valueOf(getChrId())})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("DELETE FROM family_entitlement WHERE entitlementid = ? AND charid = ?", new String[]{String.valueOf(id), String.valueOf(getChrId())})) {
             if (!cursor.moveToFirst()) {
                 log.error("Could not refund family entitlement \"{}\" for chr {}", entitlement.getName(), getName());
             }
@@ -600,7 +595,8 @@ public class FamilyEntry {
         if (!repChanged) {
             return true;
         }
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             return saveReputation(con);
         } catch (SQLiteException e) {
             log.error("Could not get connection to DB while saving reputation", e);

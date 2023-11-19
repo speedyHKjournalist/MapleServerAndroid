@@ -24,6 +24,8 @@ import net.server.PlayerStorage;
 import net.server.Server;
 import net.server.coordinator.matchchecker.MatchCheckerListenerFactory.MatchCheckerType;
 import net.server.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -33,7 +35,7 @@ import java.util.concurrent.Semaphore;
  * @author Ronan
  */
 public class MatchCheckerCoordinator {
-
+    private static final Logger log = LoggerFactory.getLogger(MatchCheckerCoordinator.class);
     private final Map<Integer, MatchCheckingElement> matchEntries = new HashMap<>();
 
     private final Set<Integer> pooledCids = new HashSet<>();
@@ -284,7 +286,7 @@ public class MatchCheckerCoordinator {
                 semaphorePool.release();
             }
         } catch (InterruptedException ie) {
-            ie.printStackTrace();
+            log.error("createMatchConfirmation error", ie);
         }
 
         if (mmce != null) {
@@ -374,7 +376,7 @@ public class MatchCheckerCoordinator {
                 semaphorePool.release();
             }
         } catch (InterruptedException ie) {
-            ie.printStackTrace();
+            log.error("answerMatchConfirmation error", ie);
         }
 
         if (mmce != null) {
@@ -412,7 +414,7 @@ public class MatchCheckerCoordinator {
                 semaphorePool.release();
             }
         } catch (InterruptedException ie) {
-            ie.printStackTrace();
+            log.error("dismissMatchConfirmation error", ie);
         }
 
         if (mmce != null) {

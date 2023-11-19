@@ -29,17 +29,17 @@ import config.YamlConfig;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
-
-import java.sql.*;
 
 /**
  * @author Ronan
  * @author Ubaware
  */
 public final class TransferWorldHandler extends AbstractPacketHandler {
-
+    private static final Logger log = LoggerFactory.getLogger(TransferWorldHandler.class);
     @Override
     public final void handlePacket(InPacket p, Client c) {
         p.readInt(); //cid
@@ -59,8 +59,8 @@ public final class TransferWorldHandler extends AbstractPacketHandler {
             c.sendPacket(PacketCreator.sendWorldTransferRules(worldTransferError, c));
             return;
         }
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT completionTime FROM worldtransfers WHERE characterid=?",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT completionTime FROM worldtransfers WHERE characterid=?",
                      new String[]{ String.valueOf(chr.getId()) })) {
             while (cursor.moveToNext()) {
                 int completionTimeIdx = cursor.getColumnIndex("completionTime");
@@ -74,7 +74,7 @@ public final class TransferWorldHandler extends AbstractPacketHandler {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("Transfer world handlePacket error", e);
             return;
         }
         c.sendPacket(PacketCreator.sendWorldTransferRules(0, c));

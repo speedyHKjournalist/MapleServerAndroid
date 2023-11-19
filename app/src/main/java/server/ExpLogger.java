@@ -4,6 +4,8 @@ import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
 import java.sql.Timestamp;
@@ -21,6 +23,7 @@ public class ExpLogger {
     private static final LinkedBlockingQueue<ExpLogRecord> expLoggerQueue = new LinkedBlockingQueue<>();
     private static final short EXP_LOGGER_THREAD_SLEEP_DURATION_SECONDS = 60;
     private static final short EXP_LOGGER_THREAD_SHUTDOWN_WAIT_DURATION_MINUTES = 5;
+    private static final Logger log = LoggerFactory.getLogger(ExpLogger.class);
 
     public record ExpLogRecord(int worldExpRate, int expCoupon, long gainedExp, int currentExp,Timestamp expGainTime, int charid) {}
 
@@ -28,7 +31,7 @@ public class ExpLogger {
         try {
             expLoggerQueue.put(expLogRecord);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("putExpLogRecord error", e);
         }
     }
 
@@ -63,7 +66,7 @@ public class ExpLogger {
                 }
                 con.setTransactionSuccessful();
             } catch (SQLiteException sqle) {
-                sqle.printStackTrace();
+                log.error("saveExpLoggerToDBRunnable error", sqle);
             } finally {
                 con.endTransaction();
             }
@@ -87,7 +90,7 @@ public class ExpLogger {
             runThreadBeforeShutdown.start();
             return true;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("stopExpLogger error", e);
             return false;
         }
     }

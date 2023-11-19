@@ -21,6 +21,8 @@
  */
 package server.maps;
 
+import android.graphics.Point;
+import android.graphics.Rect;
 import client.BuffStat;
 import client.Character;
 import client.Client;
@@ -75,9 +77,6 @@ import java.util.function.Predicate;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
-import android.graphics.Point;
-import android.graphics.Rect;
 
 public class MapleMap {
     private static final Logger log = LoggerFactory.getLogger(MapleMap.class);
@@ -1472,7 +1471,7 @@ public class MapleMap {
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("killMonster error", e);
                 } finally {     // thanks resinate for pointing out a memory leak possibly from an exception thrown
                     monster.dispatchMonsterKilled(true);
                     broadcastMessage(PacketCreator.killMonster(monster.getObjectId(), animation), monster.getPosition());
@@ -3250,7 +3249,7 @@ public class MapleMap {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("movePlayer error", e);
         }
 
         for (MapObject mo : getMapObjectsInRange(player.getPosition(), getRangedDistance(), rangedMapobjectTypes)) {
@@ -4362,7 +4361,7 @@ public class MapleMap {
             this.buffMonsters(team, skill);
             getReactorByOid(reactor.getObjectId()).hitReactor(((Character) this.getAllPlayer().get(0)).getClient());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("spawnGuardian error", e);
         }
         return 1;
     }

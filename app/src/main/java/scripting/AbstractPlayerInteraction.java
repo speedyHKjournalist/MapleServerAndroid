@@ -37,6 +37,8 @@ import net.server.Server;
 import net.server.guild.Guild;
 import net.server.world.Party;
 import net.server.world.PartyCharacter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.event.EventInstanceManager;
 import scripting.event.EventManager;
 import scripting.npc.NPCScriptManager;
@@ -62,6 +64,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 public class AbstractPlayerInteraction {
 
     public Client c;
+    private static final Logger log = LoggerFactory.getLogger(AbstractPlayerInteraction.class);
 
     public AbstractPlayerInteraction(Client c) {
         this.c = c;
@@ -382,7 +385,7 @@ public class AbstractPlayerInteraction {
         try {
             return getQuestStat(id) == QuestStatus.Status.COMPLETED;
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            log.error("isQuestCompleted error", e);
             return false;
         }
     }
@@ -395,7 +398,7 @@ public class AbstractPlayerInteraction {
         try {
             return getQuestStat(id) == QuestStatus.Status.STARTED;
         } catch (NullPointerException e) {
-            e.printStackTrace();
+            log.error("isQuestStarted error", e);
             return false;
         }
     }
@@ -511,7 +514,7 @@ public class AbstractPlayerInteraction {
         try {
             return Quest.getInstance(id).forceStart(getPlayer(), npc);
         } catch (NullPointerException ex) {
-            ex.printStackTrace();
+            log.error("startQuest error", ex);
             return false;
         }
     }
@@ -520,7 +523,7 @@ public class AbstractPlayerInteraction {
         try {
             return Quest.getInstance(id).forceComplete(getPlayer(), npc);
         } catch (NullPointerException ex) {
-            ex.printStackTrace();
+            log.error("completeQuest error", ex);
             return false;
         }
     }
@@ -734,7 +737,7 @@ public class AbstractPlayerInteraction {
         try {
             return Server.getInstance().getGuild(getPlayer().getGuildId(), getPlayer().getWorld(), null);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getGuild error", e);
         }
         return null;
     }

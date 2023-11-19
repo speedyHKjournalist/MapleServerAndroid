@@ -28,15 +28,13 @@ import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.ItemFactory;
 import client.inventory.manipulator.InventoryManipulator;
-import database.MapleDBHelper;
-import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.event.EventInstanceManager;
 import scripting.event.EventManager;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -49,6 +47,7 @@ public class Marriage extends EventInstanceManager {
     public Marriage(EventManager em, String name) {
         super(em, name);
     }
+    private static final Logger log = LoggerFactory.getLogger(Marriage.class);
 
     public boolean giftItemToSpouse(int cid) {
         return this.getIntProperty("wishlistSelection") == 0;
@@ -122,10 +121,11 @@ public class Marriage extends EventInstanceManager {
     public static boolean claimGiftItems(Client c, Character chr) {
         List<Item> gifts = loadGiftItemsFromDb(c, chr.getId());
         if (Inventory.checkSpot(chr, gifts)) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 ItemFactory.MARRIAGE_GIFTS.saveItems(new LinkedList<>(), chr.getId(), con);
             } catch (SQLiteException sqle) {
-                sqle.printStackTrace();
+                log.error("claimGiftItems error", sqle);
             }
 
             for (Item item : gifts) {
@@ -146,7 +146,7 @@ public class Marriage extends EventInstanceManager {
                 items.add(it.getLeft());
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadGiftItemsFromDb error", sqle);
         }
 
         return items;
@@ -161,11 +161,11 @@ public class Marriage extends EventInstanceManager {
         for (Item it : giftItems) {
             items.add(new Pair<>(it, it.getInventoryType()));
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ItemFactory.MARRIAGE_GIFTS.saveItems(items, cid, con);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("saveGiftItemsToDb error", sqle);
         }
     }
 }

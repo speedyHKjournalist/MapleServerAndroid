@@ -104,7 +104,7 @@ public final class CharSelectedHandler extends AbstractPacketHandler {
         try {
             c.sendPacket(PacketCreator.getServerIP(InetAddress.getByName(socket[0]), Integer.parseInt(socket[1]), charId));
         } catch (UnknownHostException | NumberFormatException e) {
-            e.printStackTrace();
+            log.error("CharSelectedHandler sendPacket error", e);
         }
     }
 }

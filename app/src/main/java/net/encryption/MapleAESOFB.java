@@ -121,7 +121,7 @@ public class MapleAESOFB {
                         byte[] newIv = cipher.doFinal(myIv);
                         System.arraycopy(newIv, 0, myIv, 0, myIv.length);
                     } catch (IllegalBlockSizeException | BadPaddingException e) {
-                        e.printStackTrace();
+                        log.error("crypt error", e);
                     }
                 }
                 data[x] ^= myIv[(x - start) % myIv.length];

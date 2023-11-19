@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package net.server.channel.handlers;
 
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.inventory.InventoryType;
@@ -39,7 +40,6 @@ import tools.PacketCreator;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import android.graphics.Point;
 
 public final class ChangeMapHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(ChangeMapHandler.class);
@@ -173,7 +173,7 @@ public final class ChangeMapHandler extends AbstractPacketHandler {
                 c.sendPacket(PacketCreator.enableActions());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ChangeMapHandler error", e);
         }
 
     }
@@ -196,7 +196,7 @@ public final class ChangeMapHandler extends AbstractPacketHandler {
         try {
             c.sendPacket(PacketCreator.getChannelChange(InetAddress.getByName(socket[0]), Integer.parseInt(socket[1])));
         } catch (UnknownHostException ex) {
-            ex.printStackTrace();
+            log.error("enterFromCashShop error", ex);
         }
     }
 }

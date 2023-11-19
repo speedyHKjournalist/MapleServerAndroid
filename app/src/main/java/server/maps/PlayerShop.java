@@ -29,6 +29,8 @@ import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
 import client.inventory.manipulator.KarmaManipulator;
 import net.packet.Packet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.Trade;
 import tools.PacketCreator;
 import tools.Pair;
@@ -43,6 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Ronan - concurrency protection
  */
 public class PlayerShop extends AbstractMapObject {
+    private static final Logger log = LoggerFactory.getLogger(PlayerShop.class);
     private final AtomicBoolean open = new AtomicBoolean(false);
     private final Character owner;
     private final int itemid;
@@ -370,7 +373,7 @@ public class PlayerShop extends AbstractMapObject {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("removeVisitors error", e);
             }
         } finally {
             visitorLock.unlock();

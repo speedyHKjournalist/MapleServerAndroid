@@ -24,9 +24,11 @@ package server.maps;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
+import android.graphics.Rect;
 import constants.id.MapId;
-import database.MapleDBHelper;
-import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import provider.Data;
 import provider.DataProvider;
 import provider.DataProviderFactory;
@@ -38,23 +40,16 @@ import server.life.LifeFactory;
 import server.life.Monster;
 import server.life.PlayerNPC;
 import server.partyquest.GuardianSpawnPoint;
-import tools.DatabaseConnection;
 import tools.StringUtil;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import android.graphics.Point;
-import android.graphics.Rect;
 
 public class MapFactory {
+    private static final Logger log = LoggerFactory.getLogger(MapFactory.class);
     private static final Data nameData;
     private static final DataProvider mapSource;
 
@@ -138,7 +133,7 @@ public class MapFactory {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadLifeFromDb error", sqle);
         }
     }
 
@@ -277,7 +272,7 @@ public class MapFactory {
                         }
                     }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("Select from playernpcs error", e);
                 }
         }
 
@@ -352,7 +347,7 @@ public class MapFactory {
                 backTypes.put(layerNum, btype);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("loadMapFromWz error", e);
             // swallow cause I'm cool
         }
 

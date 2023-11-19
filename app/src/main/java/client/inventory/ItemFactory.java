@@ -24,12 +24,11 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import database.MapleDBHelper;
-import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -54,6 +53,7 @@ public enum ItemFactory {
 
     private static final int lockCount = 400;
     private static final Lock[] locks = new Lock[lockCount];  // thanks Masterrulax for pointing out a bottleneck issue here
+    private static final Logger log = LoggerFactory.getLogger(ItemFactory.class);
 
     static {
         for (int i = 0; i < lockCount; i++) {
@@ -169,8 +169,8 @@ public enum ItemFactory {
         query.append(isAccount ? "accountid" : "characterid");
         query.append(" = ?");
         query.append(login ? " AND inventorytype = " + InventoryType.EQUIPPED.getType() : "");
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String[] selectionArgs = {String.valueOf(id)};
             try (Cursor cursor = con.rawQuery(query.toString(), selectionArgs)) {
                 while (cursor.moveToNext()) {
@@ -182,7 +182,7 @@ public enum ItemFactory {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadEquippedItems error", e);
         }
         return items;
     }

@@ -32,17 +32,15 @@ import client.BuddyList.BuddyOperation;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import static client.BuddyList.BuddyOperation.ADDED;
 
 public class BuddylistModifyHandler extends AbstractPacketHandler {
+    private static final Logger log = LoggerFactory.getLogger(BuddylistModifyHandler.class);
     private static class CharacterIdNameBuddyCapacity extends CharacterNameAndId {
         private final int buddyCapacity;
 
@@ -66,8 +64,8 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
     private CharacterIdNameBuddyCapacity getCharacterIdAndNameFromDatabase(String name) throws SQLiteException {
         CharacterIdNameBuddyCapacity ret = null;
         String[] selectionArgs = { "%" + name + "%" };
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT id, name, buddyCapacity FROM characters WHERE name LIKE ?", selectionArgs)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT id, name, buddyCapacity FROM characters WHERE name LIKE ?", selectionArgs)) {
             if (cursor.moveToFirst()) {
                 int idIdx = cursor.getColumnIndex("id");
                 int nameIdx = cursor.getColumnIndex("name");
@@ -113,22 +111,21 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         if (channel != -1) {
                             buddyAddResult = world.requestBuddyAdd(addName, c.getChannel(), player.getId(), player.getName());
                         } else {
-                            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                                try (Cursor cursor = con.rawQuery("SELECT COUNT(*) as buddyCount FROM buddies WHERE characterid = ? AND pending = 0",
-                                        new String[]{ String.valueOf(charWithId.getId()) })) {
-                                    if (cursor.moveToFirst()) {
-                                        int buddyCountIdx = cursor.getColumnIndex("buddyCount");
-                                        if (cursor.getInt(buddyCountIdx) >= charWithId.getBuddyCapacity()) {
-                                            buddyAddResult = BuddyAddResult.BUDDYLIST_FULL;
-                                        }
+                            SQLiteDatabase con = DatabaseConnection.getConnection();
+                            try (Cursor cursor = con.rawQuery("SELECT COUNT(*) as buddyCount FROM buddies WHERE characterid = ? AND pending = 0",
+                                    new String[]{ String.valueOf(charWithId.getId()) })) {
+                                if (cursor.moveToFirst()) {
+                                    int buddyCountIdx = cursor.getColumnIndex("buddyCount");
+                                    if (cursor.getInt(buddyCountIdx) >= charWithId.getBuddyCapacity()) {
+                                        buddyAddResult = BuddyAddResult.BUDDYLIST_FULL;
                                     }
                                 }
+                            }
 
-                                try (Cursor cursor = con.rawQuery("SELECT pending FROM buddies WHERE characterid = ? AND buddyid = ?",
-                                        new String[]{ String.valueOf(charWithId.getId()), String.valueOf(player.getId()) })) {
-                                    if (cursor.moveToFirst()) {
-                                            buddyAddResult = BuddyAddResult.ALREADY_ON_LIST;
-                                    }
+                            try (Cursor cursor = con.rawQuery("SELECT pending FROM buddies WHERE characterid = ? AND buddyid = ?",
+                                    new String[]{ String.valueOf(charWithId.getId()), String.valueOf(player.getId()) })) {
+                                if (cursor.moveToFirst()) {
+                                        buddyAddResult = BuddyAddResult.ALREADY_ON_LIST;
                                 }
                             }
                         }
@@ -142,13 +139,12 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                                 displayChannel = channel;
                                 notifyRemoteChannel(c, channel, otherCid, ADDED);
                             } else if (buddyAddResult != BuddyAddResult.ALREADY_ON_LIST && channel == -1) {
-                                try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                                    ContentValues values = new ContentValues();
-                                    values.put("characterid", charWithId.getId());
-                                    values.put("buddyid", player.getId());
-                                    values.put("pending", 1);
-                                    con.insert("buddies", null, values);
-                                }
+                                SQLiteDatabase con = DatabaseConnection.getConnection();
+                                ContentValues values = new ContentValues();
+                                values.put("characterid", charWithId.getId());
+                                values.put("buddyid", player.getId());
+                                values.put("pending", 1);
+                                con.insert("buddies", null, values);
                             }
                             buddylist.put(new BuddylistEntry(charWithId.getName(), group, otherCid, displayChannel, true));
                             c.sendPacket(PacketCreator.updateBuddylist(buddylist.getBuddies()));
@@ -157,7 +153,7 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         c.sendPacket(PacketCreator.serverNotice(1, "A character called \"" + addName + "\" does not exist"));
                     }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("BuddylistModifyHandler error", e);
                 }
             } else {
                 ble.changeGroup(group);
@@ -174,9 +170,8 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         String[] projection = { "name" };
                         String selection = "id = ?";
                         String[] selectionArgs = { String.valueOf(otherCid) };
-
-                        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                             Cursor cursor = con.query("characters", projection, selection, selectionArgs, null, null, null)) {
+                        SQLiteDatabase con = DatabaseConnection.getConnection();
+                        try (Cursor cursor = con.query("characters", projection, selection, selectionArgs, null, null, null)) {
                             if (cursor.moveToNext()) {
                                 int nameIdx = cursor.getColumnIndex("name");
                                 otherName = cursor.getString(nameIdx);
@@ -191,7 +186,7 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
                         notifyRemoteChannel(c, channel, otherCid, ADDED);
                     }
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("Buddylist query characters error", e);
                 }
             }
             nextPendingRequest(c);
