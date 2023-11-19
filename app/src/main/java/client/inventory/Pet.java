@@ -28,6 +28,8 @@ import android.graphics.Point;
 import client.Character;
 import client.inventory.manipulator.CashIdGenerator;
 import constants.game.ExpTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.ItemInformationProvider;
 import server.movement.AbsoluteLifeMovement;
 import server.movement.LifeMovement;
@@ -52,6 +54,7 @@ public class Pet extends Item {
     private int stance;
     private boolean summoned;
     private int petAttribute = 0;
+    private static final Logger log = LoggerFactory.getLogger(Pet.class);
 
     public enum PetAttribute {
         OWNER_SPEED(0x01);
@@ -75,8 +78,9 @@ public class Pet extends Item {
 
     public static Pet loadFromDb(int itemid, short position, int petid) {
         Pet ret = new Pet(itemid, position, petid);
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT name, level, closeness, fullness, summoned, flag FROM pets WHERE petid = ?", new String[]{String.valueOf(petid)})) { // Get the pet details...
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT name, level, closeness, fullness, summoned, flag FROM pets WHERE petid = ?",
+                new String[]{String.valueOf(petid)})) { // Get the pet details...
             if (cursor.moveToFirst()) {
                 int nameIdx = cursor.getColumnIndex("name");
                 int closenessIdx = cursor.getColumnIndex("closeness");
@@ -96,24 +100,28 @@ public class Pet extends Item {
             }
             return ret;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadFromDb error", e);
             return null;
         }
     }
 
     public static void deleteFromDb(Character owner, int petid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("DELETE FROM pets WHERE `petid` = ?", new String[]{String.valueOf(petid)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        String whereClause = "`petid` = ?";
+        String[] whereArgs = {String.valueOf(petid)};
+        try {
+            con.delete("pets", whereClause, whereArgs);
             // thanks Vcoc for detecting petignores remaining after deletion
             owner.resetExcluded(petid);
             CashIdGenerator.freeCashId(petid);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("deleteFromDb error", ex);
         }
     }
 
     public void saveToDb() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
              con.execSQL("UPDATE pets SET name = ?, level = ?, closeness = ?, fullness = ?, summoned = ?, flag = ? WHERE petid = ?", new String[]{
                      getName(),
                      String.valueOf(getLevel()),
@@ -124,12 +132,13 @@ public class Pet extends Item {
                      String.valueOf(getUniqueId())
              });
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("saveToDb error", e);
         }
     }
 
     public static int createPet(int itemid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             int ret = CashIdGenerator.generateCashId();
              con.execSQL("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, 1, 0, 100, 0, 0)", new String[]{
                      String.valueOf(ret),
@@ -137,13 +146,14 @@ public class Pet extends Item {
              });
             return ret;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("createPet error", e);
             return -1;
         }
     }
 
     public static int createPet(int itemid, byte level, int tameness, int fullness) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             int ret = CashIdGenerator.generateCashId();
             con.execSQL("INSERT INTO pets (petid, name, level, closeness, fullness, summoned, flag) VALUES (?, ?, ?, ?, ?, 0, 0)", new String[]{
                     String.valueOf(ret),
@@ -154,7 +164,7 @@ public class Pet extends Item {
             });
             return ret;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("createPet error", e);
             return -1;
         }
     }

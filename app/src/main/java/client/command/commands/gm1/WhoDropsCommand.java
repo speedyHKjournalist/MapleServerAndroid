@@ -34,9 +34,6 @@ import server.life.MonsterInformationProvider;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Iterator;
 
 public class WhoDropsCommand extends Command {
@@ -63,9 +60,8 @@ public class WhoDropsCommand extends Command {
                         Pair<Integer, String> data = listIterator.next();
                         output += "#b" + data.getRight() + "#k is dropped by:\r\n";
                         String[] selectionArgs = {String.valueOf(data.getLeft())};
-                        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                             Cursor ps = con.rawQuery("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50", selectionArgs)) {
-
+                        SQLiteDatabase con = DatabaseConnection.getConnection();
+                        try (Cursor ps = con.rawQuery("SELECT dropperid FROM drop_data WHERE itemid = ? LIMIT 50", selectionArgs)) {
                             while (ps.moveToNext()) {
                                 int dropperidIdx = ps.getColumnIndex("dropperid");
                                 String resultName = MonsterInformationProvider.getInstance().getMobNameFromId(ps.getInt(dropperidIdx));
@@ -75,7 +71,6 @@ public class WhoDropsCommand extends Command {
                             }
                         } catch (Exception e) {
                             player.dropMessage(6, "There was a problem retrieving the required data. Please try again.");
-                            e.printStackTrace();
                             return;
                         }
                         output += "\r\n\r\n";

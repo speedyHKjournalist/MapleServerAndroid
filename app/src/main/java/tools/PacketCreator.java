@@ -21,6 +21,7 @@
 package tools;
 
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.*;
 import client.Character.SkillEntry;
@@ -60,26 +61,22 @@ import net.server.world.Party;
 import net.server.world.PartyCharacter;
 import net.server.world.PartyOperation;
 import net.server.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.CashShop.CashItem;
 import server.CashShop.CashItemFactory;
 import server.CashShop.SpecialCashItem;
 import server.*;
 import server.events.gm.Snowball;
-import server.life.MobSkill;
-import server.life.Monster;
-import server.life.NPC;
-import server.life.PlayerNPC;
-import server.life.MobSkillId;
+import server.life.*;
 import server.maps.*;
 import server.maps.MiniGame.MiniGameResult;
 import server.movement.LifeMovementFragment;
 
 import java.net.InetAddress;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import android.graphics.Point;
 
 /**
  * @author Frz
@@ -91,6 +88,7 @@ public class PacketCreator {
     private final static long DEFAULT_TIME = 150842304000000000L;//00 80 05 BB 46 E6 17 02
     public final static long ZERO_TIME = 94354848000000000L;//00 40 E0 FD 3B 37 4F 01
     private final static long PERMANENT = 150841440000000000L; // 00 C0 9B 90 7D E5 17 02
+    private static final Logger log = LoggerFactory.getLogger(PacketCreator.class);
 
     public static long getTime(long utcTimestamp) {
         if (utcTimestamp < 0 && utcTimestamp >= -3) {
@@ -4944,7 +4942,7 @@ public class PacketCreator {
                 addItemInfo(p, item.getLeft(), true);
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getFredrick error", e);
         }
         p.skip(3);
         return p;

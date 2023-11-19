@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package scripting.npc;
 
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.*;
 import client.inventory.Item;
@@ -67,11 +68,9 @@ import server.partyquest.Pyramid.PyramidMode;
 import tools.PacketCreator;
 import tools.packets.WeddingPackets;
 
-import java.sql.SQLException;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import android.graphics.Point;
 
 /**
  * @author Matze
@@ -393,11 +392,10 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 Skill skill = SkillFactory.getSkill(Integer.parseInt(skill_.getName()));
                 getPlayer().changeSkillLevel(skill, (byte) 0, skill.getMaxLevel(), -1);
             } catch (NumberFormatException nfe) {
-                nfe.printStackTrace();
+                log.error("maxMastery error", nfe);
                 break;
             } catch (NullPointerException npe) {
-                npe.printStackTrace();
-                continue;
+                log.error("maxMastery error nullptr", npe);
             }
         }
     }
@@ -457,7 +455,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 return true;
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("hasMerchantItems error", e);
             return false;
         }
         return getPlayer().getMerchantMeso() != 0;
@@ -682,7 +680,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("cpqLobby error", ex);
         }
     }
 
@@ -804,7 +802,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 }
             }, 11000);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("cpqLobby error", e);
         }
     }
 
@@ -856,7 +854,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 }
             }, 10000);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("startCPQ2 error", e);
         }
     }
 
@@ -925,7 +923,7 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("cpqLobby2 error", ex);
         }
     }
 

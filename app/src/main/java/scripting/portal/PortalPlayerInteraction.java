@@ -25,19 +25,17 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.AbstractPlayerInteraction;
 import scripting.map.MapScriptManager;
 import server.maps.Portal;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 public class PortalPlayerInteraction extends AbstractPlayerInteraction {
     private final Portal portal;
+    private static final Logger log = LoggerFactory.getLogger(PortalPlayerInteraction.class);
 
     public PortalPlayerInteraction(Client c, Portal portal) {
         super(c);
@@ -54,8 +52,8 @@ public class PortalPlayerInteraction extends AbstractPlayerInteraction {
     }
 
     public boolean hasLevel30Character() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT `level` FROM `characters` WHERE accountid = ?", new String[]{String.valueOf(getPlayer().getAccountID())})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT `level` FROM `characters` WHERE accountid = ?", new String[]{String.valueOf(getPlayer().getAccountID())})) {
 
             if (ps != null) {
                 while (ps.moveToNext()) {
@@ -66,7 +64,7 @@ public class PortalPlayerInteraction extends AbstractPlayerInteraction {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("hasLevel30Character error", sqle);
         }
 
         return getPlayer().getLevel() >= 30;

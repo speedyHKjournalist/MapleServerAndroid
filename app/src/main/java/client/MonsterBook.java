@@ -25,13 +25,11 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
@@ -41,6 +39,7 @@ public final class MonsterBook {
     private int specialCard = 0;
     private int normalCard = 0;
     private int bookLevel = 1;
+    private static final Logger log = LoggerFactory.getLogger(MonsterBook.class);
     private final Map<Integer, Integer> cards = new LinkedHashMap<>();
     private final Lock lock = new ReentrantLock();
 
@@ -196,8 +195,8 @@ public final class MonsterBook {
     }
 
     public static int[] getCardTierSize() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor rs = con.rawQuery("SELECT COUNT(*) FROM monstercarddata GROUP BY floor(cardid / 1000);", null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor rs = con.rawQuery("SELECT COUNT(*) FROM monstercarddata GROUP BY floor(cardid / 1000);", null)) {
             int rowCount = rs.getCount();
             int[] tierSizes = new int[rowCount];
             if (rs.moveToFirst()) {
@@ -210,7 +209,7 @@ public final class MonsterBook {
 
             return tierSizes;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getCardTierSize error", e);
             return new int[0];
         }
     }

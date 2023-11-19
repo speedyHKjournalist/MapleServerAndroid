@@ -26,11 +26,14 @@ package client.command.commands.gm2;
 import client.Character;
 import client.*;
 import client.command.Command;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import provider.Data;
 import provider.DataProviderFactory;
 import provider.wz.WZFiles;
 
 public class MaxSkillCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(MaxSkillCommand.class);
     {
         setDescription("Max out all job skills.");
     }
@@ -43,9 +46,10 @@ public class MaxSkillCommand extends Command {
                 Skill skill = SkillFactory.getSkill(Integer.parseInt(skill_.getName()));
                 player.changeSkillLevel(skill, (byte) skill.getMaxLevel(), skill.getMaxLevel(), -1);
             } catch (NumberFormatException nfe) {
-                nfe.printStackTrace();
+                log.error("MaxSkillCommand error", nfe);
                 break;
             } catch (NullPointerException npe) {
+                log.error("MaxSkillCommand error nullptr", npe);
             }
         }
 

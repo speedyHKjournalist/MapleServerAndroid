@@ -124,41 +124,39 @@ public final class CouponCodeHandler extends AbstractPacketHandler {
             if (!c.attemptCsCoupon()) {
                 return new Pair<>(-5, null);
             }
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery("SELECT * FROM nxcode WHERE code = ?", new String[]{code})) {
+                if (cursor.moveToNext()) {
+                    int idIdx = cursor.getColumnIndex("id");
+                    int retrieverIdx = cursor.getColumnIndex("retriever");
+                    int expirationIdx = cursor.getColumnIndex("expiration");
 
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                try (Cursor cursor = con.rawQuery("SELECT * FROM nxcode WHERE code = ?", new String[]{code})) {
-                    if (cursor.moveToNext()) {
-                        int idIdx = cursor.getColumnIndex("id");
-                        int retrieverIdx = cursor.getColumnIndex("retriever");
-                        int expirationIdx = cursor.getColumnIndex("expiration");
+                    int codeId = cursor.getInt(idIdx);
+                    String retriever = cursor.getString(retrieverIdx);
+                    long expiration = cursor.getLong(expirationIdx);
 
-                        int codeId = cursor.getInt(idIdx);
-                        String retriever = cursor.getString(retrieverIdx);
-                        long expiration = cursor.getLong(expirationIdx);
-
-                        if (retriever != null) {
-                            return new Pair<>(-2, null);
-                        }
-
-                        if (expiration < System.currentTimeMillis()) {
-                            return new Pair<>(-3, null);
-                        }
-
-                        ret = getNXCodeItems(chr, con, codeId);
-                        if (ret == null) {
-                            return new Pair<>(-4, null);
-                        }
-                    } else {
-                        return new Pair<>(-1, null);
+                    if (retriever != null) {
+                        return new Pair<>(-2, null);
                     }
-                }
 
-                ContentValues values = new ContentValues();
-                values.put("retriever", chr.getName());
-                con.update("nxcode", values, "code = ?", new String[]{code});
+                    if (expiration < System.currentTimeMillis()) {
+                        return new Pair<>(-3, null);
+                    }
+
+                    ret = getNXCodeItems(chr, con, codeId);
+                    if (ret == null) {
+                        return new Pair<>(-4, null);
+                    }
+                } else {
+                    return new Pair<>(-1, null);
+                }
             }
+
+            ContentValues values = new ContentValues();
+            values.put("retriever", chr.getName());
+            con.update("nxcode", values, "code = ?", new String[]{code});
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("getNXCodeResult error", ex);
         }
 
         c.resetCsCoupon();

@@ -55,10 +55,6 @@ import tools.PacketCreator;
 import tools.Pair;
 import tools.packets.WeddingPackets;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -149,7 +145,7 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
                     player = Character.loadCharFromDB(cid, c, true);
                     newcomer = true;
                 } catch (SQLiteException e) {
-                    e.printStackTrace();
+                    log.error("loadCharFromDB error", e);
                 }
 
                 if (player == null) { //If you are still getting null here then please just uninstall the game >.>, we dont need you fucking with the logs
@@ -446,15 +442,15 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
                 player.setLoginTime(System.currentTimeMillis());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Player loggedin handler error", e);
         } finally {
             c.releaseClient();
         }
     }
 
     private static void showDueyNotification(Client c, Character player) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC",
                      new String[]{String.valueOf(player.getId())})) {
             if (cursor.moveToFirst()) {
                 int typeIdx = cursor.getColumnIndex("Type");
@@ -467,7 +463,7 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
                 c.sendPacket(PacketCreator.sendDueyParcelNotification(type == 1));
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("showDueyNotification error", e);
         }
     }
 

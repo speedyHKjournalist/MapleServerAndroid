@@ -109,10 +109,11 @@ public class FredrickProcessor {
     }
 
     public static void removeFredrickLog(int cid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             removeFredrickLog(con, cid);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("removeFredrickLog error", sqle);
         }
     }
 
@@ -124,7 +125,8 @@ public class FredrickProcessor {
     }
 
     public static void insertFredrickLog(int cid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             removeFredrickLog(con, cid);
             try (SQLiteStatement stmt = con.compileStatement("INSERT INTO `fredstorage` (`cid`, `daynotes`, `timestamp`) VALUES (?, 0, ?)")) {
                 stmt.bindLong(1, cid);
@@ -132,7 +134,7 @@ public class FredrickProcessor {
                 stmt.executeInsert();
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("insertFredrickLog error", sqle);
         }
     }
 
@@ -157,7 +159,7 @@ public class FredrickProcessor {
             }
             con.setTransactionSuccessful();
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("removeFredrickReminders error", e);
         } finally {
             con.endTransaction();
         }
@@ -275,18 +277,19 @@ public class FredrickProcessor {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("runFredrickSchedule error", e);
         }
     }
 
     private static boolean deleteFredrickItems(int cid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String deleteQuery = "DELETE FROM inventoryitems WHERE type = ? AND characterid = ?";
             Object[] bindArgs = { ItemFactory.MERCHANT.getValue(), cid };
             con.execSQL(deleteQuery, bindArgs);
             return true;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("deleteFredrickItems", e);
             return false;
         }
     }
@@ -328,7 +331,7 @@ public class FredrickProcessor {
                         chr.message("An unknown error has occured.");
                     }
                 } catch (SQLiteException ex) {
-                    ex.printStackTrace();
+                    log.error("fredrickRetrieveItems error", ex);
                 }
             } finally {
                 c.releaseClient();

@@ -25,8 +25,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
 import constants.inventory.ItemConstants;
-import database.MapleDBHelper;
-import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.Data;
@@ -39,10 +37,6 @@ import tools.DatabaseConnection;
 import tools.Pair;
 import tools.Randomizer;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 
 public class MonsterInformationProvider {
@@ -174,9 +168,9 @@ public class MonsterInformationProvider {
             return drops.get(monsterId);
         }
         final List<MonsterDropEntry> ret = new LinkedList<>();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT itemid, chance, minimum_quantity, maximum_quantity, questid FROM drop_data WHERE dropperid = ?", new String[]{String.valueOf(monsterId)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT itemid, chance, minimum_quantity, maximum_quantity, questid FROM drop_data WHERE dropperid = ?",
+                new String[]{String.valueOf(monsterId)})) {
             if (ps != null) {
                 while (ps.moveToNext()) {
                     int itemidIdx = ps.getColumnIndex("itemid");
@@ -189,7 +183,7 @@ public class MonsterInformationProvider {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("retrieveDrop error", e);
             return ret;
         }
 

@@ -24,6 +24,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import config.YamlConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.Pair;
 
@@ -40,6 +42,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
  * @author Ronan
  */
 public class ExpeditionBossLog {
+    private static final Logger log = LoggerFactory.getLogger(ExpeditionBossLog.class);
 
     public enum BossLogEntry {
         ZAKUM(2, 1, false),
@@ -131,7 +134,7 @@ public class ExpeditionBossLog {
                         new String[]{String.valueOf(p.getLeft()), p.getRight().name()});
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("resetBossLogTable error", e);
         }
     }
 
@@ -141,8 +144,8 @@ public class ExpeditionBossLog {
 
     private static int countPlayerEntries(int cid, BossLogEntry boss) {
         int ret_count = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT COUNT(*) FROM " + getBossLogTable(boss.week) + " WHERE characterid = ? AND bosstype LIKE ?",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT COUNT(*) FROM " + getBossLogTable(boss.week) + " WHERE characterid = ? AND bosstype LIKE ?",
                      new String[]{String.valueOf(cid), boss.name()})) {
             if (ps != null) {
                 if (ps.moveToNext()) {
@@ -153,7 +156,7 @@ public class ExpeditionBossLog {
             }
             return ret_count;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("countPlayerEntries error", e);
             return -1;
         }
     }
@@ -162,11 +165,11 @@ public class ExpeditionBossLog {
         ContentValues values = new ContentValues();
         values.put("characterid", cid);
         values.put("bosstype", boss.name());
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.insert(getBossLogTable(boss.week), null, values);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("insertPlayerEntry error", e);
         }
     }
 

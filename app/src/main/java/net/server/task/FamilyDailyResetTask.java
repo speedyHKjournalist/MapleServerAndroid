@@ -5,15 +5,11 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Family;
-import database.MapleDBHelper;
 import net.server.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Calendar;
 
 public class FamilyDailyResetTask implements Runnable {
@@ -41,8 +37,8 @@ public class FamilyDailyResetTask implements Runnable {
         resetTime.set(Calendar.MINUTE, 0);
         resetTime.set(Calendar.SECOND, 0);
         resetTime.set(Calendar.MILLISECOND, 0);
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String whereClause = "lastresettime <= ?";
             String[] whereArgs = {String.valueOf(resetTime.getTimeInMillis())};
             ContentValues values = new ContentValues();

@@ -101,12 +101,12 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
     }
 
     private static void listBBSThreads(Client c, int start) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT * FROM bbs_threads WHERE guildid = ? ORDER BY localthreadid DESC",
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT * FROM bbs_threads WHERE guildid = ? ORDER BY localthreadid DESC",
                      new String[]{String.valueOf(c.getPlayer().getGuildId())})) {
                 c.sendPacket(GuildPackets.BBSThreadList(cursor, start));
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("listBBSThreads error", se);
         }
     }
 
@@ -114,7 +114,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         if (c.getPlayer().getGuildId() <= 0) {
             return;
         }
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             int threadid = -1;
             try (Cursor cursor = con.rawQuery("SELECT threadid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?",
                     new String[]{String.valueOf(c.getPlayer().getGuildId()), String.valueOf(localthreadid)})) {
@@ -139,7 +140,7 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             con.update("bbs_threads", values, "threadid = ?", new String[]{String.valueOf(threadid)});
             displayThread(c, localthreadid);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("newBBSReply error", se);
         }
     }
 
@@ -156,12 +157,12 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
 
         String selection = "guildid = ? AND localthreadid = ? AND (postercid = ? OR ?)";
         String[] selectionArgs = new String[]{String.valueOf(chr.getGuildId()), String.valueOf(localthreadid), String.valueOf(chr.getId()), String.valueOf(chr.getGuildRank() < 3)};
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("bbs_threads", values, selection, selectionArgs);
             displayThread(client, localthreadid);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("editBBSThread error", se);
         }
     }
 
@@ -171,7 +172,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             return;
         }
         int nextId = 0;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             if (!bNotice) {
                 try (Cursor cursor = con.rawQuery("SELECT MAX(localthreadid) AS lastLocalId FROM bbs_threads WHERE guildid = ?", new String[]{String.valueOf(chr.getGuildId())})) {
                     if (cursor.moveToNext()) {
@@ -197,7 +199,7 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
 
             displayThread(client, nextId);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("newBBSThread error", se);
         }
 
     }
@@ -207,9 +209,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         if (mc.getGuildId() <= 0) {
             return;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             final int threadid;
             try (Cursor cursor = con.rawQuery("SELECT threadid, postercid FROM bbs_threads WHERE guildid = ? AND localthreadid = ?",
                     new String[]{String.valueOf(mc.getGuildId()), String.valueOf(localthreadid)})) {
@@ -230,7 +231,7 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
             String[] whereArgs1 = {String.valueOf(threadid)};
             con.delete("bbs_threads", whereClause1, whereArgs1);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("deleteBBSThread error", se);
         }
     }
 
@@ -241,8 +242,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         }
 
         int threadid = -1;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cursor = con.rawQuery("SELECT postercid, threadid FROM bbs_replies WHERE replyid = ?",
                     new String[]{String.valueOf(replyid)})) {
                 if (cursor.moveToNext()) {
@@ -272,7 +273,7 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
 
             displayThread(client, threadid, false);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("deleteBBSReply error", se);
         }
     }
 
@@ -285,8 +286,8 @@ public final class BBSOperationHandler extends AbstractPacketHandler {
         if (mc.getGuildId() <= 0) {
             return;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             // TODO clean up this block and use try-with-resources
             try (Cursor threadCursor = con.rawQuery("SELECT * FROM bbs_threads WHERE guildid = ? AND " + (bIsThreadIdLocal ? "local" : "") + "threadid = ?",
                     new String[]{String.valueOf(mc.getGuildId()), String.valueOf(threadid)})) {

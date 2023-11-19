@@ -25,6 +25,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import client.Character;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.TimerManager;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
@@ -53,6 +55,7 @@ public class NewYearCardRecord {
     private final String stringContent;
     private long dateSent = 0;
     private long dateReceived = 0;
+    private static final Logger log = LoggerFactory.getLogger(NewYearCardRecord.class);
 
     private ScheduledFuture<?> sendTask = null;
 
@@ -133,23 +136,24 @@ public class NewYearCardRecord {
     }
 
     public static void saveNewYearCard(NewYearCardRecord newyear) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                ContentValues values = new ContentValues();
-                values.put("senderId", newyear.senderId);
-                values.put("senderName", newyear.senderName);
-                values.put("receiverId", newyear.receiverId);
-                values.put("receiverName", newyear.receiverName);
-                values.put("stringContent", newyear.stringContent);
-                values.put("senderDiscardCard", newyear.senderDiscardCard ? 1 : 0);
-                values.put("receiverDiscardCard", newyear.receiverDiscardCard ? 1 : 0);
-                values.put("receiverReceivedCard", newyear.receiverReceivedCard ? 1 : 0);
-                values.put("dateSent", newyear.dateSent);
-                values.put("dateReceived", newyear.dateReceived);
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
+            ContentValues values = new ContentValues();
+            values.put("senderId", newyear.senderId);
+            values.put("senderName", newyear.senderName);
+            values.put("receiverId", newyear.receiverId);
+            values.put("receiverName", newyear.receiverName);
+            values.put("stringContent", newyear.stringContent);
+            values.put("senderDiscardCard", newyear.senderDiscardCard ? 1 : 0);
+            values.put("receiverDiscardCard", newyear.receiverDiscardCard ? 1 : 0);
+            values.put("receiverReceivedCard", newyear.receiverReceivedCard ? 1 : 0);
+            values.put("dateSent", newyear.dateSent);
+            values.put("dateReceived", newyear.dateReceived);
 
-                long newRowId = con.insert("newyear", null, values);
-                newyear.id = (int) newRowId;
+            long newRowId = con.insert("newyear", null, values);
+            newyear.id = (int) newRowId;
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("saveNewYearCard error", sqle);
         }
     }
 
@@ -163,11 +167,11 @@ public class NewYearCardRecord {
 
         String whereClause = "id = ?";
         String[] whereArgs = {String.valueOf(newyear.id)};
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("newyear", values, whereClause, whereArgs);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("updateNewYearCard error", sqle);
         }
     }
 
@@ -176,8 +180,8 @@ public class NewYearCardRecord {
         if (nyc != null) {
             return nyc;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String[] projection = {
                     "senderid",
                     "sendername",
@@ -241,7 +245,7 @@ public class NewYearCardRecord {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadNewYearCard error", sqle);
         }
 
         return null;
@@ -289,7 +293,7 @@ public class NewYearCardRecord {
                 }
             }
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadPlayerNewYearCards error", sqle);
         }
     }
 
@@ -348,29 +352,16 @@ public class NewYearCardRecord {
 
     private static void deleteNewYearCard(int id) {
         Server.getInstance().removeNewYearCard(id);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.delete("newyear", "id=?", new String[]{String.valueOf(id)});
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("deleteNewYearCard error", sqle);
         }
     }
 
     public static void removeAllNewYearCard(boolean send, Character chr) {
         int cid = chr.getId();
-        
-        /* not truly needed since it's going to be hard removed from the DB
-        String actor = (send ? "sender" : "receiver");
-        
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("UPDATE newyear SET " + actor + "id = 1, received = 0 WHERE " + actor + "id = ?")) {
-                ps.setInt(1, cid);
-                ps.executeUpdate();
-            }
-        } catch(SQLiteException sqle) {
-            sqle.printStackTrace();
-        }
-        */
 
         Set<NewYearCardRecord> set = new HashSet<>(chr.getNewYearRecords());
         for (NewYearCardRecord nyc : set) {

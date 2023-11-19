@@ -21,6 +21,8 @@ package tools.mapletools;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.life.MonsterStats;
 import tools.Pair;
 
@@ -47,6 +49,7 @@ import java.util.Map.Entry;
 
 public class ArrowFetcher {
     private static final String OUTPUT_FILE_NAME = "arrow_drop_data.sql";
+    private static final Logger log = LoggerFactory.getLogger(ArrowFetcher.class);
     private static final int MIN_ARROW_ID = 2060000;
     private static final int MAX_ARROW_ID = 2061004;
     private static final float CORRECTION_FACTOR = 2.2f;
@@ -200,7 +203,7 @@ public class ArrowFetcher {
             if (e.getMessage() != null && e.getMessage().equals("NO DATA")) {
                 System.out.println("failed! The DB has no arrow entry to be updated.");
             } else {
-                e.printStackTrace();
+                log.error("updateMobsArrowRange error", e);
             }
         }
     }

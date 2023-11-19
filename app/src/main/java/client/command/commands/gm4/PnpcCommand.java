@@ -26,22 +26,21 @@ package client.command.commands.gm4;
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.command.Command;
 import net.server.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.life.LifeFactory;
 import server.life.NPC;
 import server.maps.MapleMap;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import android.graphics.Point;
-
 public class PnpcCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(PnpcCommand.class);
     {
         setDescription("Spawn a permanent NPC on your location.");
     }
@@ -70,7 +69,8 @@ public class PnpcCommand extends Command {
         int fh = player.getMap().getFootholds().findBelow(checkpos).getId();
 
         if (npc != null && !npc.getName().equals("MISSINGNO")) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 ContentValues values = new ContentValues();
                 values.put("life", npcId);
                 values.put("f", 0);
@@ -102,7 +102,7 @@ public class PnpcCommand extends Command {
 
                 player.yellowMessage("Pnpc created.");
             } catch (SQLiteException e) {
-                e.printStackTrace();
+                log.error("PnpcCommand error", e);
                 player.dropMessage(5, "Failed to store pNPC in the database.");
             }
         } else {

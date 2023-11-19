@@ -5,6 +5,8 @@ import client.Job;
 import config.YamlConfig;
 import constants.id.MapId;
 import constants.skills.Aran;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import provider.*;
 import provider.wz.WZFiles;
 import server.maps.FieldLimit;
@@ -34,6 +36,7 @@ public class GameConstants {
     private final static Map<Integer, String> jobNames = new HashMap<>();
     private final static NumberFormat nfFormatter = new DecimalFormat("#,###,###,###");
     private final static NumberFormat nfParser = NumberFormat.getInstance(YamlConfig.config.server.USE_UNITPRICE_WITH_COMMA ? Locale.FRANCE : Locale.UK);
+    private static final Logger log = LoggerFactory.getLogger(GameConstants.class);
 
     public static final Disease[] CPQ_DISEASES = {Disease.SLOW, Disease.SEDUCE, Disease.STUN, Disease.POISON,
             Disease.SEAL, Disease.DARKNESS, Disease.WEAKEN, Disease.CURSE};
@@ -645,7 +648,7 @@ public class GameConstants {
         try {
             return nfParser.parse(value);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("parseNumber error", e);
             return 0.0f;
         }
     }

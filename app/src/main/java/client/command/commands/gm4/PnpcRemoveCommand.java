@@ -26,23 +26,23 @@ package client.command.commands.gm4;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.command.Command;
 import net.server.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.maps.MapleMap;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
-import android.graphics.Point;
 
 public class PnpcRemoveCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(PnpcRemoveCommand.class);
     {
         setDescription("Remove a permanent NPC on the map.");
     }
@@ -59,7 +59,8 @@ public class PnpcRemoveCommand extends Command {
         int ypos = pos.y;
 
         List<Pair<Integer, Pair<Integer, Integer>>> toRemove = new LinkedList<>();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             final PreparedStatement ps;
             String select;
             String[] selectArgs;
@@ -83,7 +84,7 @@ public class PnpcRemoveCommand extends Command {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("PnpcRemoveCommand error", e);
             player.dropMessage(5, "Failed to remove pNPC from the database.");
         }
 

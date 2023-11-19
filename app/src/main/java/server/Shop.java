@@ -24,7 +24,6 @@ package server;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.database.sqlite.SQLiteStatement;
 import client.Client;
 import client.inventory.InventoryType;
 import client.inventory.Item;
@@ -37,10 +36,6 @@ import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -248,7 +243,8 @@ public class Shop {
     public static Shop createFromDB(int id, boolean isShopId) {
         Shop ret = null;
         int shopId = -1;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             final String query;
             if (isShopId) {
                 query = "SELECT * FROM shops WHERE shopid = ?";
@@ -297,7 +293,7 @@ public class Shop {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("createFromDB error", e);
         }
         return ret;
     }

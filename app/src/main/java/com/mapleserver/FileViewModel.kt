@@ -14,14 +14,12 @@ class FileViewModel(application: Application) : AndroidViewModel(application) {
         try {
             val configFile = File(application.dataDir, "config.yaml")
             val inputStream = FileInputStream(configFile)
-            if (inputStream != null) {
-                val size = inputStream.available()
-                val buffer = ByteArray(size)
-                inputStream.read(buffer)
-                inputStream.close()
-                val yamlContent = String(buffer, Charsets.UTF_8)
-                fileContent.value = yamlContent
-            }
+            val size = inputStream.available()
+            val buffer = ByteArray(size)
+            inputStream.read(buffer)
+            inputStream.close()
+            val yamlContent = String(buffer, Charsets.UTF_8)
+            fileContent.value = yamlContent
         } catch (e: IOException) {
             e.printStackTrace()
         }

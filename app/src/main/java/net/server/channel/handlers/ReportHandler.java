@@ -29,20 +29,17 @@ import client.Client;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
 
 /*
  *
  * @author BubblesDev
  */
 public final class ReportHandler extends AbstractPacketHandler {
+    private static final Logger log = LoggerFactory.getLogger(ReportHandler.class);
     public final void handlePacket(InPacket p, Client c) {
         int type = p.readByte(); //00 = Illegal program claim, 01 = Conversation claim
         String victim = p.readString();
@@ -85,7 +82,8 @@ public final class ReportHandler extends AbstractPacketHandler {
     }
 
     private void addReport(int reporterid, int victimid, int reason, String description, String chatlog) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("reporttime", System.currentTimeMillis());
             values.put("reporterid", reporterid);
@@ -95,9 +93,7 @@ public final class ReportHandler extends AbstractPacketHandler {
             values.put("description", description);
             con.insert("reports", null, values);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("addReport error", ex);
         }
-
-
     }
 }

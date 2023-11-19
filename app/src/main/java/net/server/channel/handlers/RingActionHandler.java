@@ -48,11 +48,6 @@ import tools.PacketCreator;
 import tools.Pair;
 import tools.packets.WeddingPackets;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 /**
  * @author Jvlaple
  * @author Ronan - major overhaul on Ring handling mechanics
@@ -153,10 +148,11 @@ public final class RingActionHandler extends AbstractPacketHandler {
     }
 
     private static void eraseEngagementOffline(int characterId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             eraseEngagementOffline(characterId, con);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("eraseEngagementOffline error", sqle);
         }
     }
 
@@ -197,7 +193,6 @@ public final class RingActionHandler extends AbstractPacketHandler {
             log.error("Error updating offline breakup", ex);
         } finally {
             con.endTransaction();
-            con.close();
         }
     }
 
@@ -467,7 +462,7 @@ public final class RingActionHandler extends AbstractPacketHandler {
                     }
 
                 } catch (Exception ex) {
-                    ex.printStackTrace();
+                    log.error("Invite wedding error", ex);
                     return;
                 }
 

@@ -34,11 +34,6 @@ import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 public final class DeleteCharHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(DeleteCharHandler.class);
 
@@ -48,8 +43,8 @@ public final class DeleteCharHandler extends AbstractPacketHandler {
         int cid = p.readInt();
         if (c.checkPic(pic)) {
             //check for family, guild leader, pending marriage, world transfer
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor ps = con.rawQuery("SELECT world, guildid, guildrank, familyId FROM characters WHERE id = ?",
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor ps = con.rawQuery("SELECT world, guildid, guildrank, familyId FROM characters WHERE id = ?",
                          new String[]{String.valueOf(cid)});
                  Cursor ps2 = con.rawQuery("SELECT COUNT(*) as rowcount FROM worldtransfers WHERE characterid = ? AND completionTime IS NULL",
                          new String[]{String.valueOf(cid)})) {

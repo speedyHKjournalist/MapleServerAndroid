@@ -48,10 +48,6 @@ import tools.PacketCreator;
 import tools.Pair;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ScheduledFuture;
@@ -106,7 +102,7 @@ public final class Channel {
     private Set<Integer> ongoingCathedralGuests = null;
     private long ongoingStartTime;
 
-    private final Lock lock = new ReentrantLock(true);;
+    private final Lock lock = new ReentrantLock(true);
     private final Lock merchRlock;
     private final Lock merchWlock;
     private final Context context;
@@ -176,7 +172,7 @@ public final class Channel {
                 return;
             }
 
-            log.info("Shutting down channel {} in world {}", channel, world);
+            log.info("Shutting down channel " + channel + " in world " + world);
 
             closeAllMerchants();
             disconnectAwayPlayers();
@@ -194,9 +190,9 @@ public final class Channel {
             channelServer.stop();
 
             finishedShutdown = true;
-            log.info("Successfully shut down channel {} in world {}", channel, world);
+            log.info("Successfully shut down channel " + channel + " in world " + world);
         } catch (Exception e) {
-            log.error("Error while shutting down channel {} in world {}", channel, world, e);
+            log.error("Error while shutting down channel " + channel + " in " + world, e);
         }
     }
 
@@ -236,7 +232,7 @@ public final class Channel {
                 merch.forceClose();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("closeAllMerchants error", e);
         }
     }
 
@@ -449,7 +445,6 @@ public final class Channel {
             }
         } catch (IOException e) {
             log.warn("Unable to load events !");
-            e.printStackTrace();
         }
         return events.toArray(new String[0]);
     }

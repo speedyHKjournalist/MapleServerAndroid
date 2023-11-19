@@ -30,6 +30,8 @@ import config.YamlConfig;
 import constants.id.ItemId;
 import constants.inventory.ItemConstants;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import provider.Data;
 import provider.DataProvider;
 import provider.DataProviderFactory;
@@ -157,6 +159,7 @@ public class CashShop {
         private static volatile List<Integer> randomitemsns = new ArrayList<>();
         private static volatile Map<Integer, List<Integer>> packages = new HashMap<>();
         private static volatile List<SpecialCashItem> specialcashitems = new ArrayList<>();
+        private static final Logger log = LoggerFactory.getLogger(CashItemFactory.class);
 
         public static void loadAllCashItems() {
             DataProvider etc = DataProviderFactory.getDataProvider(WZFiles.ETC);
@@ -193,8 +196,8 @@ public class CashShop {
 
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
             String query = "SELECT * FROM specialcashitems";
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery(query, null)) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery(query, null)) {
                 if (cursor != null) {
                     if (cursor.moveToFirst()) {
                         do {
@@ -212,7 +215,7 @@ public class CashShop {
                     }
                 }
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
+                log.error("loadAllCashItems error", ex);
             }
             CashItemFactory.specialcashitems = loadedSpecialItems;
         }
@@ -251,8 +254,8 @@ public class CashShop {
         public static void reloadSpecialCashItems() {//Yay?
             List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
             String[] columns = { "sn", "modifier", "info" };
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.query("specialcashitems", columns, null, null, null, null, null)) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.query("specialcashitems", columns, null, null, null, null, null)) {
                 while (cursor.moveToNext()) {
                     int snIdx = cursor.getColumnIndex("sn");
                     int modifierIdx = cursor.getColumnIndex("modifier");
@@ -262,7 +265,7 @@ public class CashShop {
                     }
                 }
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
+                log.error("reloadSpecialCashItems error", ex);
             }
             CashItemFactory.specialcashitems = loadedSpecialItems;
         }
@@ -279,6 +282,7 @@ public class CashShop {
     private final List<Integer> wishList = new ArrayList<>();
     private int notes = 0;
     private final Lock lock = new ReentrantLock();
+    private static final Logger log = LoggerFactory.getLogger(CashShop.class);
 
     public CashShop(int accountId, int characterId, int jobType) throws SQLiteException {
         this.accountId = accountId;
@@ -433,7 +437,8 @@ public class CashShop {
     }
 
     public void gift(int recipient, String from, String message, int sn, int ringid) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("recipient", recipient);
             values.put("from", from);
@@ -442,14 +447,14 @@ public class CashShop {
             values.put("ringid", ringid);
             con.insert("gifts", null, values);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("insert into gift error", sqle);
         }
     }
 
     public List<Pair<Item, String>> loadGifts() {
         List<Pair<Item, String>> gifts = new ArrayList<>();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String[] selectionArgs = { String.valueOf(characterId) };
 
             try (Cursor cursor = con.rawQuery("SELECT * FROM `gifts` WHERE `to` = ?", selectionArgs)) {
@@ -497,7 +502,7 @@ public class CashShop {
             String[] whereArgs = { String.valueOf(characterId) };
             con.delete(table, whereClause, whereArgs);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("loadGifts error", sqle);
         }
 
         return gifts;

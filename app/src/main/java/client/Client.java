@@ -320,7 +320,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                 chars.add(Character.loadCharFromDB(cni.id, this, false));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("loadCharacters error", e);
         }
         return chars;
     }
@@ -335,8 +335,8 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     private List<CharNameAndId> loadCharactersInternal(int worldId) {
         List<CharNameAndId> chars = new ArrayList<>(15);
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT id, name FROM characters WHERE accountid = ? AND world = ?", new String[]{String.valueOf(this.getAccID()), String.valueOf(worldId)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT id, name FROM characters WHERE accountid = ? AND world = ?", new String[]{String.valueOf(this.getAccID()), String.valueOf(worldId)})) {
             if (ps.moveToFirst()) {
                 do {
                     int idIdx = ps.getColumnIndex("id");
@@ -350,7 +350,7 @@ public class Client extends ChannelInboundHandlerAdapter {
             }
 
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadCharactersInternal error", e);
         }
         return chars;
     }
@@ -361,19 +361,18 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public boolean hasBannedIP() {
         boolean ret = false;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            String query = "SELECT COUNT(*) FROM ipbans WHERE ? LIKE ip || '%'";
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        String query = "SELECT COUNT(*) FROM ipbans WHERE ? LIKE ip || '%'";
 
-            try (Cursor cursor = con.rawQuery(query, new String[]{remoteAddress})) {
-                if (cursor.moveToFirst()) {
-                    int count = cursor.getInt(0);
-                    if (count > 0) {
-                        ret = true;
-                    }
+        try (Cursor cursor = con.rawQuery(query, new String[]{remoteAddress})) {
+            if (cursor.moveToFirst()) {
+                int count = cursor.getInt(0);
+                if (count > 0) {
+                    ret = true;
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("hasBannedIP Error", e);
         }
         return ret;
     }
@@ -382,9 +381,8 @@ public class Client extends ChannelInboundHandlerAdapter {
         if (voteTime != -1) {
             return voteTime;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT date FROM bit_votingrecords WHERE UPPER(account) = UPPER(?)", new String[]{accountName.toUpperCase()})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT date FROM bit_votingrecords WHERE UPPER(account) = UPPER(?)", new String[]{accountName.toUpperCase()})) {
             if (ps.moveToFirst()) {
                 int dateIdx = ps.getColumnIndex("date");
                 if (dateIdx != -1) {
@@ -415,15 +413,15 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         boolean ret = false;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor ps = con.rawQuery("SELECT COUNT(*) FROM hwidbans WHERE hwid LIKE ?", new String[]{hwid.hwid()})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor ps = con.rawQuery("SELECT COUNT(*) FROM hwidbans WHERE hwid LIKE ?", new String[]{hwid.hwid()})) {
             if (ps.moveToFirst()) {
                 if (ps.getInt(0) > 0) {
                     ret = true;
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("hasBannedHWID error", e);
         }
 
         return ret;
@@ -443,18 +441,16 @@ public class Client extends ChannelInboundHandlerAdapter {
             }
         }
         sql.append(")");
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            try (Cursor cursor = con.rawQuery(sql.toString(), macs.toArray(new String[0]))) {
-                if (cursor.moveToFirst()) {
-                    int count = cursor.getInt(0);
-                    if (count > 0) {
-                        ret = true;
-                    }
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery(sql.toString(), macs.toArray(new String[0]))) {
+            if (cursor.moveToFirst()) {
+                int count = cursor.getInt(0);
+                if (count > 0) {
+                    ret = true;
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("hasBannedMac error", e);
         }
         return ret;
     }
@@ -462,8 +458,8 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     private void loadHWIDIfNescessary() throws SQLiteException {
         if (hwid == null) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery("SELECT hwid FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery("SELECT hwid FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
                 if (cursor.moveToFirst()) {
                     int hwidIdx = cursor.getColumnIndex("hwid");
                     hwid = new Hwid(cursor.getString(hwidIdx));
@@ -475,8 +471,8 @@ public class Client extends ChannelInboundHandlerAdapter {
     // TODO: Recode to close statements...
     private void loadMacsIfNescessary() throws SQLiteException {
         if (macs.isEmpty()) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection();
-                 Cursor cursor = con.rawQuery("SELECT macs FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try (Cursor cursor = con.rawQuery("SELECT macs FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
                 if (cursor.moveToFirst()) {
                     int macsIdx = cursor.getColumnIndex("macs");
                     if (macsIdx != -1) {
@@ -493,52 +489,49 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public void banHWID() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             loadHWIDIfNescessary();
             ContentValues values = new ContentValues();
             values.put("hwid", hwid.hwid());
             con.insert("hwidbans", null, values);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("banHWID error", e);
         }
     }
 
     public void banMacs() {
-        try {
-            loadMacsIfNescessary();
-
-            List<String> filtered = new LinkedList<>();
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-                try (Cursor cursor = con.rawQuery("SELECT filter FROM macfilters", null)) {
-                    if (cursor != null) {
-                        while (cursor.moveToNext()) {
-                            int filterIdx = cursor.getColumnIndex("filter");
-                            if (filterIdx != -1) {
-                                String filter = cursor.getString(filterIdx);
-                                filtered.add(filter);
-                            }
-                        }
-                    }
-                }
-
-                for (String mac : macs) {
-                    boolean matched = false;
-                    for (String filter : filtered) {
-                        if (mac.matches(filter)) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                    if (!matched) {
-                        ContentValues values = new ContentValues();
-                        values.put("mac", mac);
-                        values.put("aid", String.valueOf(getAccID()));
-                        con.insert("macbans", null, values);
+        loadMacsIfNescessary();
+        List<String> filtered = new LinkedList<>();
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT filter FROM macfilters", null)) {
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    int filterIdx = cursor.getColumnIndex("filter");
+                    if (filterIdx != -1) {
+                        String filter = cursor.getString(filterIdx);
+                        filtered.add(filter);
                     }
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("banMacs error", e);
+        }
+
+        for (String mac : macs) {
+            boolean matched = false;
+            for (String filter : filtered) {
+                if (mac.matches(filter)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                ContentValues values = new ContentValues();
+                values.put("mac", mac);
+                values.put("aid", String.valueOf(getAccID()));
+                con.insert("macbans", null, values);
+            }
         }
     }
 
@@ -559,14 +552,15 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void setPin(String pin) {
         this.pin = pin;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("pin", pin);
             String whereClause = "id=?";
             String[] whereArgs = { String.valueOf(accId) };
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setPin error", e);
         }
     }
 
@@ -593,14 +587,15 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void setPic(String pic) {
         this.pic = pic;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("pic", pic);
             String whereClause = "id=?";
             String[] whereArgs = { String.valueOf(accId) };
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setPic error", e);
         }
     }
 
@@ -638,10 +633,8 @@ public class Client extends ChannelInboundHandlerAdapter {
         String[] columns = {"id", "password", "gender", "banned", "pin", "pic", "characterslots", "tos", "language"};
         String selection = "name = ?";
         String[] selectionArgs = {login};
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
             accId = -2;
             if (cursor.moveToFirst()) {
                 int idIdx = cursor.getColumnIndex("id");
@@ -695,7 +688,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                 accId = -3;
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("Query accounts error", e);
         }
 
         if (loginok == 0 || loginok == 4) {
@@ -706,21 +699,15 @@ public class Client extends ChannelInboundHandlerAdapter {
                     if (loginok == 0) {
                         loginattempt = 0;
                     }
-
                     return loginok;
-
                 case REMOTE_LOGGEDIN:
                     return 17;
-
                 case REMOTE_REACHED_LIMIT:
                     return 13;
-
                 case REMOTE_PROCESSING:
                     return 10;
-
                 case MANY_ACCOUNT_ATTEMPTS:
                     return 16;
-
                 default:
                     return 8;
             }
@@ -731,10 +718,8 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public Calendar getTempBanCalendarFromDB() {
         final Calendar lTempban = Calendar.getInstance();
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT `tempban` FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT `tempban` FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
             if (cursor.moveToFirst()) {
                 int tempbanIdx = cursor.getColumnIndex("tempban");
                 if (tempbanIdx != -1) {
@@ -758,7 +743,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getTempBanCalendarFromDB error", e);
         }
 
         return null;//why oh why!?!
@@ -787,15 +772,15 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void updateHwid(Hwid hwid) {
         this.hwid = hwid;
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("hwid", hwid.hwid());
             String whereClause = "id=?";
             String[] whereArgs = { String.valueOf(accId) };
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("updateHwid error", e);
         }
     }
 
@@ -810,15 +795,15 @@ public class Client extends ChannelInboundHandlerAdapter {
                 newMacData.append(", ");
             }
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("macs", newMacData.toString());
             String whereClause = "id=?";
             String[] whereArgs = { String.valueOf(accId) };
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("updateMacs error", e);
         }
     }
 
@@ -835,15 +820,15 @@ public class Client extends ChannelInboundHandlerAdapter {
         if (newState == LOGIN_LOGGEDIN) {
             SessionCoordinator.getInstance().updateOnlineClient(this);
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("loggedin", newState);
             values.put("lastlogin", String.valueOf(new Timestamp(Server.getInstance().getCurrentTime())));
 
             con.update("accounts", values, "id = ?", new String[]{String.valueOf(getAccID())});
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("updateLoginState error", e);
         }
 
         if (newState == LOGIN_NOTLOGGEDIN) {
@@ -857,8 +842,8 @@ public class Client extends ChannelInboundHandlerAdapter {
     }
 
     public int getLoginState() {  // 0 = LOGIN_NOTLOGGEDIN, 1= LOGIN_SERVER_TRANSITION, 2 = LOGIN_LOGGEDIN
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT loggedin, lastlogin, birthday FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT loggedin, lastlogin, birthday FROM accounts WHERE id = ?", new String[]{String.valueOf(getAccID())})) {
             int state = 0;
             if (cursor.moveToFirst()) {
                 birthday = Calendar.getInstance();
@@ -900,7 +885,7 @@ public class Client extends ChannelInboundHandlerAdapter {
             return state;
         } catch (SQLiteException e) {
             loggedIn = false;
-            e.printStackTrace();
+            log.error("getLoginState error", e);
             throw new RuntimeException("login state");
         }
     }
@@ -1129,7 +1114,6 @@ public class Client extends ChannelInboundHandlerAdapter {
     public boolean deleteCharacter(int cid, int senderAccId) {
         try {
             Character chr = Character.loadCharFromDB(cid, this, false);
-
             Integer partyid = chr.getWorldServer().getCharacterPartyid(cid);
             if (partyid != null) {
                 this.setPlayer(chr);
@@ -1141,10 +1125,9 @@ public class Client extends ChannelInboundHandlerAdapter {
 
                 this.setPlayer(null);
             }
-
             return Character.deleteCharFromDB(chr, senderAccId);
         } catch (SQLiteException ex) {
-            ex.printStackTrace();
+            log.error("deleteCharacter error", ex);
             return false;
         }
     }
@@ -1186,7 +1169,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                     }
                 }
             } catch (NullPointerException e) {
-                e.printStackTrace();
+                log.error("checkIfIdle error", e);
             }
         }, SECONDS.toMillis(15));
     }
@@ -1229,8 +1212,8 @@ public class Client extends ChannelInboundHandlerAdapter {
         }
 
         boolean disconnect = false;
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.rawQuery("SELECT tos FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.rawQuery("SELECT tos FROM accounts WHERE id = ?", new String[]{String.valueOf(accId)})) {
             int tosIdx = cursor.getColumnIndex("tos");
             if (tosIdx != -1) {
                 if (cursor.moveToFirst()) {
@@ -1245,7 +1228,7 @@ public class Client extends ChannelInboundHandlerAdapter {
             values.put("tos", 1);
             con.update("accounts", values, "id = ?", new String[]{String.valueOf(accId)});
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("acceptToS error", e);
         }
         return disconnect;
     }
@@ -1271,9 +1254,8 @@ public class Client extends ChannelInboundHandlerAdapter {
         String[] columns = { "votepoints" };
         String selection = "id=?";
         String[] selectionArgs = { String.valueOf(accId) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("accounts", columns, selection, selectionArgs, null, null, null)) {
             if (cursor.moveToFirst()) {
                 int columnIndex = cursor.getColumnIndex("votepoints");
                 if (columnIndex != -1) {
@@ -1281,7 +1263,7 @@ public class Client extends ChannelInboundHandlerAdapter {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getVotePoints error", e);
         }
         votePoints = points;
         return votePoints;
@@ -1307,11 +1289,11 @@ public class Client extends ChannelInboundHandlerAdapter {
         values.put("votepoints", votePoints);
         String whereClause = "id=?";
         String[] whereArgs = { String.valueOf(accId) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("accounts", values, whereClause, whereArgs);
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("saveVotePoints error", e);
         }
     }
 
@@ -1403,11 +1385,11 @@ public class Client extends ChannelInboundHandlerAdapter {
             values.put("characterslots", characterSlots + 1);
             String whereClause = "id=?";
             String[] whereArgs = { String.valueOf(accId) };
-
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 con.update("accounts", values, whereClause, whereArgs);
             } catch (SQLiteException e) {
-                e.printStackTrace();
+                log.error("gainCharacterSlot error", e);
             }
             return true;
         }
@@ -1418,16 +1400,15 @@ public class Client extends ChannelInboundHandlerAdapter {
         String[] projection = { "greason" };
         String selection = "id = ?";
         String[] selectionArgs = { String.valueOf(accId) };
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();
-             Cursor cursor = con.query("accounts", projection, selection, selectionArgs, null, null, null)) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try (Cursor cursor = con.query("accounts", projection, selection, selectionArgs, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 int greason = cursor.getInt(cursor.getColumnIndexOrThrow("greason"));
                 return (byte) greason;
             }
 
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("getGReason error", e);
         }
         return 0;
     }
@@ -1438,13 +1419,13 @@ public class Client extends ChannelInboundHandlerAdapter {
 
     public void setGender(byte m) {
         this.gender = m;
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             ContentValues values = new ContentValues();
             values.put("gender", gender);
             con.update("accounts", values, "id = ?", new String[]{String.valueOf(accId)});
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("setGender error", e);
         }
     }
 
@@ -1544,7 +1525,7 @@ public class Client extends ChannelInboundHandlerAdapter {
         try {
             sendPacket(PacketCreator.getChannelChange(InetAddress.getByName(socket[0]), Integer.parseInt(socket[1])));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("changeChannel error", e);
         }
     }
 

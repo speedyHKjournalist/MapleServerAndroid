@@ -26,8 +26,12 @@ package client.command.commands.gm2;
 import client.Character;
 import client.Client;
 import client.command.Command;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DcCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(DcCommand.class);
+
     {
         setDescription("Disconnect a player.");
     }
@@ -50,7 +54,7 @@ public class DcCommand extends Command {
                         victim.getClient().disconnect(true, false);
                         player.getMap().removePlayer(victim);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("DcCommand error", e);
                     }
                 } else {
                     return;

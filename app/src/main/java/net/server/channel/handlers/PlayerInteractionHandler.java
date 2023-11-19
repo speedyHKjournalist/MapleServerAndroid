@@ -22,6 +22,7 @@
 package net.server.channel.handlers;
 
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.autoban.AutobanFactory;
@@ -44,9 +45,7 @@ import server.maps.*;
 import server.maps.MiniGame.MiniGameType;
 import tools.PacketCreator;
 
-import java.sql.SQLException;
 import java.util.Arrays;
-import android.graphics.Point;
 
 /**
  * @author Matze
@@ -652,7 +651,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                     try {
                         merchant.saveItems(false);   // thanks Masterrulax for realizing yet another dupe with merchants/Fredrick
                     } catch (SQLiteException ex) {
-                        ex.printStackTrace();
+                        log.error("merchant saveItems error", ex);
                     }
                 } else {
                     c.sendPacket(PacketCreator.serverNotice(1, "You can't sell without owning a shop."));
@@ -877,7 +876,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("canPlaceStore error", e);
         }
 
         return true;

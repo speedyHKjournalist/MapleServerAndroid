@@ -28,9 +28,11 @@ import android.database.sqlite.SQLiteException;
 import client.Job;
 import config.YamlConfig;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.*;
+import java.sql.Timestamp;
 
 /**
  * @author Matze
@@ -39,6 +41,7 @@ import java.sql.*;
  */
 public class RankingLoginTask implements Runnable {
     private long lastUpdate = System.currentTimeMillis();
+    private static final Logger log = LoggerFactory.getLogger(RankingLoginTask.class);
 
     private void resetMoveRank(boolean job) throws SQLiteException {
         ContentValues values = new ContentValues();
@@ -110,7 +113,7 @@ public class RankingLoginTask implements Runnable {
             con.setTransactionSuccessful();
             lastUpdate = System.currentTimeMillis();
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("Run RankingLoginTask error", e);
         } finally {
             con.endTransaction();
         }

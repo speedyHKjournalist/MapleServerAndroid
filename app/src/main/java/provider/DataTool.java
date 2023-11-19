@@ -21,13 +21,16 @@
 */
 package provider;
 
-import provider.wz.DataType;
 import android.graphics.Point;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import provider.wz.DataType;
 
 public class DataTool {
     public static String getString(Data data) {
         return ((String) data.getData());
     }
+    private static final Logger log = LoggerFactory.getLogger(DataTool.class);
 
     public static String getString(Data data, String def) {
         if (data == null || data.getData() == null) {
@@ -128,7 +131,7 @@ public class DataTool {
             try {
                 return Integer.parseInt(getString(d));
             } catch (NumberFormatException nfe) {
-                nfe.printStackTrace();
+                log.error("getIntConvert error", nfe);
                 return def;
             }
         } else {

@@ -30,8 +30,11 @@ import client.inventory.Equip;
 import client.inventory.Inventory;
 import client.inventory.InventoryType;
 import constants.inventory.ItemConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SetEqStatCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(SetEqStatCommand.class);
     {
         setDescription("Set stats of all equips in inventory.");
     }
@@ -76,7 +79,7 @@ public class SetEqStatCommand extends Command {
 
                 player.forceUpdateItem(eq);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("SetEqStatCommand error", e);
             }
         }
     }

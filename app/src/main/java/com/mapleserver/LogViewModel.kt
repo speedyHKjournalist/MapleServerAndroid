@@ -40,14 +40,14 @@ class LogViewModel(context: Context) {
     private fun readLogFileContent(logFile: File): String {
         val lineList = LinkedList<String>()
         try {
-            val reader = RandomAccessFile(logFile, "r")
+            val reader = BufferedReader(FileReader(logFile))
             var line: String?
 
             // Read the file line by line in reverse order and add to the list
             while (reader.readLine().also { line = it } != null) {
                 lineList.addFirst(line)
                 if (lineList.size > 200) {
-                    // Remove the oldest line if more than 50 lines have been read
+                    // Remove the oldest line if more than 200 lines have been read
                     lineList.removeLast()
                 }
             }

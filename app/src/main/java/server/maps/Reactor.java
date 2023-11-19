@@ -21,11 +21,14 @@
  */
 package server.maps;
 
+import android.graphics.Rect;
 import client.Client;
 import config.YamlConfig;
 import net.packet.Packet;
 import net.server.services.task.channel.OverallService;
 import net.server.services.type.ChannelServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.reactor.ReactorScriptManager;
 import server.TimerManager;
 import server.partyquest.GuardianSpawnPoint;
@@ -36,8 +39,6 @@ import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import android.graphics.Rect;
 
 /**
  * @author Lerk
@@ -60,6 +61,7 @@ public class Reactor extends AbstractMapObject {
     private byte facingDirection = 0;
     private final Lock reactorLock = new ReentrantLock(true);
     private final Lock hitLock = new ReentrantLock(true);
+    private static final Logger log = LoggerFactory.getLogger(Reactor.class);
 
     public Reactor(ReactorStats stats, int rid) {
         this.evstate = (byte) 0;
@@ -321,7 +323,7 @@ public class Reactor extends AbstractMapObject {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Hit reactor error", e);
         }
     }
 

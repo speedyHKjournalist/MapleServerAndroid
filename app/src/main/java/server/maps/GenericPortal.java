@@ -21,18 +21,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server.maps;
 
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import constants.game.GameConstants;
 import constants.id.MapId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scripting.portal.PortalScriptManager;
 import tools.PacketCreator;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import android.graphics.Point;
 
 public class GenericPortal implements Portal {
+    private static final Logger log = LoggerFactory.getLogger(GenericPortal.class);
     private String name;
     private String target;
     private Point position;
@@ -138,7 +141,7 @@ public class GenericPortal implements Portal {
                     scriptLock.unlock();
                 }
             } catch (NullPointerException npe) {
-                npe.printStackTrace();
+                log.error("enterPortal nullptr", npe);
             }
         } else if (getTargetMapId() != MapId.NONE) {
             Character chr = c.getPlayer();

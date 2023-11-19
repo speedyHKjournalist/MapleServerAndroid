@@ -34,12 +34,10 @@ import net.server.coordinator.world.InviteCoordinator.InviteResult;
 import net.server.coordinator.world.InviteCoordinator.InviteType;
 import net.server.world.Party;
 import net.server.world.PartyCharacter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -49,6 +47,7 @@ import java.util.List;
  */
 public class Alliance {
     final private List<Integer> guilds = new LinkedList<>();
+    private static final Logger log = LoggerFactory.getLogger(Alliance.class);
 
     private int allianceId = -1;
     private int capacity;
@@ -69,8 +68,8 @@ public class Alliance {
         if (name.contains(" ") || name.length() > 12) {
             return false;
         }
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             String selectQuery = "SELECT name FROM alliance WHERE name = ?";
             String[] selectionArgs = { name };
             try (Cursor cursor = con.rawQuery(selectQuery, selectionArgs)) {
@@ -80,7 +79,7 @@ public class Alliance {
             }
             return true;
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("canBeUsedAllianceName error", e);
             return false;
         }
     }
@@ -146,7 +145,7 @@ public class Alliance {
                 Server.getInstance().allianceMessage(id, GuildPackets.updateAllianceInfo(alliance, worldid), -1, -1);
                 Server.getInstance().allianceMessage(id, GuildPackets.getGuildAlliances(alliance, worldid), -1, -1);  // thanks Vcoc for noticing guilds from other alliances being visually stacked here due to this not being updated
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("createAlliance error", e);
                 return null;
             }
         }
@@ -185,11 +184,10 @@ public class Alliance {
             }
             con.setTransactionSuccessful();
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("createAllianceOnDb error", e);
             return null;
         } finally {
             con.endTransaction();
-            con.close();
         }
         return new Alliance(name, id);
     }
@@ -199,8 +197,8 @@ public class Alliance {
             return null;
         }
         Alliance alliance = new Alliance(null, -1);
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try (Cursor cursor = con.rawQuery("SELECT * FROM alliance WHERE id = ?", new String[] { String.valueOf(id) })) {
                 if (cursor.moveToFirst()) {
                     int capacityColumnIndex = cursor.getColumnIndex("capacity");
@@ -249,14 +247,15 @@ public class Alliance {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("loadAlliance error", e);
         }
 
         return alliance;
     }
 
     public void saveToDB() {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
 
             try (SQLiteStatement updateAlliance = con.compileStatement("UPDATE alliance SET capacity = ?, notice = ?, rank1 = ?, rank2 = ?, rank3 = ?, rank4 = ?, rank5 = ? WHERE id = ?");
@@ -285,12 +284,13 @@ public class Alliance {
                 con.endTransaction(); // End the transaction
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
+            log.error("saveToDB error", e);
         }
     }
 
     public static void disbandAlliance(int allianceId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.beginTransaction();
             try (SQLiteStatement deleteAlliance = con.compileStatement("DELETE FROM alliance WHERE id = ?");
                  SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM allianceguilds WHERE allianceid = ?")) {
@@ -309,17 +309,18 @@ public class Alliance {
             Server.getInstance().allianceMessage(allianceId, GuildPackets.disbandAlliance(allianceId), -1, -1);
             Server.getInstance().disbandAlliance(allianceId);
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("disbandAlliance error", sqle);
         }
     }
 
     private static void removeGuildFromAllianceOnDb(int guildId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             SQLiteStatement deleteAllianceGuilds = con.compileStatement("DELETE FROM allianceguilds WHERE guildid = ?");
             deleteAllianceGuilds.bindLong(1, guildId);
             deleteAllianceGuilds.executeUpdateDelete();
         } catch (SQLiteException sqle) {
-            sqle.printStackTrace();
+            log.error("removeGuildFromAllianceOnDb error", sqle);
         }
     }
 

@@ -40,10 +40,6 @@ import org.slf4j.LoggerFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 /**
  * @author Jay Estrella
  * @author Ubaware
@@ -132,7 +128,8 @@ public final class AcceptFamilyHandler extends AbstractPacketHandler {
     }
 
     private static void insertNewFamilyRecord(int characterID, int familyID, int seniorID, boolean updateChar) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             try {
                 ContentValues values = new ContentValues();
                 values.put("cid", characterID);

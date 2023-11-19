@@ -26,6 +26,7 @@ package client.command.commands.gm4;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.command.Command;
@@ -34,13 +35,9 @@ import server.maps.MapleMap;
 import tools.DatabaseConnection;
 import tools.Pair;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
-import android.graphics.Point;
 
 public class PmobRemoveCommand extends Command {
     {
@@ -59,7 +56,8 @@ public class PmobRemoveCommand extends Command {
         int ypos = pos.y;
 
         List<Pair<Integer, Pair<Integer, Integer>>> toRemove = new LinkedList<>();
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             final PreparedStatement ps;
             String select;
             String[] selectionArgs;
@@ -105,7 +103,6 @@ public class PmobRemoveCommand extends Command {
                 }
             }
         } catch (SQLiteException e) {
-            e.printStackTrace();
             player.dropMessage(5, "Failed to remove pmob from the database.");
         }
 

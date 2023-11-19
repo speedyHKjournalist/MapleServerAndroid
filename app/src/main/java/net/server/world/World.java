@@ -63,7 +63,6 @@ import tools.PacketCreator;
 import tools.Pair;
 import tools.packets.Fishing;
 
-import java.sql.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -695,11 +694,11 @@ public class World {
 
         String whereClause = "id = ?";
         String[] whereArgs = {String.valueOf(cid)};
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.update("characters", values, whereClause, whereArgs);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("setOfflineGuildStatus error", se);
         }
     }
 
@@ -1852,7 +1851,8 @@ public class World {
 
     private void setPlayerNpcMapData(int mapid, int step, int podium, boolean silent) {
         if (!silent) {
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 if (step != -1) {
                     executePlayerNpcMapDataUpdate(con, false, pnpcStep, step, id, mapid);
                 }
@@ -1861,7 +1861,7 @@ public class World {
                     executePlayerNpcMapDataUpdate(con, true, pnpcPodium, podium, id, mapid);
                 }
             } catch (SQLiteException e) {
-                e.printStackTrace();
+                log.error("setPlayerNpcMapData error", e);
             }
         }
 
@@ -1971,22 +1971,27 @@ public class World {
     }
 
     private static Pair<Integer, Pair<Integer, Integer>> getRelationshipCoupleFromDb(int id, boolean usingMarriageId) {
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
-            Integer mid = null, hid = null, wid = null;
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        Integer mid = null, hid = null, wid = null;
+        String[] columns = {"marriageid", "husbandid", "wifeid"};
+        String selection;
+        String[] selectionArgs;
+        if (usingMarriageId) {
+            selection = "marriageid = ?";
+            selectionArgs = new String[]{String.valueOf(id)};
+        } else {
+            selection = "husbandid = ? OR wifeid = ?";
+            selectionArgs = new String[]{String.valueOf(id), String.valueOf(id)};
+        }
 
-            Cursor cursor;
-            if (usingMarriageId) {
-                cursor = con.rawQuery("SELECT * FROM marriages WHERE marriageid = ?", new String[]{String.valueOf(id)});
-            } else {
-                cursor = con.rawQuery("SELECT * FROM marriages WHERE husbandid = ? OR wifeid = ?", new String[]{String.valueOf(id), String.valueOf(id)});
-            }
+        try (Cursor cursor = con.query("marriages", columns, selection, selectionArgs, null, null, null)) {
             int marriageidIdx = cursor.getColumnIndex("marriageid");
             int husbandidIdx = cursor.getColumnIndex("husbandid");
             int wifeidIdx = cursor.getColumnIndex("wifeid");
             if (cursor.moveToFirst()) {
                 if (marriageidIdx != -1 &&
-                        husbandidIdx != -1 &&
-                        wifeidIdx != -1) {
+                    husbandidIdx != -1 &&
+                    wifeidIdx != -1) {
                     mid = cursor.getInt(marriageidIdx);
                     hid = cursor.getInt(husbandidIdx);
                     wid = cursor.getInt(wifeidIdx);
@@ -1994,7 +1999,7 @@ public class World {
             }
             return (mid == null) ? null : new Pair<>(mid, new Pair<>(hid, wid));
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("getRelationshipCoupleFromDb error", se);
             return null;
         }
     }
@@ -2010,8 +2015,8 @@ public class World {
         ContentValues values = new ContentValues();
         values.put("husbandid", groomId);
         values.put("wifeid", brideId);
-
-        try (SQLiteDatabase con = DatabaseConnection.getConnection();) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             long newRowId = con.insert("marriages", null, values);
             if (newRowId != -1) {
                 return (int) newRowId;
@@ -2019,7 +2024,7 @@ public class World {
                 return -1;
             }
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("addRelationshipToDb error", se);
             return -1;
         }
     }
@@ -2036,10 +2041,11 @@ public class World {
     private static void deleteRelationshipFromDb(int playerId) {
         String whereClause = "marriageid = ?";
         String[] whereArgs = {String.valueOf(playerId)};
-        try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+        SQLiteDatabase con = DatabaseConnection.getConnection();
+        try {
             con.delete("marriages", whereClause, whereArgs);
         } catch (SQLiteException se) {
-            se.printStackTrace();
+            log.error("deleteRelationshipFromDb error", se);
         }
     }
 

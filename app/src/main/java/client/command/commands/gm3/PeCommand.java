@@ -38,7 +38,6 @@ import tools.HexTool;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -58,7 +57,7 @@ public class PeCommand extends Command {
             packetProps.load(br);
             packet = packetProps.getProperty("pe");
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("PeCommand IOException", ex);
             player.yellowMessage("Failed to load pe.txt");
             return;
 

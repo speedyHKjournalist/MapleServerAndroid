@@ -27,12 +27,15 @@ import client.Character;
 import client.Client;
 import client.command.Command;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.PacketCreator;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class WarpWorldCommand extends Command {
+    private static final Logger log = LoggerFactory.getLogger(WarpWorldCommand.class);
     {
         setDescription("Warp to a different world.");
     }
@@ -57,7 +60,7 @@ public class WarpWorldCommand extends Command {
                 player.saveCharToDB();//To set the new world :O (true because else 2 player instances are created, one in both worlds)
                 c.sendPacket(PacketCreator.getChannelChange(InetAddress.getByName(socket[0]), Integer.parseInt(socket[1])));
             } catch (UnknownHostException | NumberFormatException ex) {
-                ex.printStackTrace();
+                log.error("WarpWorldCommand error", ex);
                 player.message("Unexpected error when changing worlds, are you sure the world you are trying to warp to has the same amount of channels?");
             }
 

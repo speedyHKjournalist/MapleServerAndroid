@@ -364,10 +364,7 @@ public class MonsterStats {
                     Field fieldFrom = from.getClass().getDeclaredField(field.getName());
                     Object value = fieldFrom.get(from);
                     to.getClass().getDeclaredField(field.getName()).set(to, value);
-
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (NoSuchFieldException e) {
+                } catch (IllegalAccessException | NoSuchFieldException e) {
                     e.printStackTrace();
                 }
             }

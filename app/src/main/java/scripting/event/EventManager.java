@@ -105,7 +105,7 @@ public class EventManager {
         try {
             iv.invokeFunction("cancelSchedule", (Object) null);
         } catch (ScriptException | NoSuchMethodException ex) {
-            ex.printStackTrace();
+            log.error("cancelSchedule error", ex);
         }
 
         Collection<EventInstanceManager> eimList;
@@ -738,7 +738,7 @@ public class EventManager {
                 return eligibleParty;
             }
         } catch (ScriptException | NoSuchMethodException ex) {
-            ex.printStackTrace();
+            log.error("getEligibleParty error", ex);
         }
 
         return new ArrayList<>();
@@ -876,7 +876,7 @@ public class EventManager {
         try {
             Quest.getInstance(id).forceStart(chr, npcid);
         } catch (NullPointerException ex) {
-            ex.printStackTrace();
+            log.error("startQuest error", ex);
         }
     }
 
@@ -884,7 +884,7 @@ public class EventManager {
         try {
             Quest.getInstance(id).forceComplete(chr, npcid);
         } catch (NullPointerException ex) {
-            ex.printStackTrace();
+            log.error("completeQuest error", ex);
         }
     }
 

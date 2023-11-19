@@ -3,6 +3,8 @@ package database;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import net.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
@@ -11,6 +13,7 @@ public class MapleDBHelper extends SQLiteOpenHelper {
     private static String DATABASE_PATH = "";
     private static final int DATABASE_VERSION = 1;
     private static MapleDBHelper sInstance;
+    private static final Logger log = LoggerFactory.getLogger(MapleDBHelper.class);
     private MapleDBHelper() {
         super(Server.getInstance().getContext(), DATABASE_NAME, null, DATABASE_VERSION);
         DATABASE_PATH = Server.getInstance().getContext().getDatabasePath(DATABASE_NAME).getPath();
@@ -26,7 +29,7 @@ public class MapleDBHelper extends SQLiteOpenHelper {
                 copyDataBase();
                 mDataBaseExist = true;
             } catch (IOException mIOException) {
-                mIOException.printStackTrace();
+                log.error("createDataBase IOException", mIOException);
                 throw new Error("ErrorCopyingDataBase");
             }
         }
@@ -68,7 +71,7 @@ public class MapleDBHelper extends SQLiteOpenHelper {
                 sInstance = new MapleDBHelper();
                 sInstance.createDataBase();
             } catch (IOException mIOException) {
-                mIOException.printStackTrace();
+                log.error("MapleDBHelper getInstance error", mIOException);
             }
         }
         return sInstance;

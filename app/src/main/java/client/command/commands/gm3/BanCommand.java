@@ -34,10 +34,6 @@ import server.TimerManager;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
 public class BanCommand extends Command {
     {
         setDescription("Ban a player.");
@@ -57,7 +53,8 @@ public class BanCommand extends Command {
             String readableTargetName = Character.makeMapleReadable(target.getName());
             String ip = target.getClient().getRemoteAddress();
             //Ban ip
-            try (SQLiteDatabase con = DatabaseConnection.getConnection()) {
+            SQLiteDatabase con = DatabaseConnection.getConnection();
+            try {
                 if (ip.matches("/[0-9]{1,3}\\..*")) {
                     ContentValues values = new ContentValues();
                     values.put("ip", ip);
@@ -65,7 +62,6 @@ public class BanCommand extends Command {
                     con.insert("ipbans", null, values);
                 }
             } catch (SQLiteException ex) {
-                ex.printStackTrace();
                 c.getPlayer().message("Error occured while banning IP address");
                 c.getPlayer().message(target.getName() + "'s IP was not banned: " + ip);
             }

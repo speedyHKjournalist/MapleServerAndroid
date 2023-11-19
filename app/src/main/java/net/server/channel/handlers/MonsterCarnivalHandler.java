@@ -21,6 +21,7 @@
  */
 package net.server.channel.handlers;
 
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.Disease;
@@ -28,6 +29,8 @@ import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.server.world.Party;
 import net.server.world.PartyCharacter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import server.life.LifeFactory;
 import server.life.MobSkillType;
 import server.life.Monster;
@@ -38,7 +41,6 @@ import tools.PacketCreator;
 import tools.Pair;
 
 import java.util.List;
-import android.graphics.Point;
 
 
 /**
@@ -46,6 +48,7 @@ import android.graphics.Point;
  */
 
 public final class MonsterCarnivalHandler extends AbstractPacketHandler {
+    private static final Logger log = LoggerFactory.getLogger(MonsterCarnivalHandler.class);
 
     @Override
     public void handlePacket(InPacket p, Client c) {
@@ -170,7 +173,7 @@ public final class MonsterCarnivalHandler extends AbstractPacketHandler {
                     c.getPlayer().gainCP(-neededCP);
                     c.getPlayer().getMap().broadcastMessage(PacketCreator.playerSummoned(c.getPlayer().getName(), tab, num));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("MonsterCarnivalHandler error", e);
                 }
             } finally {
                 c.releaseClient();
