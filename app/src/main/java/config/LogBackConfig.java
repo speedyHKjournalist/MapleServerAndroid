@@ -37,6 +37,6 @@ public class LogBackConfig {
         fileAppender.start();
 
         rootLogger.addAppender(fileAppender);
-        rootLogger.setLevel(Level.ERROR);
+        rootLogger.setLevel(Level.INFO);
     }
 }
