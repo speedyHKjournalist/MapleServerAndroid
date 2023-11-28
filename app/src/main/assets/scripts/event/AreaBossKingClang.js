@@ -56,7 +56,7 @@ function start() {
     var posY = 140;
     posX = Math.floor((Math.random() * 2400) - 1600);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     hotSand.spawnMonsterOnGroundBelow(kingClang, spawnpoint);
 
     importPackage(Packages.tools);

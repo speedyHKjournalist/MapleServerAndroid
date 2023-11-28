@@ -582,7 +582,8 @@ public class EventInstanceManager {
 
     public void monsterKilled(Character chr, final Monster mob) {
         try {
-            final int inc = (int) invokeScriptFunction("monsterValue", EventInstanceManager.this, mob.getId());
+            Double result = (Double) invokeScriptFunction("monsterValue", EventInstanceManager.this, mob.getId());
+            final int inc = result.intValue();
 
             if (inc != 0) {
                 Integer kc = killCount.get(chr);

@@ -41,12 +41,9 @@ public class CashIdGenerator {
 
         try (Cursor cursor = con.rawQuery(query, null)) {
             if (cursor != null && cursor.moveToFirst()) {
-                int columnIndex = 1;
                 do {
-                    int id = cursor.getInt(columnIndex);
-                    if (id != 0) {
-                        existentCashids.add(id);
-                    }
+                    int id = cursor.getInt(0);
+                    existentCashids.add(id);
                 } while (cursor.moveToNext());
             }
         }

@@ -55,7 +55,7 @@ function start() {
     var posY = 390;
     posX = Math.floor((Math.random() * 700) - 800);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     territoryOfWanderingBear.spawnMonsterOnGroundBelow(taeRoon, spawnpoint);
 
     importPackage(Packages.tools);

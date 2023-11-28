@@ -21,7 +21,10 @@
  */
 package provider.wz;
 
+import android.graphics.Point;
 import constants.game.GameConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -33,32 +36,29 @@ import provider.DataEntity;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import android.graphics.Point;
 
 public class XMLDomMapleData implements Data {
     private final Node node;
+    private static final Logger log = LoggerFactory.getLogger(XMLDomMapleData.class);
     private Path imageDataDir;
 
     public XMLDomMapleData(InputStream fis, Path imageDataDir) {
+        Node node = null;
         try {
             DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
             Document document = documentBuilder.parse(fis);
-            this.node = document.getFirstChild();
-        } catch (ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        } catch (SAXException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            node = document.getFirstChild();
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            log.error("Parse xml data failed");
         }
+        this.node = node;
         this.imageDataDir = imageDataDir;
     }
 

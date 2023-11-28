@@ -55,7 +55,7 @@ function start() {
 
     importPackage(Packages.tools);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(208, 83);
+    var spawnpoint = new Point(208, 83);
     stairwayToTheSky2.spawnMonsterOnGroundBelow(eliza, spawnpoint);
     stairwayToTheSky2.broadcastMessage(PacketCreator.serverNotice(6, "Eliza has appeared with a black whirlwind."));
     em.schedule("start", 3 * 60 * 60 * 1000);

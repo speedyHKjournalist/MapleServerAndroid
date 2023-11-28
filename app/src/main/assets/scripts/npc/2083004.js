@@ -30,7 +30,7 @@ var expedMembers;
 var player;
 var em;
 importPackage(Packages.server.expeditions);
-const exped = ExpeditionType.HORNTAIL;
+var exped = ExpeditionType.HORNTAIL;
 var expedName = "Horntail";
 var expedBoss = "mighty Horntail";
 

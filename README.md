@@ -3,7 +3,7 @@
 ## Introduction
 A Maplestory GMS 083 server on Android based on Cosmic Maplestory project.
 
-<img src="img.png" alt="Your Image" height="601" width="288"/>
+<img src="screenshot.png" alt="Your Image" height="601" width="288"/>
 
 ## Important
 1. It takes about 1 minutes for the server to start after clicking the Start button.  

@@ -53,7 +53,7 @@ function start() {
     var posY = 33;
     posX = Math.floor((Math.random() * 1300) - 800);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     moonRidge.spawnMonsterOnGroundBelow(nineTailedFox, spawnpoint);
 
     importPackage(Packages.tools);

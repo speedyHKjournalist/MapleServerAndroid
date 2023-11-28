@@ -55,7 +55,7 @@ function start() {
     var posY = 1280;
     posX = Math.floor((Math.random() * 800) + 400);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     eastRockyMountain5.spawnMonsterOnGroundBelow(stumpy, spawnpoint);
 
     importPackage(Packages.tools);

@@ -36,7 +36,7 @@ var maxMapId = 610030800;
 
 var eventTime = 2;     // 2 minutes for first stg
 
-const maxLobbies = 1;
+var maxLobbies = 1;
 
 function init() {
     setEventRequirements();

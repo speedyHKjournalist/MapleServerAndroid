@@ -30,7 +30,7 @@ var maxMapId = 108010201;
 
 var eventTime = 20; //20 minutes
 
-const maxLobbies = 7;
+var maxLobbies = 7;
 
 function getMaxLobbies() {
     return maxLobbies;
