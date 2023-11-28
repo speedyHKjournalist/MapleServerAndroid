@@ -29,7 +29,7 @@ var expedMembers;
 var player;
 var em;
 importPackage(Packages.server.expeditions);
-const exped = ExpeditionType.BALROG_NORMAL;
+var exped = ExpeditionType.BALROG_NORMAL;
 var expedName = "Balrog";
 var expedBoss = "Balrog";
 var expedMap = "Balrog's Tomb";

@@ -41,7 +41,7 @@ var bossMobId = 8830003;
 var eventTime = 60;         // 60 minutes
 var releaseClawTime = 1;
 
-const maxLobbies = 1;
+var maxLobbies = 1;
 
 function init() {
     setEventRequirements();
@@ -114,7 +114,11 @@ function getEligibleParty(party) {      //selects, from the given party, the tea
         eligible = [];
     }
     importClass(Packages.net.server.world.PartyCharacter);
-    return Java.to(eligible, "net.server.world.PartyCharacter[]");
+    var javaArray = java.lang.reflect.Array.newInstance(PartyCharacter, eligible.length);
+    for (var j = 0; j < eligible.length; j++) {
+        javaArray[j] = eligible[j];
+    }
+    return javaArray;
 }
 
 function setup(level, lobbyid) {

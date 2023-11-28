@@ -56,7 +56,7 @@ function start() {
     var posY = 520;
     posX = Math.floor((Math.random() * 2300) - 1500);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     theSeaweedTower.spawnMonsterOnGroundBelow(seruf, spawnpoint);
 
     importPackage(Packages.tools);

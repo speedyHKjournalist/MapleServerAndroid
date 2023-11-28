@@ -54,7 +54,7 @@ function start() {
     var posY = 540;
     posX = Math.floor((Math.random() * 1300) - 500);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     goblinForest2.spawnMonsterOnGroundBelow(kingSageCat, spawnpoint);
 
     importPackage(Packages.tools);

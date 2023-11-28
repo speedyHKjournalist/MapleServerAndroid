@@ -12,7 +12,7 @@ var maxMapId;
 
 var eventTime;                  // Max time allotted for the event, in minutes.
 
-const maxLobbies = 7;        // Max amount of concurrent active lobbies.
+var maxLobbies = 7;        // Max amount of concurrent active lobbies.
 
 function init() {
     // After loading, ChannelServer

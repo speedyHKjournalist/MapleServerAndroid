@@ -32,7 +32,7 @@ var eventMaps = [923010000];
 
 var eventTime = 5; //5 minutes
 
-const maxLobbies = 7;
+var maxLobbies = 7;
 
 function getMaxLobbies() {
     return maxLobbies;

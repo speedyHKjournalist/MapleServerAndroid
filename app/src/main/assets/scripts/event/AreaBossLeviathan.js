@@ -54,7 +54,7 @@ function start() {
     var posY = 1125;
     posX = Math.floor((Math.random() * 600) - 300);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     leviathansCanyon.spawnMonsterOnGroundBelow(leviathan, spawnpoint);
 
     importPackage(Packages.tools);

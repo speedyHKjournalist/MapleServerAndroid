@@ -56,7 +56,7 @@ function start() {
     var posY = 1030;
     posX = Math.floor((Math.random() * 1400) - 700);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     lostTime2.spawnMonsterOnGroundBelow(timer3, spawnpoint);
 
     importPackage(Packages.tools);

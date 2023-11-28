@@ -55,7 +55,7 @@ function start() {
     var posY = 180;
     posX = (Math.floor(Math.random() * 900) - 900);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     labSecretBasementPath.spawnMonsterOnGroundBelow(chimera, spawnpoint);
 
     importPackage(Packages.tools);

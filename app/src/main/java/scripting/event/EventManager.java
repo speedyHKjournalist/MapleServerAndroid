@@ -161,7 +161,8 @@ public class EventManager {
 
     private int getMaxLobbies() {
         try {
-            return (int) iv.invokeFunction("getMaxLobbies");
+            Double result = (Double) iv.invokeFunction("getMaxLobbies");
+            return result.intValue();
         } catch (ScriptException | NoSuchMethodException ex) { // they didn't define a lobby range
             return maxLobbys;
         }

@@ -109,7 +109,7 @@ function selectedOneTimeCoupon() {
 
     colors = Array();
     for (var i = 0; i < 8; i++) {
-        const oneTimeCouponId = 5152100 + i
+        var oneTimeCouponId = 5152100 + i
         if (cm.haveItem(oneTimeCouponId)) {
             pushIfItemExists(colors, current + 100 * i);
         }
@@ -131,7 +131,7 @@ function pushIfItemExists(array, itemid) {
 }
 
 function acceptedRegularCoupon() {
-    const regularCouponItemId = 5152011
+    var regularCouponItemId = 5152011
     if (cm.haveItem(regularCouponItemId)) {
         cm.gainItem(regularCouponItemId, -1);
         cm.setFace(colors[Math.floor(Math.random() * colors.length)]);
@@ -142,10 +142,10 @@ function acceptedRegularCoupon() {
 }
 
 function selectedVipStyle(selection) {
-    const vipCouponItemId = 5152014
+    var vipCouponItemId = 5152014
     if (cm.haveItem(vipCouponItemId)) {
         cm.gainItem(vipCouponItemId, -1);
-        const selectedFace = colors[selection]
+        var selectedFace = colors[selection]
         cm.setFace(selectedFace);
         cm.sendOk("Enjoy your new and improved cosmetic lenses!");
     } else {
@@ -154,10 +154,10 @@ function selectedVipStyle(selection) {
 }
 
 function selectedOneTimeStyle(selection) {
-    const selectedFace = colors[selection]
-    const color = Math.floor(selectedFace / 100) % 10;
+    var selectedFace = colors[selection]
+    var color = Math.floor(selectedFace / 100) % 10;
 
-    const oneTimeCouponItemId = 5152100 + color
+    var oneTimeCouponItemId = 5152100 + color
     if (cm.haveItem(oneTimeCouponItemId)) {
         cm.gainItem(oneTimeCouponItemId, -1);
         cm.setFace(selectedFace);

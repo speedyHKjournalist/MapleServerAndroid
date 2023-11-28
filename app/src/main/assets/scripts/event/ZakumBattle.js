@@ -36,7 +36,7 @@ var maxMapId = 280030000;
 
 var eventTime = 120;     // 120 minutes
 
-const maxLobbies = 1;
+var maxLobbies = 1;
 
 function init() {
     setEventRequirements();

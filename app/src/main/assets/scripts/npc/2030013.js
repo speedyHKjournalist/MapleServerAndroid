@@ -30,7 +30,7 @@ var expedMembers;
 var player;
 var em;
 importPackage(Packages.server.expeditions);
-const exped = ExpeditionType.ZAKUM;
+var exped = ExpeditionType.ZAKUM;
 var expedName = "Zakum";
 var expedBoss = "Zakum";
 var expedMap = "Zakum's Altar";

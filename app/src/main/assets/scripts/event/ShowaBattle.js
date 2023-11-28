@@ -36,7 +36,7 @@ var maxMapId = 801040101;
 
 var eventTime = 60;     // 60 minutes for boss stg
 
-const maxLobbies = 1;
+var maxLobbies = 1;
 
 function init() {
     setEventRequirements();

@@ -51,7 +51,7 @@ function start() {
     importPackage(Packages.server.life);
     importPackage(Packages.tools);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(90, 119);
+    var spawnpoint = new Point(90, 119);
     dangeroudCroko1.spawnMonsterOnGroundBelow(LifeFactory.getMonster(6220000), spawnpoint);
     dangeroudCroko1.broadcastMessage(PacketCreator.serverNotice(6, "The huge crocodile Dyle has come out from the swamp."));
     setupTask = em.schedule("start", 3 * 60 * 60 * 1000);

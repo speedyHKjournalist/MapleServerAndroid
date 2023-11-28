@@ -50,7 +50,7 @@ function start() {
     }
 
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(279, -496);
+    var spawnpoint = new Point(279, -496);
     thicketAroundTheBeach3.spawnMonsterOnGroundBelow(mano, spawnpoint);
 
     importPackage(Packages.tools);

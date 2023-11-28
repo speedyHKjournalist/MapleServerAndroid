@@ -53,7 +53,7 @@ function start() {
     importClass(android.graphics.Point);
 
     var faust1 = LifeFactory.getMonster(5220002);
-    const spawnpoint = new Point(456, 278);
+    var spawnpoint = new Point(456, 278);
     theForestOfEvil1.spawnMonsterOnGroundBelow(faust1, spawnpoint);
     theForestOfEvil1.broadcastMessage(PacketCreator.serverNotice(6, "Faust appeared amidst the blue fog."));
     em.schedule("start", 3 * 60 * 60 * 1000);

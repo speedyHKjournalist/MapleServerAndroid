@@ -62,7 +62,6 @@ function canEnterDimensionMap(mapid, jobid) {
 function start() {
     if (canEnterDimensionMap(cm.getMapId(), cm.getJob().getId()) && cm.getPlayer().gotPartyQuestItem("JBP") && !cm.haveItem(4031059)) {
         var js = jobString(cm.getPlayer().getJob().getJobNiche());
-
         var em = cm.getEventManager("3rdJob_" + js);
         if (em == null) {
             cm.sendOk("Sorry, but 3rd job advancement (" + js + ") is closed.");

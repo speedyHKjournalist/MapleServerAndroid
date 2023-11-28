@@ -52,7 +52,7 @@ function start() {
     }
 
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(474, 278);
+    var spawnpoint = new Point(474, 278);
     theForestOfEvil2.spawnMonsterOnGroundBelow(faust2, spawnpoint);
 
     importPackage(Packages.tools);

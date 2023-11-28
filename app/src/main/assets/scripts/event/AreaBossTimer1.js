@@ -54,7 +54,7 @@ function start() {
     var posY = 1030;
     posX = Math.floor((Math.random() * 770) - 770);
     importClass(android.graphics.Point);
-    const spawnpoint = new Point(posX, posY);
+    var spawnpoint = new Point(posX, posY);
     whirlpoolOfTime.spawnMonsterOnGroundBelow(timer1, spawnpoint);
 
     importPackage(Packages.tools);

@@ -35,12 +35,12 @@ function action(mode, type, selection) {
                 cm.mapMessage(6, "Engarde! Master Guardians approach!");
                 for (var i = 0; i < 10; i++) {
                     var mob = eim.getMonster(9400594);
-                    const xPos = Math.floor(-1337 + (Math.random() * 1337))
+                    var xPos = Math.floor(-1337 + (Math.random() * 1337))
                     cm.getMap().spawnMonsterOnGroundBelow(mob, new android.graphics.Point(xPos, 276));
                 }
                 for (var i = 0; i < 20; i++) {
                     var mob = eim.getMonster(9400582);
-                    const xPos = Math.floor(-1337 + (Math.random() * 1337))
+                    var xPos = Math.floor(-1337 + (Math.random() * 1337))
                     cm.getMap().spawnMonsterOnGroundBelow(mob, new android.graphics.Point(xPos, 276));
                 }
                 eim.setIntProperty("glpq6", 1);
