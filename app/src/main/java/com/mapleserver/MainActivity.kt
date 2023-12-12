@@ -112,12 +112,12 @@ class MainActivity : ComponentActivity() {
                             Box(
                                 modifier = Modifier
                                     .background(Color.White)
-                                    .padding(16.dp)
+                                    .padding(11.dp)
                                     .fillMaxWidth()
                             ) {
                                 Text(
                                     text = logView.logMessage.value,
-                                    modifier = Modifier.padding(16.dp),
+                                    modifier = Modifier.padding(11.dp),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
