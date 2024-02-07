@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -229,6 +228,6 @@ fun WorldsConfiguration(worlds: List<WorldProperties>) {
 fun onSave(context: Context, modifiedServerConfig: ServerConfig) {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.propertyNamingStrategy = PropertyNamingStrategies.UPPER_SNAKE_CASE
-    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
     mapper.writeValue(File(context.dataDir, "config.yaml"), modifiedServerConfig)
 }
