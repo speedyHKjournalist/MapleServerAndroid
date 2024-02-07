@@ -1,15 +1,16 @@
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,21 +18,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.mapleserver.LogViewModel
+import com.mapleserver.MainViewModel
+import com.mapleserver.ServerConfig
 import com.mapleserver.SharedUtil
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.StartButton
 import com.mapleserver.ui.theme.StopButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.File
+
 
 @Composable
-fun MainCompose(context: Context, navController: NavHostController, notificationPendingIntent: PendingIntent) {
+fun MainCompose(context: Context, navController: NavHostController, mainViewModel: MainViewModel) {
     val logView = LogViewModel(LocalContext.current)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    var isStartButtonEnabled = rememberSaveable { mutableStateOf(true) }
-    var isStopButtonEnabled = rememberSaveable { mutableStateOf(false) }
+    checkIfEnabled(context, mainViewModel.connection, mainViewModel.serviceIntent)
 
     MapleServerTheme {
         ModalNavigationDrawer(
@@ -71,23 +76,32 @@ fun MainCompose(context: Context, navController: NavHostController, notification
                         DrawerToggleButton(drawerState, scope)
                         StartButton(
                             text = "Start",
-                            isButtonEnabled = isStartButtonEnabled,
+                            isButtonEnabled = mainViewModel.isStartButtonEnabled,
                             startMapleServer = {
-                                isStartButtonEnabled.value = false
-                                isStopButtonEnabled.value = true
-                                SharedUtil.startMapleServer(context, notificationPendingIntent)
+                                mainViewModel.isStartButtonEnabled.value = false
+                                mainViewModel.isStopButtonEnabled.value = true
+                                SharedUtil.startMapleServer(
+                                    context,
+                                    mainViewModel.serviceIntent,
+                                    mainViewModel.notificationPendingIntent
+                                )
                             }
                         )
                         StopButton(
                             text = "Stop",
-                            isButtonEnabled = isStopButtonEnabled,
+                            isButtonEnabled = mainViewModel.isStopButtonEnabled,
                             stopMapleServer = {
-                                isStartButtonEnabled.value = true
-                                isStopButtonEnabled.value = false
-                                SharedUtil.stopMapleServer(context)
+                                mainViewModel.isStartButtonEnabled.value = true
+                                mainViewModel.isStopButtonEnabled.value = false
+                                SharedUtil.stopMapleServer(
+                                    context,
+                                    mainViewModel.serviceIntent,
+                                    mainViewModel.connection
+                                )
                             }
                         )
                     }
+                    DisplayCurrentIP(mainViewModel)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -113,6 +127,25 @@ fun MainCompose(context: Context, navController: NavHostController, notification
 }
 
 @Composable
+fun DisplayCurrentIP(mainViewModel: MainViewModel) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "WAN_IP: ${mainViewModel.serverConfig.server.HOST}",
+            modifier = Modifier.padding(9.dp),
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "LAN_IP: ${mainViewModel.serverConfig.server.LANHOST}",
+            modifier = Modifier.padding(9.dp),
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
 fun DrawerToggleButton(drawerState: DrawerState, scope: CoroutineScope) {
     // Add a button to toggle the drawer
     IconButton(
@@ -125,4 +158,12 @@ fun DrawerToggleButton(drawerState: DrawerState, scope: CoroutineScope) {
         }) {
         Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
     }
+}
+
+fun checkIfEnabled(
+    context: Context,
+    connection: ServiceConnection,
+    serviceIntent: Intent
+) {
+    context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
 }

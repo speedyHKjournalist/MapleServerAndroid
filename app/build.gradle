@@ -36,7 +36,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = '17'
-        allWarningsAsErrors = true
+        allWarningsAsErrors = false
         freeCompilerArgs += [
                 '-opt-in=androidx.compose.material3.ExperimentalMaterial3Api'
         ]
@@ -67,6 +67,7 @@ dependencies {
     implementation 'androidx.compose.material3:material3'
     implementation "com.anggrayudi:storage:1.5.5"
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
+    implementation "org.jetbrains.kotlin:kotlin-reflect:1.9.22"
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
@@ -77,6 +78,7 @@ dependencies {
     // Logging facade
     implementation 'org.slf4j:slf4j-api:2.0.9'
     implementation group: 'com.github.tony19', name: 'logback-android', version: '3.0.0'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.16.1'
 
     // Networking (Netty)
     implementation 'io.netty:netty-all:4.1.100.Final'

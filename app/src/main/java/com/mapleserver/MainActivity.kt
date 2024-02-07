@@ -1,16 +1,10 @@
 package com.mapleserver
 
 import MainCompose
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.app.NotificationCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,10 +15,7 @@ import java.io.FileOutputStream
 
 
 class MainActivity : ComponentActivity() {
-    private val notificationPendingIntent: PendingIntent by lazy {
-        val intent = Intent(this, MainActivity::class.java)
-        PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-    }
+    private val mainViewModel by lazy { MainViewModel(this@MainActivity) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val preferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
@@ -42,16 +33,28 @@ class MainActivity : ComponentActivity() {
                     startDestination = "main_screen"
                 ) {
                     composable("main_screen") {
-                        MainCompose(this@MainActivity, navController, notificationPendingIntent)
+                        MainCompose(this@MainActivity, navController, mainViewModel)
                     }
                     composable("config_editor_screen") {
-                        ServerConfigScreen(this@MainActivity, navController)
+                        ServerConfigScreen(this@MainActivity, navController, mainViewModel)
+                    }
+                    composable("export_db_screen") {
+                        ExportDBCompose(this@MainActivity, navController)
+                    }
+                    composable("import_db_screen") {
+                        ImportDBCompose(this@MainActivity, navController)
                     }
                 }
             }
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        if (mainViewModel.isStopButtonEnabled.value) {
+            unbindService(mainViewModel.connection)
+        }
+    }
     private fun copyAssetFileApplication(assetFileName: String) {
         try {
             val appDir: File = applicationContext.dataDir

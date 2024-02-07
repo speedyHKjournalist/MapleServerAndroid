@@ -1,21 +1,38 @@
 package com.mapleserver
 
-import android.app.*
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Intent
-import android.os.Build
+import android.os.Binder
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
 import net.server.Server
+import kotlin.system.exitProcess
+
 
 class ServerService : Service() {
-    override fun onBind(intent: Intent?): IBinder? {
-        TODO("Not yet implemented")
+    private var isRunning = false
+    private val binder = LocalBinder()
+    inner class LocalBinder : Binder() {
+        fun getService(): ServerService = this@ServerService
+    }
+
+    fun isRunning(): Boolean {
+        return isRunning
+    }
+    override fun onBind(intent: Intent?): IBinder {
+        return binder
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Server.getInstance(applicationContext).shutdown(false).run()
+        if (isRunning) {
+            Server.getInstance(applicationContext).shutdown(false).run()
+            exitProcess(0)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -27,6 +44,7 @@ class ServerService : Service() {
             Server.main(args)
         }
         initializationThread.start()
+        isRunning = true
 
         val notificationManager = getSystemService(ComponentActivity.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(channelId, "OpenMapleServer Channel", NotificationManager.IMPORTANCE_DEFAULT)
@@ -41,7 +59,6 @@ class ServerService : Service() {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         val notification = builder.build()
-        notificationManager.notify(0, notification);
         startForeground(startId, notification)
         return START_STICKY
     }
