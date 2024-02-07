@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StoptButton(
+fun StopButton(
     text: String,
     stopMapleServer: () -> Unit,
     isButtonEnabled: MutableState<Boolean>
