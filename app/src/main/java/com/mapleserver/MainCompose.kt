@@ -1,9 +1,6 @@
-import android.app.PendingIntent
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,17 +15,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.mapleserver.LogViewModel
 import com.mapleserver.MainViewModel
-import com.mapleserver.ServerConfig
 import com.mapleserver.SharedUtil
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.StartButton
 import com.mapleserver.ui.theme.StopButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.File
 
 
 @Composable
