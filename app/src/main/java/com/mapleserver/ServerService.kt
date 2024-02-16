@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
@@ -37,7 +38,12 @@ class ServerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val channelId = intent?.getStringExtra("channel_id") ?: "default_id"
-        val pendingIntent = intent?.getParcelableExtra("pending_intent", PendingIntent::class.java)
+        val pendingIntent : PendingIntent?
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pendingIntent = intent?.getParcelableExtra("pending_intent", PendingIntent::class.java)
+        } else {
+            pendingIntent = intent?.getParcelableExtra<PendingIntent>("pending_intent")
+        }
         val initializationThread = Thread {
             val args = arrayOf("-Xmx2048m", "-Dwz-path=wz", "-Djava.net.preferIPv4Stack=true")
             Server.getInstance(applicationContext)
