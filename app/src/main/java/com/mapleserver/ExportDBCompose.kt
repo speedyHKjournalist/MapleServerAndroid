@@ -25,9 +25,7 @@ fun ExportDBCompose(context: Context, navController: NavHostController) {
     var exportFileName by remember { mutableStateOf(context.getDatabasePath("cosmic")) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier = Modifier.padding(16.dp)
     ) {
         IconButton(
             onClick = {
@@ -36,17 +34,22 @@ fun ExportDBCompose(context: Context, navController: NavHostController) {
         ) {
             Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
         }
-        Button(
-            onClick = {
-                exportFileToDownload(context, exportFileName)
-                navController.popBackStack()
-            },
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Button(
+                onClick = {
+                    exportFileToDownload(context, exportFileName)
+                    navController.popBackStack()
+                },
             ) {
-                Text("Export Database")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Export Database")
+                }
             }
         }
     }

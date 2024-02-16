@@ -32,11 +32,7 @@ fun ImportDBCompose(context: Context, navController: NavHostController) {
         selectedFileUri = uri
         fileName = TextFieldValue(getFileNameFromUri(context, uri) ?: "")
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
+    Column() {
         IconButton(
             onClick = {
                 navController.popBackStack()
@@ -44,24 +40,41 @@ fun ImportDBCompose(context: Context, navController: NavHostController) {
         ) {
             Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
         }
-        Button(
-            onClick = { launcher.launch("*/*") }) {
-            Text("Select Database File")
-        }
-        if (selectedFileUri != null) {
-            Text("Selected File: ${fileName.text}")
-        }
-        Button(
-            onClick = {
-                if (selectedFileUri != null) {
-                    importDatabase(context, selectedFileUri!!)
-                    navController.popBackStack()
+        Column(
+            modifier = Modifier
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Button(
+                        onClick = { launcher.launch("*/*") }) {
+                        Text("Select Database File")
+                    }
+                    if (selectedFileUri != null) {
+                        Text("Selected File: ${fileName.text}")
+                    }
+                    Button(
+                        onClick = {
+                            if (selectedFileUri != null) {
+                                importDatabase(context, selectedFileUri!!)
+                                navController.popBackStack()
+                            }
+                        }
+                    ) {
+                        Text("Import Database")
+                    }
                 }
             }
-        ) {
-            Text("Import Database")
         }
-
     }
 }
 
