@@ -1,6 +1,6 @@
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
+import android.content.Context.RECEIVER_NOT_EXPORTED
+import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,13 +11,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startForegroundService
 import androidx.navigation.NavHostController
 import com.mapleserver.LogViewModel
 import com.mapleserver.MainViewModel
-import com.mapleserver.SharedUtil
+import com.mapleserver.ServerService
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.StartButton
 import com.mapleserver.ui.theme.StopButton
@@ -30,7 +32,57 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
     val logView = LogViewModel(LocalContext.current)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    checkIfEnabled(context, mainViewModel.connection, mainViewModel.serviceIntent)
+    val intentFilter = remember { IntentFilter("MapleServerMessage") }
+
+    val showProcessingBar = remember { mutableStateOf(false) }
+    val isStartButtonEnabled = remember { mutableStateOf(false) }
+    val isStopButtonEnabled = remember { mutableStateOf(true) }
+    val statusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val status = intent?.getStringExtra("Status")
+
+            if (status == "ServerStarting") {
+                showProcessingBar.value = true
+            } else if (status == "ServerStarted") {
+                showProcessingBar.value = false
+                isStartButtonEnabled.value = false
+                isStopButtonEnabled.value = true
+            } else if (status == "ServerStopping") {
+                showProcessingBar.value = true
+            } else if (status == "ServerStopped") {
+                showProcessingBar.value = false
+                isStartButtonEnabled.value = true
+                isStopButtonEnabled.value = false
+            }
+        }
+    }
+
+    val mConnection: ServiceConnection = object : ServiceConnection {
+        lateinit var myService: ServerService
+
+        override fun onServiceConnected(
+            className: ComponentName,
+            service: IBinder
+        ) {
+            val binder: ServerService.LocalBinder = service as ServerService.LocalBinder
+            myService = binder.getService()
+
+            isStartButtonEnabled.value = !myService.isRunning()
+            isStopButtonEnabled.value = !isStartButtonEnabled.value
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {}
+    }
+
+    doBindService(context, mConnection, mainViewModel.serviceIntent)
+
+    DisposableEffect(key1 = true) {
+        context.registerReceiver(statusReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
+
+        onDispose {
+            context.unregisterReceiver(statusReceiver)
+        }
+    }
 
     MapleServerTheme {
         ModalNavigationDrawer(
@@ -70,32 +122,29 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
                         DrawerToggleButton(drawerState, scope)
                         StartButton(
                             text = "Start",
-                            isButtonEnabled = mainViewModel.isStartButtonEnabled,
+                            isButtonEnabled = isStartButtonEnabled,
                             startMapleServer = {
-                                mainViewModel.isStartButtonEnabled.value = false
-                                mainViewModel.isStopButtonEnabled.value = true
-                                SharedUtil.startMapleServer(
+                                startMapleServer(
                                     context,
-                                    mainViewModel.serviceIntent,
-                                    mainViewModel.notificationPendingIntent
+                                    mainViewModel.serviceIntent
                                 )
                             }
                         )
                         StopButton(
                             text = "Stop",
-                            isButtonEnabled = mainViewModel.isStopButtonEnabled,
+                            isButtonEnabled = isStopButtonEnabled,
                             stopMapleServer = {
-                                mainViewModel.isStartButtonEnabled.value = true
-                                mainViewModel.isStopButtonEnabled.value = false
-                                SharedUtil.stopMapleServer(
+                                stopMapleServer(
                                     context,
                                     mainViewModel.serviceIntent,
-                                    mainViewModel.connection
+                                    mConnection
                                 )
                             }
                         )
                     }
+
                     DisplayCurrentIP(mainViewModel)
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
                     ) {
@@ -115,7 +164,27 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
                         }
                     }
                 }
+                DisplayProcessingBar(showProcessingBar)
             }
+        }
+    }
+}
+
+@Composable
+fun DisplayProcessingBar(showProcessingBar: MutableState<Boolean>) {
+    if (showProcessingBar.value) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .pointerInput(Unit) {},
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .size(48.dp)
+            )
         }
     }
 }
@@ -154,10 +223,19 @@ fun DrawerToggleButton(drawerState: DrawerState, scope: CoroutineScope) {
     }
 }
 
-fun checkIfEnabled(
+fun doBindService(
     context: Context,
     connection: ServiceConnection,
     serviceIntent: Intent
 ) {
     context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
+}
+
+fun startMapleServer(context: Context, serviceIntent : Intent) {
+    startForegroundService(context, serviceIntent)
+}
+
+fun stopMapleServer(context: Context, serviceIntent : Intent, connection : ServiceConnection) {
+    context.unbindService(connection)
+    context.stopService(serviceIntent)
 }

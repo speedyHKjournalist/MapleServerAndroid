@@ -1981,6 +1981,7 @@ public class Server {
 
         log.info("Worlds and channels are offline.");
         loginServer.stop();
+        online = false;
         if (!restart) {  // shutdown hook deadlocks if System.exit() method is used within its body chores, thanks MIKE for pointing that out
             // We disabled log4j's shutdown hook in the config file, so we have to manually shut it down here,
             // after our last log statement.

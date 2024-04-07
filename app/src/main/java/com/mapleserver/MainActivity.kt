@@ -49,12 +49,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        if (mainViewModel.isStopButtonEnabled.value) {
-            unbindService(mainViewModel.connection)
-        }
-    }
     private fun copyAssetFileApplication(assetFileName: String) {
         try {
             val appDir: File = applicationContext.dataDir
