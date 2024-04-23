@@ -416,8 +416,6 @@ data class ServerConfiguration(
     var USE_ENHANCED_CHSCROLL: Boolean,
     @JsonProperty("USE_ENHANCED_CRAFTING")
     var USE_ENHANCED_CRAFTING: Boolean,
-    @JsonProperty("USE_ENHANCED_CLNSLATE")
-    var USE_ENHANCED_CLNSLATE: Boolean,
     @JsonProperty("SCROLL_CHANCE_ROLLS")
     var SCROLL_CHANCE_ROLLS: Int,
     @JsonProperty("CHSCROLL_STAT_RATE")

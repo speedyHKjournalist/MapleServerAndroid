@@ -3,6 +3,7 @@ import android.graphics.Point;
 
 public interface InPacket extends Packet {
     byte readByte();
+    short readUnsignedByte();
     short readShort();
     int readInt();
     long readLong();
