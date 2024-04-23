@@ -3,7 +3,7 @@
 ## Introduction
 A one-click Maplestory GMS 083 server on Android based on Cosmic project.
 
-<img src="screenshot1.jpg" alt="Your Image" height="601" width="288"/><img src="screenshot2.jpg" alt="Your Image" height="601" width="288"/><img src="screenshot3.jpg" alt="Your Image" height="601" width="288"/>
+<img src="screenshot1.jpg" alt="Your Image" height="601" width="288"/><img src="screenshot2.jpg" alt="Your Image" height="601" width="288"/>
 
 ## Features
 1. Customizable Server Settings: Modify local and lan IP addresses to enable multiplayer capabilities.
