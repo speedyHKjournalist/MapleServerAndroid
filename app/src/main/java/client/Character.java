@@ -8935,7 +8935,7 @@ public class Character extends AbstractCharacterObject {
                         buddiesValues.put("characterid", id);
                         buddiesValues.put("buddyid", entry.getCharacterId());
                         buddiesValues.put("pending", 0);
-                        buddiesValues.put("group", entry.getGroup());
+                        buddiesValues.put("`group`", entry.getGroup());
 
                         con.insert("buddies", null, buddiesValues);
                     }
