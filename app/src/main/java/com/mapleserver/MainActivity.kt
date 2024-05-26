@@ -15,7 +15,7 @@ import java.io.FileOutputStream
 
 
 class MainActivity : ComponentActivity() {
-    private val mainViewModel by lazy { MainViewModel(this@MainActivity) }
+    private val serverinit by lazy { ServerInit(this@MainActivity) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val preferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
@@ -33,10 +33,10 @@ class MainActivity : ComponentActivity() {
                     startDestination = "main_screen"
                 ) {
                     composable("main_screen") {
-                        MainCompose(this@MainActivity, navController, mainViewModel)
+                        MainCompose(this@MainActivity, navController, serverinit)
                     }
                     composable("config_editor_screen") {
-                        ServerConfigScreen(this@MainActivity, navController, mainViewModel)
+                        ServerConfigScreen(this@MainActivity, navController, serverinit)
                     }
                     composable("export_db_screen") {
                         ExportDBCompose(this@MainActivity, navController)

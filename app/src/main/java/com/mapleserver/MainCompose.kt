@@ -2,8 +2,10 @@ import android.content.*
 import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.os.IBinder
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -18,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.navigation.NavHostController
 import com.mapleserver.LogViewModel
-import com.mapleserver.MainViewModel
+import com.mapleserver.ServerInit
 import com.mapleserver.ServerService
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.StartButton
@@ -28,7 +30,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun MainCompose(context: Context, navController: NavHostController, mainViewModel: MainViewModel) {
+fun MainCompose(context: Context, navController: NavHostController, serverinit: ServerInit) {
     val logView = LogViewModel(LocalContext.current)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -74,7 +76,7 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
         override fun onServiceDisconnected(arg0: ComponentName) {}
     }
 
-    doBindService(context, mConnection, mainViewModel.serviceIntent)
+    doBindService(context, mConnection, serverinit.serviceIntent)
 
     DisposableEffect(key1 = true) {
         context.registerReceiver(statusReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
@@ -126,7 +128,7 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
                             startMapleServer = {
                                 startMapleServer(
                                     context,
-                                    mainViewModel.serviceIntent
+                                    serverinit.serviceIntent
                                 )
                             }
                         )
@@ -136,14 +138,14 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
                             stopMapleServer = {
                                 stopMapleServer(
                                     context,
-                                    mainViewModel.serviceIntent,
+                                    serverinit.serviceIntent,
                                     mConnection
                                 )
                             }
                         )
                     }
 
-                    DisplayCurrentIP(mainViewModel)
+                    DisplayCurrentIP(serverinit)
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
@@ -157,7 +159,9 @@ fun MainCompose(context: Context, navController: NavHostController, mainViewMode
                             ) {
                                 Text(
                                     text = logView.logMessage.value,
-                                    modifier = Modifier.padding(11.dp),
+                                    modifier = Modifier
+                                        .padding(11.dp)
+                                        .horizontalScroll(rememberScrollState(0)),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -190,18 +194,18 @@ fun DisplayProcessingBar(showProcessingBar: MutableState<Boolean>) {
 }
 
 @Composable
-fun DisplayCurrentIP(mainViewModel: MainViewModel) {
+fun DisplayCurrentIP(serverinit: ServerInit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "WAN_IP: ${mainViewModel.serverConfig.server.HOST}",
+            text = "WAN_IP: ${serverinit.serverConfig.server.HOST}",
             modifier = Modifier.padding(9.dp),
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "LAN_IP: ${mainViewModel.serverConfig.server.LANHOST}",
+            text = "LAN_IP: ${serverinit.serverConfig.server.LANHOST}",
             modifier = Modifier.padding(9.dp),
             fontWeight = FontWeight.Bold
         )
