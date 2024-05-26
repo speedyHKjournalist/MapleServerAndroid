@@ -19,14 +19,14 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.mapleserver.MainViewModel
+import com.mapleserver.ServerInit
 import com.mapleserver.ServerConfig
 import com.mapleserver.WorldProperties
 import java.io.File
 
 
 @Composable
-fun ServerConfigScreen(context: Context, navController: NavHostController, mainViewModel: MainViewModel) {
+fun ServerConfigScreen(context: Context, navController: NavHostController, serverinit: ServerInit) {
     Scaffold(
         topBar = {
             IconButton(
@@ -46,7 +46,7 @@ fun ServerConfigScreen(context: Context, navController: NavHostController, mainV
             ) {
                 Button(
                     onClick = {
-                        onSave(context, mainViewModel.serverConfig)
+                        onSave(context, serverinit.serverConfig)
                         navController.popBackStack()
                     },
                     modifier = Modifier
@@ -68,7 +68,7 @@ fun ServerConfigScreen(context: Context, navController: NavHostController, mainV
                     .padding(top = 8.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                ServerConfigProperties(mainViewModel.serverConfig)
+                ServerConfigProperties(serverinit.serverConfig)
             }
         }
     }

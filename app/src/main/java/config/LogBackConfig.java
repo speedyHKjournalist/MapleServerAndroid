@@ -3,6 +3,7 @@ package config;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.android.LogcatAppender;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
@@ -22,6 +23,15 @@ public class LogBackConfig {
             logFile.delete();
         }
 
+        FileAppender<ILoggingEvent> fileAppender = setFileLogger(lc, logFile);
+        LogcatAppender logcatAppender = setLogcatLogger(lc);
+
+        rootLogger.addAppender(fileAppender);
+        rootLogger.addAppender(logcatAppender);
+        rootLogger.setLevel(Level.INFO);
+    }
+
+    private static FileAppender<ILoggingEvent> setFileLogger(LoggerContext lc, File logFile) {
         // Create a FileAppender
         FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
         fileAppender.setFile(logFile.getAbsolutePath()); // Set the file path
@@ -36,7 +46,21 @@ public class LogBackConfig {
         fileAppender.setEncoder(encoder);
         fileAppender.start();
 
-        rootLogger.addAppender(fileAppender);
-        rootLogger.setLevel(Level.INFO);
+        return fileAppender;
+    }
+
+    private static LogcatAppender setLogcatLogger(LoggerContext lc) {
+        LogcatAppender logcatAppender = new LogcatAppender();
+        logcatAppender.setContext(lc);
+
+        PatternLayoutEncoder logcatEncoder = new PatternLayoutEncoder();
+        logcatEncoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
+        logcatEncoder.setContext(lc);
+        logcatEncoder.start();
+
+        logcatAppender.setEncoder(logcatEncoder);
+        logcatAppender.start();
+
+        return logcatAppender;
     }
 }
