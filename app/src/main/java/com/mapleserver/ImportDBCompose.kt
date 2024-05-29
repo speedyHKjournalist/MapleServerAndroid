@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -36,10 +37,10 @@ fun ImportDBCompose(context: Context, navController: NavHostController) {
     Column() {
         IconButton(
             onClick = {
-                navController.popBackStack()
+                navController.navigate("main_screen")
             }
         ) {
-            Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
+            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
         }
         Column(
             modifier = Modifier
@@ -62,16 +63,16 @@ fun ImportDBCompose(context: Context, navController: NavHostController) {
                     }
                     if (selectedFileUri != null) {
                         Text("Selected File: ${fileName.text}")
-                    }
-                    Button(
-                        onClick = {
-                            if (selectedFileUri != null) {
-                                importDatabase(context, selectedFileUri!!)
-                                navController.popBackStack()
+                        Button(
+                            onClick = {
+                                if (selectedFileUri != null) {
+                                    importDatabase(context, selectedFileUri!!)
+                                    navController.popBackStack()
+                                }
                             }
+                        ) {
+                            Text("Import Database")
                         }
-                    ) {
-                        Text("Import Database")
                     }
                 }
             }

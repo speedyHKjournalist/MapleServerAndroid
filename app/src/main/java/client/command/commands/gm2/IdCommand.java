@@ -10,12 +10,9 @@ import tools.exceptions.IdTypeNotSupportedException;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class IdCommand extends Command {
     {

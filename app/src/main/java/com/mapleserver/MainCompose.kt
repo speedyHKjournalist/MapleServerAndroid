@@ -17,6 +17,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.navigation.NavHostController
 import com.mapleserver.LogViewModel
@@ -90,7 +91,7 @@ fun MainCompose(context: Context, navController: NavHostController, serverinit: 
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
+                ModalDrawerSheet(modifier = Modifier.width(200.dp)) {
                     Text("OpenMapleServer", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                     Divider()
                     NavigationDrawerItem(
@@ -144,31 +145,36 @@ fun MainCompose(context: Context, navController: NavHostController, serverinit: 
                             }
                         )
                     }
-
                     DisplayCurrentIP(serverinit)
+                    LogWindow(logView)
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .background(Color.White)
-                                    .padding(11.dp)
-                                    .fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = logView.logMessage.value,
-                                    modifier = Modifier
-                                        .padding(11.dp)
-                                        .horizontalScroll(rememberScrollState(0)),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
                 }
                 DisplayProcessingBar(showProcessingBar)
+            }
+        }
+    }
+}
+
+@Composable
+fun LogWindow(logView: LogViewModel) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item {
+            Box(
+                modifier = Modifier
+                    .background(Color.White)
+                    .padding(8.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = logView.logMessage.value,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .horizontalScroll(rememberScrollState(0)),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
             }
         }
     }
@@ -202,12 +208,14 @@ fun DisplayCurrentIP(serverinit: ServerInit) {
         Text(
             text = "WAN_IP: ${serverinit.serverConfig.server.HOST}",
             modifier = Modifier.padding(9.dp),
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp
         )
         Text(
             text = "LAN_IP: ${serverinit.serverConfig.server.LANHOST}",
             modifier = Modifier.padding(9.dp),
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp
         )
     }
 }

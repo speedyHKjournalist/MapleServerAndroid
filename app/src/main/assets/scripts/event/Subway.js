@@ -36,12 +36,6 @@ function stopEntry() {
 }
 
 function takeoff() {
-    importPackage(Packages.tools);
-
-    //sound src: https://www.soundjay.com/transportation/metro-door-close-01.mp3
-    KC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
-    NLC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
-
     em.setProperty("docked", "false");
     KC_Waiting.warpEveryone(Subway_to_NLC.getId());
     NLC_Waiting.warpEveryone(Subway_to_KC.getId());
@@ -52,10 +46,6 @@ function arrived() {
     Subway_to_KC.warpEveryone(KC_docked.getId(), 0);
     Subway_to_NLC.warpEveryone(NLC_docked.getId(), 0);
     scheduleNew();
-
-    importPackage(Packages.tools);
-    KC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
-    NLC_docked.broadcastMessage(PacketCreator.playSound("subway/whistle"));
 }
 
 function cancelSchedule() {}

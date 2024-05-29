@@ -133,7 +133,7 @@ public class Character extends AbstractCharacterObject {
     private int expRate = 1, mesoRate = 1, dropRate = 1, expCoupon = 1, mesoCoupon = 1, dropCoupon = 1;
     private int omokwins, omokties, omoklosses, matchcardwins, matchcardties, matchcardlosses;
     private int owlSearch;
-    private long lastfametime, lastUsedCashItem, lastExpression = 0, lastHealed, lastBuyback = 0, lastDeathtime, jailExpiration = -1;
+    private long lastfametime, lastUsedCashItem, lastExpression = 0, lastHealed, lastDeathtime, jailExpiration = -1;
     private transient int localstr, localdex, localluk, localint_, localmagic, localwatk;
     private transient int equipmaxhp, equipmaxmp, equipstr, equipdex, equipluk, equipint_, equipmagic, equipwatk, localchairhp, localchairmp;
     private int localchairrate;
@@ -6062,98 +6062,11 @@ public class Character extends AbstractCharacterObject {
         }
     }
 
-    private boolean canBuyback(int fee, boolean usingMesos) {
-        return (usingMesos ? this.getMeso() : cashshop.getCash(1)) >= fee;
-    }
-
-    private void applyBuybackFee(int fee, boolean usingMesos) {
-        if (usingMesos) {
-            this.gainMeso(-fee);
-        } else {
-            cashshop.gainCash(1, -fee);
-        }
-    }
-
-    private long getNextBuybackTime() {
-        return lastBuyback + MINUTES.toMillis(YamlConfig.config.server.BUYBACK_COOLDOWN_MINUTES);
-    }
-
-    private boolean isBuybackInvincible() {
-        return Server.getInstance().getCurrentTime() - lastBuyback < 4200;
-    }
-
-    private int getBuybackFee() {
-        float fee = YamlConfig.config.server.BUYBACK_FEE;
-        int grade = Math.min(Math.max(level, 30), 120) - 30;
-
-        fee += (grade * YamlConfig.config.server.BUYBACK_LEVEL_STACK_FEE);
-        if (YamlConfig.config.server.USE_BUYBACK_WITH_MESOS) {
-            fee *= YamlConfig.config.server.BUYBACK_MESO_MULTIPLIER;
-        }
-
-        return (int) Math.floor(fee);
-    }
-
-    public void showBuybackInfo() {
-        String s = "#eBUYBACK STATUS#n\r\n\r\nCurrent buyback fee: #b" + getBuybackFee() + " " + (YamlConfig.config.server.USE_BUYBACK_WITH_MESOS ? "mesos" : "NX") + "#k\r\n\r\n";
-
-        long timeNow = Server.getInstance().getCurrentTime();
-        boolean avail = true;
-        if (!isAlive()) {
-            long timeLapsed = timeNow - lastDeathtime;
-            long timeRemaining = MINUTES.toMillis(YamlConfig.config.server.BUYBACK_RETURN_MINUTES) - (timeLapsed + Math.max(0, getNextBuybackTime() - timeNow));
-            if (timeRemaining < 1) {
-                s += "Buyback #e#rUNAVAILABLE#k#n";
-                avail = false;
-            } else {
-                s += "Buyback countdown: #e#b" + getTimeRemaining(MINUTES.toMillis(YamlConfig.config.server.BUYBACK_RETURN_MINUTES) - timeLapsed) + "#k#n";
-            }
-            s += "\r\n";
-        }
-
-        if (timeNow < getNextBuybackTime() && avail) {
-            s += "Buyback available in #r" + getTimeRemaining(getNextBuybackTime() - timeNow) + "#k";
-            s += "\r\n";
-        } else {
-            s += "Buyback #bavailable#k";
-        }
-
-        this.showHint(s);
-    }
-
     private static String getTimeRemaining(long timeLeft) {
         int seconds = (int) Math.floor(timeLeft / SECONDS.toMillis(1)) % 60;
         int minutes = (int) Math.floor(timeLeft / MINUTES.toMillis(1)) % 60;
 
         return (minutes > 0 ? (String.format("%02d", minutes) + " minutes, ") : "") + String.format("%02d", seconds) + " seconds";
-    }
-
-    public boolean couldBuyback() {  // Ronan's buyback system
-        long timeNow = Server.getInstance().getCurrentTime();
-
-        if (timeNow - lastDeathtime > MINUTES.toMillis(YamlConfig.config.server.BUYBACK_RETURN_MINUTES)) {
-            this.dropMessage(5, "The period of time to decide has expired, therefore you are unable to buyback.");
-            return false;
-        }
-
-        long nextBuybacktime = getNextBuybackTime();
-        if (timeNow < nextBuybacktime) {
-            long timeLeft = nextBuybacktime - timeNow;
-            this.dropMessage(5, "Next buyback available in " + getTimeRemaining(timeLeft) + ".");
-            return false;
-        }
-
-        boolean usingMesos = YamlConfig.config.server.USE_BUYBACK_WITH_MESOS;
-        int fee = getBuybackFee();
-
-        if (!canBuyback(fee, usingMesos)) {
-            this.dropMessage(5, "You don't have " + fee + " " + (usingMesos ? "mesos" : "NX") + " to buyback.");
-            return false;
-        }
-
-        lastBuyback = timeNow;
-        applyBuybackFee(fee, usingMesos);
-        return true;
     }
 
     public boolean isBuffFrom(BuffStat stat, Skill skill) {
@@ -9281,11 +9194,7 @@ public class Character extends AbstractCharacterObject {
         boolean playerDied = false;
         if (hp <= 0) {
             if (oldHp > hp) {
-                if (!isBuybackInvincible()) {
-                    playerDied = true;
-                } else {
-                    hp = 1;
-                }
+                playerDied = true;
             }
         }
 

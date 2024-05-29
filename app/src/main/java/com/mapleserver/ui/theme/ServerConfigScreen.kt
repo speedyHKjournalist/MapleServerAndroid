@@ -7,12 +7,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -31,10 +34,10 @@ fun ServerConfigScreen(context: Context, navController: NavHostController, serve
         topBar = {
             IconButton(
                 onClick = {
-                    navController.popBackStack()
+                    navController.navigate("main_screen")
                 }
             ) {
-                Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
+                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
             }
         },
         bottomBar = {
@@ -47,7 +50,7 @@ fun ServerConfigScreen(context: Context, navController: NavHostController, serve
                 Button(
                     onClick = {
                         onSave(context, serverinit.serverConfig)
-                        navController.popBackStack()
+                        navController.navigate("main_screen")
                     },
                     modifier = Modifier
                         .padding(top = 16.dp)
@@ -78,28 +81,29 @@ fun ServerConfigScreen(context: Context, navController: NavHostController, serve
 fun ServerConfigProperties(modifiedServerConfig: ServerConfig) {
     var host by remember { mutableStateOf(modifiedServerConfig.server.HOST) }
     var lanHost by remember { mutableStateOf(modifiedServerConfig.server.LANHOST) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp)
     ) {
-        TextField(
+        ConfigurationTextField(
             value = host,
+            label = "WAN_IP",
             onValueChange = { newHost ->
                 host = newHost
                 modifiedServerConfig.server.HOST = newHost
             },
-            label = { Text("WAN_IP") },
-            modifier = Modifier.padding(16.dp)
+            keyboardType = KeyboardType.Number
         )
-        TextField(
+        ConfigurationTextField(
             value = lanHost,
+            label = "LAN_IP",
             onValueChange = { newLanHost ->
                 lanHost = newLanHost
-                modifiedServerConfig.server.LANHOST = lanHost
+                modifiedServerConfig.server.LANHOST = newLanHost
             },
-            label = { Text("LAN_IP") },
-            modifier = Modifier.padding(16.dp)
+            keyboardType = KeyboardType.Number
         )
         WorldsConfiguration(modifiedServerConfig.worlds)
     }
@@ -121,108 +125,119 @@ fun WorldsConfiguration(worlds: List<WorldProperties>) {
 
         Card(
             modifier = Modifier
-                .clickable {
-                    isExpanded = !isExpanded
-                }
-                .animateContentSize(
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = LinearOutSlowInEasing
-                    )
-                )
+                .clickable { isExpanded = !isExpanded }
+                .animateContentSize(animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing))
+                .padding(8.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text("world ${index} properties")
+                Text("World $index Properties", style = MaterialTheme.typography.bodyMedium)
+
                 if (isExpanded) {
-                    TextField(
+                    ConfigurationTextField(
                         value = serverMsg,
-                        onValueChange = { newserverMsg ->
-                            serverMsg = newserverMsg
+                        label = "Server Message",
+                        onValueChange = { newServerMsg ->
+                            serverMsg = newServerMsg
                             world.server_message = serverMsg
-                        },
-                        label = { Text("server_message") },
-                        modifier = Modifier.padding(16.dp)
+                        }
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = eventMsg,
-                        onValueChange = { neweventMsg ->
-                            eventMsg = neweventMsg
+                        label = "Event Message",
+                        onValueChange = { newEventMsg ->
+                            eventMsg = newEventMsg
                             world.event_message = eventMsg
-                        },
-                        label = { Text("event_message") },
-                        modifier = Modifier.padding(16.dp)
+                        }
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = expRate.toString(),
-                        onValueChange = { newexpRate: String ->
-                            expRate = newexpRate.toInt()
+                        label = "EXP Rate",
+                        onValueChange = { newExpRate ->
+                            expRate = newExpRate.toIntOrNull() ?: expRate
                             world.exp_rate = expRate
                         },
-                        label = { Text("exp_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = mesoRate.toString(),
-                        onValueChange = { newmesoRate: String ->
-                            mesoRate = newmesoRate.toInt()
+                        label = "Meso Rate",
+                        onValueChange = { newMesoRate ->
+                            mesoRate = newMesoRate.toIntOrNull() ?: mesoRate
                             world.meso_rate = mesoRate
                         },
-                        label = { Text("meso_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = dropRate.toString(),
-                        onValueChange = { newdropRate: String ->
-                            dropRate = newdropRate.toInt()
+                        label = "Drop Rate",
+                        onValueChange = { newDropRate ->
+                            dropRate = newDropRate.toIntOrNull() ?: dropRate
                             world.drop_rate = dropRate
                         },
-                        label = { Text("drop_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = bossDropRate.toString(),
-                        onValueChange = { newbossDropRate: String ->
-                            bossDropRate = newbossDropRate.toInt()
+                        label = "Boss Drop Rate",
+                        onValueChange = { newBossDropRate ->
+                            bossDropRate = newBossDropRate.toIntOrNull() ?: bossDropRate
                             world.boss_drop_rate = bossDropRate
                         },
-                        label = { Text("boss_drop_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = questRate.toString(),
-                        onValueChange = { newquestRate: String ->
-                            questRate = newquestRate.toInt()
+                        label = "Quest Rate",
+                        onValueChange = { newQuestRate ->
+                            questRate = newQuestRate.toIntOrNull() ?: questRate
                             world.quest_rate = questRate
                         },
-                        label = { Text("quest_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = fishingRate.toString(),
-                        onValueChange = { newfishingRate: String ->
-                            fishingRate = newfishingRate.toInt()
+                        label = "Fishing Rate",
+                        onValueChange = { newFishingRate ->
+                            fishingRate = newFishingRate.toIntOrNull() ?: fishingRate
                             world.fishing_rate = fishingRate
                         },
-                        label = { Text("fishing_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
-                    TextField(
+                    ConfigurationTextField(
                         value = travelRate.toString(),
-                        onValueChange = { newtravelRate: String ->
-                            travelRate = newtravelRate.toInt()
+                        label = "Travel Rate",
+                        onValueChange = { newTravelRate ->
+                            travelRate = newTravelRate.toIntOrNull() ?: travelRate
                             world.travel_rate = travelRate
                         },
-                        label = { Text("travel_rate") },
-                        modifier = Modifier.padding(16.dp)
+                        keyboardType = KeyboardType.Number
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+fun ConfigurationTextField(
+    value: String,
+    label: String,
+    onValueChange: (String) -> Unit,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = keyboardType),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    )
 }
 
 fun onSave(context: Context, modifiedServerConfig: ServerConfig) {

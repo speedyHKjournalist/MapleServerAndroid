@@ -145,9 +145,6 @@ data class ServerConfiguration(
     @JsonProperty("USE_AUTOHIDE_GM")
     var USE_AUTOHIDE_GM: Boolean,
 
-    @JsonProperty("USE_BUYBACK_SYSTEM")
-    var USE_BUYBACK_SYSTEM: Boolean,
-
     @JsonProperty("USE_FIXED_RATIO_HPMP_UPDATE")
     var USE_FIXED_RATIO_HPMP_UPDATE: Boolean,
 
@@ -566,19 +563,6 @@ data class ServerConfiguration(
     var WEDDING_GIFT_LIMIT: Int,
     @JsonProperty("WEDDING_BLESSER_SHOWFX")
     var WEDDING_BLESSER_SHOWFX: Boolean,
-    // Buyback Configuration
-    @JsonProperty("USE_BUYBACK_WITH_MESOS")
-    var USE_BUYBACK_WITH_MESOS: Boolean,
-    @JsonProperty("BUYBACK_FEE")
-    var BUYBACK_FEE: Double,
-    @JsonProperty("BUYBACK_LEVEL_STACK_FEE")
-    var BUYBACK_LEVEL_STACK_FEE: Double,
-    @JsonProperty("BUYBACK_MESO_MULTIPLIER")
-    var BUYBACK_MESO_MULTIPLIER: Int,
-    @JsonProperty("BUYBACK_RETURN_MINUTES")
-    var BUYBACK_RETURN_MINUTES: Int,
-    @JsonProperty("BUYBACK_COOLDOWN_MINUTES")
-    var BUYBACK_COOLDOWN_MINUTES: Int,
     // Login timeout by shavit
     @JsonProperty("TIMEOUT_DURATION")
     var TIMEOUT_DURATION: Long,
