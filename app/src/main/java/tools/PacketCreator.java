@@ -6138,23 +6138,6 @@ public class PacketCreator {
         return showSpecialEffect(15);
     }
 
-    public static Packet showBuybackEffect() {
-        final OutPacket p = OutPacket.create(SendOpcode.SHOW_ITEM_GAIN_INCHAT);
-        p.writeByte(11);
-        p.writeInt(0);
-
-        return p;
-    }
-
-    public static Packet showForeignBuybackEffect(int cid) {
-        final OutPacket p = OutPacket.create(SendOpcode.SHOW_FOREIGN_EFFECT);
-        p.writeInt(cid);
-        p.writeByte(11);
-        p.writeInt(0);
-
-        return p;
-    }
-
     /**
      * 0 = Levelup 6 = Exp did not drop (Safety Charms) 7 = Enter portal sound
      * 8 = Job change 9 = Quest complete 10 = Recovery 11 = Buff effect

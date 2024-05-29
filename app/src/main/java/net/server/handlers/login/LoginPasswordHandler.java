@@ -81,7 +81,7 @@ public final class LoginPasswordHandler implements PacketHandler {
             try { //Jayd: Added birthday, tempban
                 ContentValues values = new ContentValues();
                 values.put("name", login);
-                values.put("password", YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(12)) : hashpwSHA512(pwd));
+                values.put("password", YamlConfig.config.server.BCRYPT_MIGRATION ? BCrypt.hashpw(pwd, BCrypt.gensalt(6)) : hashpwSHA512(pwd));
                 values.put("birthday", DefaultDates.getBirthday().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 values.put("tempban", DefaultDates.getTempban().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                 long accountId = con.insert("accounts", null, values);
@@ -96,7 +96,7 @@ public final class LoginPasswordHandler implements PacketHandler {
         }
 
         if (YamlConfig.config.server.BCRYPT_MIGRATION && (loginok <= -10)) { // -10 means migration to bcrypt, -23 means TOS wasn't accepted
-            String newPasswordHash = BCrypt.hashpw(pwd, BCrypt.gensalt(12));
+            String newPasswordHash = BCrypt.hashpw(pwd, BCrypt.gensalt(6));
             SQLiteDatabase con = DatabaseConnection.getConnection();
 
             ContentValues values = new ContentValues();

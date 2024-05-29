@@ -5,6 +5,7 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -29,10 +30,10 @@ fun ExportDBCompose(context: Context, navController: NavHostController) {
     ) {
         IconButton(
             onClick = {
-                navController.popBackStack()
+                navController.navigate("main_screen")
             }
         ) {
-            Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
+            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
         }
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -41,7 +42,7 @@ fun ExportDBCompose(context: Context, navController: NavHostController) {
             Button(
                 onClick = {
                     exportFileToDownload(context, exportFileName)
-                    navController.popBackStack()
+                    navController.navigate("main_screen")
                 },
             ) {
                 Row(
