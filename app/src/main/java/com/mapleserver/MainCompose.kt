@@ -1,6 +1,4 @@
 import android.content.*
-import android.content.Context.RECEIVER_NOT_EXPORTED
-import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -21,8 +19,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.navigation.NavHostController
 import com.mapleserver.LogViewModel
-import com.mapleserver.ServerInit
-import com.mapleserver.ServerService
+import com.mapleserver.MainViewModel
+import com.mapleserver.ServerParameter
 import com.mapleserver.ui.theme.MapleServerTheme
 import com.mapleserver.ui.theme.StartButton
 import com.mapleserver.ui.theme.StopButton
@@ -31,61 +29,14 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun MainCompose(context: Context, navController: NavHostController, serverinit: ServerInit) {
+fun MainCompose(context: Context, navController: NavHostController, serverParams: ServerParameter, viewModel: MainViewModel) {
     val logView = LogViewModel(LocalContext.current)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val intentFilter = remember { IntentFilter("MapleServerMessage") }
 
-    val showProcessingBar = remember { mutableStateOf(false) }
-    val isStartButtonEnabled = remember { mutableStateOf(false) }
-    val isStopButtonEnabled = remember { mutableStateOf(true) }
-    val statusReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val status = intent?.getStringExtra("Status")
-
-            if (status == "ServerStarting") {
-                showProcessingBar.value = true
-            } else if (status == "ServerStarted") {
-                showProcessingBar.value = false
-                isStartButtonEnabled.value = false
-                isStopButtonEnabled.value = true
-            } else if (status == "ServerStopping") {
-                showProcessingBar.value = true
-            } else if (status == "ServerStopped") {
-                showProcessingBar.value = false
-                isStartButtonEnabled.value = true
-                isStopButtonEnabled.value = false
-            }
-        }
-    }
-
-    val mConnection: ServiceConnection = object : ServiceConnection {
-        lateinit var myService: ServerService
-
-        override fun onServiceConnected(
-            className: ComponentName,
-            service: IBinder
-        ) {
-            val binder: ServerService.LocalBinder = service as ServerService.LocalBinder
-            myService = binder.getService()
-
-            isStartButtonEnabled.value = !myService.isRunning()
-            isStopButtonEnabled.value = !isStartButtonEnabled.value
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName) {}
-    }
-
-    doBindService(context, mConnection, serverinit.serviceIntent)
-
-    DisposableEffect(key1 = true) {
-        context.registerReceiver(statusReceiver, intentFilter, RECEIVER_NOT_EXPORTED)
-
-        onDispose {
-            context.unregisterReceiver(statusReceiver)
-        }
-    }
+    val showProcessingBar by viewModel.showProcessingBar.collectAsState()
+    val isStartButtonEnabled by viewModel.isStartButtonEnabled.collectAsState()
+    val isStopButtonEnabled by viewModel.isStopButtonEnabled.collectAsState()
 
     MapleServerTheme {
         ModalNavigationDrawer(
@@ -129,7 +80,7 @@ fun MainCompose(context: Context, navController: NavHostController, serverinit: 
                             startMapleServer = {
                                 startMapleServer(
                                     context,
-                                    serverinit.serviceIntent
+                                    serverParams.serviceIntent
                                 )
                             }
                         )
@@ -139,13 +90,13 @@ fun MainCompose(context: Context, navController: NavHostController, serverinit: 
                             stopMapleServer = {
                                 stopMapleServer(
                                     context,
-                                    serverinit.serviceIntent,
-                                    mConnection
+                                    serverParams.serviceIntent,
+                                    serverParams.mConnection
                                 )
                             }
                         )
                     }
-                    DisplayCurrentIP(serverinit)
+                    DisplayCurrentIP(serverParams)
                     LogWindow(logView)
 
                 }
@@ -181,8 +132,8 @@ fun LogWindow(logView: LogViewModel) {
 }
 
 @Composable
-fun DisplayProcessingBar(showProcessingBar: MutableState<Boolean>) {
-    if (showProcessingBar.value) {
+fun DisplayProcessingBar(showProcessingBar: Boolean) {
+    if (showProcessingBar) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -200,7 +151,7 @@ fun DisplayProcessingBar(showProcessingBar: MutableState<Boolean>) {
 }
 
 @Composable
-fun DisplayCurrentIP(serverinit: ServerInit) {
+fun DisplayCurrentIP(serverinit: ServerParameter) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -233,14 +184,6 @@ fun DrawerToggleButton(drawerState: DrawerState, scope: CoroutineScope) {
         }) {
         Icon(imageVector = Icons.Default.Menu, contentDescription = "Drawer Toggle Button")
     }
-}
-
-fun doBindService(
-    context: Context,
-    connection: ServiceConnection,
-    serviceIntent: Intent
-) {
-    context.bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE)
 }
 
 fun startMapleServer(context: Context, serviceIntent : Intent) {

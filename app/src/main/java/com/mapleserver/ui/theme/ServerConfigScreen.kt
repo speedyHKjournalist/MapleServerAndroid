@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,14 +21,14 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.mapleserver.ServerInit
+import com.mapleserver.ServerParameter
 import com.mapleserver.ServerConfig
 import com.mapleserver.WorldProperties
 import java.io.File
 
 
 @Composable
-fun ServerConfigScreen(context: Context, navController: NavHostController, serverinit: ServerInit) {
+fun ServerConfigScreen(context: Context, navController: NavHostController, serverinit: ServerParameter) {
     Scaffold(
         topBar = {
             IconButton(
