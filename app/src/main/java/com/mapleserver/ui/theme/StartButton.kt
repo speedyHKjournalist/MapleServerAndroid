@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 fun StartButton(
     text: String,
     startMapleServer: () -> Unit,
-    isButtonEnabled: MutableState<Boolean>
+    isButtonEnabled: Boolean
 ) {
     Button(
         onClick = {
@@ -21,7 +21,7 @@ fun StartButton(
         colors = ButtonDefaults.buttonColors(
             contentColor = Color.White
         ),
-        enabled = isButtonEnabled.value,
+        enabled = isButtonEnabled,
         modifier = Modifier.padding(16.dp)
     ) {
         Text(text = text)
