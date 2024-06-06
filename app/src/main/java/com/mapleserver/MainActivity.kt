@@ -19,6 +19,7 @@ import java.io.FileOutputStream
 class MainActivity : ComponentActivity() {
     private lateinit var serverParameter: ServerParameter
     private val mainViewModel: MainViewModel by viewModels()
+    private val importViewModel: ImportViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val preferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
@@ -45,10 +46,10 @@ class MainActivity : ComponentActivity() {
                         ServerConfigScreen(this@MainActivity, navController, serverParameter)
                     }
                     composable("export_db_screen") {
-                        ExportDBCompose(this@MainActivity, navController)
+                        ExportCompose(this@MainActivity, navController)
                     }
                     composable("import_db_screen") {
-                        ImportDBCompose(this@MainActivity, navController)
+                        ImportCompose(this@MainActivity, navController, importViewModel, serverParameter)
                     }
                 }
             }
@@ -62,7 +63,7 @@ class MainActivity : ComponentActivity() {
 
     private fun copyAssetFileApplication(assetFileName: String) {
         try {
-            val appDir: File = applicationContext.dataDir
+            val appDir: File = applicationContext.filesDir
             val yamlConfig = File(appDir, "config.yaml")
             val inputStream = assets.open(assetFileName)
             val outputStream = FileOutputStream(yamlConfig)

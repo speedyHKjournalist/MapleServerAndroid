@@ -46,17 +46,17 @@ fun MainCompose(context: Context, navController: NavHostController, serverParams
                     Text("OpenMapleServer", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                     Divider()
                     NavigationDrawerItem(
-                        label = { Text(text = "ServerConfig") },
+                        label = { Text(text = "Config") },
                         selected = false,
                         onClick = { navController.navigate("config_editor_screen") }
                     )
                     NavigationDrawerItem(
-                        label = { Text(text = "ImportDatabase") },
+                        label = { Text(text = "Import") },
                         selected = false,
                         onClick = { navController.navigate("import_db_screen") }
                     )
                     NavigationDrawerItem(
-                        label = { Text(text = "ExportDatabase") },
+                        label = { Text(text = "Export") },
                         selected = false,
                         onClick = { navController.navigate("export_db_screen") }
                     )

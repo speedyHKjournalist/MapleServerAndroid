@@ -15,7 +15,7 @@ public class YamlConfig {
 
     public static YamlConfig loadConfig(Context context) {
         try {
-            File configFile = new File(context.getDataDir(), "config.yaml");
+            File configFile = new File(context.getFilesDir(), "config.yaml");
             FileInputStream inputStream = new FileInputStream(configFile);
             YamlReader reader = new YamlReader(new InputStreamReader(inputStream))/*, CharsetConstants.CHARSET))*/;
             YamlConfig config = reader.read(YamlConfig.class);

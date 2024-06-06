@@ -6,7 +6,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,42 +21,60 @@ import java.io.FileOutputStream
 import java.io.IOException
 
 @Composable
-fun ExportDBCompose(context: Context, navController: NavHostController) {
-    var exportFileName by remember { mutableStateOf(context.getDatabasePath("cosmic")) }
+fun ExportCompose(context: Context, navController: NavHostController) {
+    val dbFile = context.getDatabasePath("cosmic")
+    val configYamlFile = File(context.filesDir, "config.yaml")
 
     Column(
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
     ) {
-        IconButton(
-            onClick = {
-                navController.navigate("main_screen")
-            }
-        ) {
-            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
+        Row {
+            BackButton(navController)
         }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Button(
+                modifier = Modifier.weight(1f),
                 onClick = {
-                    exportFileToDownload(context, exportFileName)
+                    exportFileToDownload(context, dbFile)
                     navController.navigate("main_screen")
-                },
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Export Database")
                 }
+            ) {
+                Text("Export Database")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    exportFileToDownload(context, configYamlFile)
+                    navController.navigate("main_screen")
+                }
+            ) {
+                Text("Export Config")
             }
         }
     }
 }
 
+@Composable
+fun BackButton(navController: NavHostController) {
+    IconButton(
+        onClick = {
+            navController.navigate("main_screen")
+        }
+    ) {
+        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
+    }
+}
+
 fun exportFileToDownload(context: Context, exportFileName: File) {
-    if(exportFileName.exists()) {
+    if (exportFileName.exists()) {
         val sourcePath = exportFileName.absolutePath
         val destinationDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val destinationPath = File(destinationDirectory, exportFileName.name)
@@ -75,15 +92,16 @@ fun exportFileToDownload(context: Context, exportFileName: File) {
             inputStream.close()
             outputStream.close()
 
-            showToast(context, "Database cosmic has been exported successfully to /sdcard/Download !")
+            showToast(context, "File has been exported successfully to /sdcard/Download !")
         } catch (e: IOException) {
-            showToast(context, "Database export failed !")
+            showToast(context, "File export failed !")
             e.printStackTrace()
         }
     } else {
-        showToast(context, "Database cosmic not found in app !")
+        showToast(context, "File cosmic not found in app folder!")
     }
 }
+
 fun showToast(context: Context, message: String) {
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
