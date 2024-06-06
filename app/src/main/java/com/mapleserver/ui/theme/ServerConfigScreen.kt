@@ -243,5 +243,5 @@ fun onSave(context: Context, modifiedServerConfig: ServerConfig) {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.propertyNamingStrategy = PropertyNamingStrategies.UPPER_SNAKE_CASE
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    mapper.writeValue(File(context.dataDir, "config.yaml"), modifiedServerConfig)
+    mapper.writeValue(File(context.filesDir, "config.yaml"), modifiedServerConfig)
 }
