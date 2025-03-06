@@ -4,7 +4,7 @@ import client.Character;
 import database.DaoException;
 import database.note.NoteDao;
 import model.Note;
-import net.packet.out.ShowNotesPacket;
+import net.net.out.ShowNotesPacket;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package net.packet.out;
+package net.net.out;
 
 import net.opcodes.SendOpcode;
 import net.packet.ByteBufOutPacket;

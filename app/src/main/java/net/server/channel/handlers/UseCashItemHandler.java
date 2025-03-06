@@ -38,7 +38,7 @@ import constants.id.MapId;
 import constants.inventory.ItemConstants;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
-import net.packet.out.SendNoteSuccessPacket;
+import net.net.out.SendNoteSuccessPacket;
 import net.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

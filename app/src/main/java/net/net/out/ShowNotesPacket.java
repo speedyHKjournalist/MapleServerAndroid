@@ -1,4 +1,4 @@
-package net.packet.out;
+package net.net.out;
 
 import model.Note;
 import net.opcodes.SendOpcode;
