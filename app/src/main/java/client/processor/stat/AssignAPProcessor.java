@@ -543,14 +543,14 @@ public class AssignAPProcessor {
                         return false;
                     }
 
-                    if (player.getMaxHp() < getMinHp(player.getJob(), player.getLevel())) {
+                    int hplose = -takeHp(player.getJob());
+                    if (player.getMaxHp() + hplose < getMinHp(player.getJob(), player.getLevel())) {
                         player.message("You don't have the minimum HP pool required to swap.");
                         c.sendPacket(PacketCreator.enableActions());
                         return false;
                     }
 
                     int curHp = player.getHp();
-                    int hplose = -takeHp(player.getJob());
                     player.assignHP(hplose, -1);
                     if (!YamlConfig.config.server.USE_FIXED_RATIO_HPMP_UPDATE) {
                         player.updateHp(Math.max(1, curHp + hplose));
@@ -572,14 +572,14 @@ public class AssignAPProcessor {
                         return false;
                     }
 
-                    if (player.getMaxMp() < getMinMp(player.getJob(), player.getLevel())) {
+                    int mplose = -takeMp(player.getJob());
+                    if (player.getMaxMp() + mplose < getMinMp(player.getJob(), player.getLevel())) {
                         player.message("You don't have the minimum MP pool required to swap.");
                         c.sendPacket(PacketCreator.enableActions());
                         return false;
                     }
 
                     int curMp = player.getMp();
-                    int mplose = -takeMp(player.getJob());
                     player.assignMP(mplose, -1);
                     if (!YamlConfig.config.server.USE_FIXED_RATIO_HPMP_UPDATE) {
                         player.updateMp(Math.max(0, curMp + mplose));
