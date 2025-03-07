@@ -44,6 +44,7 @@ import tools.Pair;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -230,7 +231,6 @@ public class CashShop {
 
     public static class CashItemFactory {
         private static volatile Map<Integer, CashItem> items = new HashMap<>();
-        private static volatile List<Integer> randomitemsns = new ArrayList<>();
         private static volatile Map<Integer, List<Integer>> packages = new HashMap<>();
         private static volatile List<SpecialCashItem> specialcashitems = new ArrayList<>();
 
@@ -238,7 +238,6 @@ public class CashShop {
             DataProvider etc = DataProviderFactory.getDataProvider(WZFiles.ETC);
 
             Map<Integer, CashItem> loadedItems = new HashMap<>();
-            List<Integer> onSaleItems = new ArrayList<>();
             for (Data item : etc.getData("Commodity.img").getChildren()) {
                 int sn = DataTool.getIntConvert("SN", item);
                 int itemId = DataTool.getIntConvert("ItemId", item);
@@ -247,13 +246,8 @@ public class CashShop {
                 short count = (short) DataTool.getIntConvert("Count", item, 1);
                 boolean onSale = DataTool.getIntConvert("OnSale", item, 0) == 1;
                 loadedItems.put(sn, new CashItem(sn, itemId, price, period, count, onSale));
-
-                if (onSale) {
-                    onSaleItems.add(sn);
-                }
             }
             CashItemFactory.items = loadedItems;
-            CashItemFactory.randomitemsns = onSaleItems;
 
             Map<Integer, List<Integer>> loadedPackages = new HashMap<>();
             for (Data cashPackage : etc.getData("CashPackage.img").getChildren()) {
@@ -293,13 +287,20 @@ public class CashShop {
             CashItemFactory.specialcashitems = loadedSpecialItems;
         }
 
-        public static CashItem getRandomCashItem() {
-            if (randomitemsns.isEmpty()) {
-                return null;
+        public static Optional<CashItem> getRandomCashItem() {
+            if (items.isEmpty()) {
+                return Optional.empty();
             }
 
-            int rnd = (int) (Math.random() * randomitemsns.size());
-            return items.get(randomitemsns.get(rnd));
+            List<CashItem> itemPool = items.values().stream()
+                    .filter(CashItem::isOnSale)
+                    .filter(cashItem -> !ItemId.isCashPackage(cashItem.itemId))
+                    .collect(Collectors.toList());
+            return Optional.of(getRandomItem(itemPool));
+        }
+
+        private static CashItem getRandomItem(List<CashItem> items) {
+            return items.get(new Random().nextInt(items.size()));
         }
 
         public static CashItem getItem(int sn) {
@@ -322,25 +323,6 @@ public class CashShop {
 
         public static List<SpecialCashItem> getSpecialCashItems() {
             return specialcashitems;
-        }
-
-        public static void reloadSpecialCashItems() {//Yay?
-            List<SpecialCashItem> loadedSpecialItems = new ArrayList<>();
-            String[] columns = { "sn", "modifier", "info" };
-            SQLiteDatabase con = DatabaseConnection.getConnection();
-            try (Cursor cursor = con.query("specialcashitems", columns, null, null, null, null, null)) {
-                while (cursor.moveToNext()) {
-                    int snIdx = cursor.getColumnIndex("sn");
-                    int modifierIdx = cursor.getColumnIndex("modifier");
-                    int infoIdx = cursor.getColumnIndex("info");
-                    if (snIdx != -1 && modifierIdx != -1 && infoIdx != -1) {
-                        loadedSpecialItems.add(new SpecialCashItem(cursor.getInt(snIdx), cursor.getInt(modifierIdx), (byte) cursor.getInt(infoIdx)));
-                    }
-                }
-            } catch (SQLiteException ex) {
-                log.error("reloadSpecialCashItems error", ex);
-            }
-            CashItemFactory.specialcashitems = loadedSpecialItems;
         }
     }
 
@@ -570,8 +552,8 @@ public class CashShop {
                 return Optional.empty();
             }
 
-            CashItem cashItemReward = CashItemFactory.getRandomCashItem();
-            if (cashItemReward == null) {
+            Optional<CashItem> cashItemReward = CashItemFactory.getRandomCashItem();
+            if (!cashItemReward.isPresent()) {
                 return Optional.empty();
             }
 
@@ -581,7 +563,7 @@ public class CashShop {
                 removeFromInventory(cashShopSurprise);
             }
 
-            Item itemReward = cashItemReward.toItem();
+            Item itemReward = cashItemReward.get().toItem();
             addToInventory(itemReward);
 
             return Optional.of(new CashShopSurpriseResult(cashShopSurprise, itemReward));
