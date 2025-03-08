@@ -232,9 +232,6 @@ data class ServerConfiguration(
     @JsonProperty("USE_SPAWN_CLEAN_MDOOR")
     var USE_SPAWN_CLEAN_MDOOR: Boolean,
 
-    @JsonProperty("USE_SPAWN_LOOT_ON_ANIMATION")
-    var USE_SPAWN_LOOT_ON_ANIMATION: Boolean,
-
     @JsonProperty("USE_SPAWN_RELEVANT_LOOT")
     var USE_SPAWN_RELEVANT_LOOT: Boolean,
 

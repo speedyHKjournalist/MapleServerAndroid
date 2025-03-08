@@ -21,6 +21,7 @@
 */
 package scripting.reactor;
 
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.inventory.Equip;
@@ -33,6 +34,7 @@ import server.TimerManager;
 import server.life.LifeFactory;
 import server.life.Monster;
 import server.maps.MapMonitor;
+import server.maps.MapleMap;
 import server.maps.Reactor;
 import server.maps.ReactorDropEntry;
 import server.partyquest.CarnivalFactory;
@@ -42,8 +44,6 @@ import javax.script.Invocable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
-import android.graphics.Point;
 
 /**
  * @author Lerk
@@ -52,7 +52,6 @@ import android.graphics.Point;
 public class ReactorActionManager extends AbstractPlayerInteraction {
     private final Reactor reactor;
     private final Invocable iv;
-    private ScheduledFuture<?> sprayTask = null;
 
     public ReactorActionManager(Client c, Reactor reactor, Invocable iv) {
         super(c);
@@ -172,7 +171,8 @@ public class ReactorActionManager extends AbstractPlayerInteraction {
                     int range = maxMeso - minMeso;
                     int displayDrop = (int) (Math.random() * range) + minMeso;
                     int mesoDrop = (displayDrop * c.getWorldServer().getMesoRate());
-                    reactor.getMap().spawnMesoDrop(mesoDrop, reactor.getMap().calcDropPos(dropPos, reactor.getPosition()), reactor, c.getPlayer(), false, (byte) 2);
+                    reactor.getMap().spawnMesoDrop(mesoDrop, reactor.getMap().calcDropPos(dropPos,
+                            reactor.getPosition()), reactor, c.getPlayer(), false, (byte) 2, (short) 0);
                 } else {
                     Item drop;
 
@@ -182,7 +182,7 @@ public class ReactorActionManager extends AbstractPlayerInteraction {
                         drop = ii.randomizeStats((Equip) ii.getEquipById(d.itemId));
                     }
 
-                    reactor.getMap().dropFromReactor(getPlayer(), reactor, drop, dropPos, (short) d.questid);
+                    reactor.getMap().dropFromReactor(getPlayer(), reactor, drop, dropPos, (short) d.questid, (short) 0);
                 }
             }
         } else {
@@ -191,21 +191,17 @@ public class ReactorActionManager extends AbstractPlayerInteraction {
             final int worldMesoRate = c.getWorldServer().getMesoRate();
 
             dropPos.x -= (12 * items.size());
-
-            sprayTask = TimerManager.getInstance().register(() -> {
-                if (dropItems.isEmpty()) {
-                    sprayTask.cancel(false);
-                    return;
-                }
-
-                ReactorDropEntry d = dropItems.remove(0);
+            short delay = 0;
+            for (ReactorDropEntry d : items) {
                 if (d.itemId == 0) {
                     int range = maxMeso - minMeso;
                     int displayDrop = (int) (Math.random() * range) + minMeso;
-                    int mesoDrop = (displayDrop * worldMesoRate);
-                    r.getMap().spawnMesoDrop(mesoDrop, r.getMap().calcDropPos(dropPos, r.getPosition()), r, chr, false, (byte) 2);
+                    int mesoDrop = displayDrop * worldMesoRate;
+                    MapleMap map = reactor.getMap();
+                    map.spawnMesoDrop(mesoDrop, map.calcDropPos(dropPos, reactor.getPosition()), reactor, chr,
+                            false, (byte) 2, delay);
                 } else {
-                    Item drop;
+                    final Item drop;
 
                     if (ItemConstants.getInventoryType(d.itemId) != InventoryType.EQUIP) {
                         drop = new Item(d.itemId, (short) 0, (short) 1);
@@ -214,11 +210,12 @@ public class ReactorActionManager extends AbstractPlayerInteraction {
                         drop = ii.randomizeStats((Equip) ii.getEquipById(d.itemId));
                     }
 
-                    r.getMap().dropFromReactor(getPlayer(), r, drop, dropPos, (short) d.questid);
+                    reactor.getMap().dropFromReactor(getPlayer(), reactor, drop, dropPos, (short) d.questid, delay);
                 }
 
                 dropPos.x += 25;
-            }, 200);
+                delay += 200;
+            }
         }
     }
 

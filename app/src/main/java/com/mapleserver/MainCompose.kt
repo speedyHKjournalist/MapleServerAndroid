@@ -44,7 +44,7 @@ fun MainCompose(context: Context, navController: NavHostController, serverParams
             drawerContent = {
                 ModalDrawerSheet(modifier = Modifier.width(200.dp)) {
                     Text("OpenMapleServer", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
-                    Divider()
+                    HorizontalDivider()
                     NavigationDrawerItem(
                         label = { Text(text = "Config") },
                         selected = false,
