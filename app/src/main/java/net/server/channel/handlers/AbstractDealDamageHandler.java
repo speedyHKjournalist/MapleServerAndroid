@@ -56,6 +56,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(AbstractDealDamageHandler.class);
 
+    private static final int EXPLODED_MESO_SPREAD_DELAY = 100;
+    private static final int EXPLODED_MESO_MAX_DELAY = 1000;
+
     public static class AttackInfo {
 
         public int numAttacked, numDamage, numAttackedAndDamage, skill, skilllevel, stance, direction, rangedirection, charge, display;
@@ -881,7 +884,7 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
     }
 
     private void removeExplodedMesos(MapleMap map, AttackInfo attack) {
-        short delay = attack.attackDelay;
+        int index = 0;
         for (Integer mesoId : attack.explodedMesos) {
             MapObject mapobject = map.getMapObject(mesoId);
             if (!(mapobject instanceof MapItem mapItem)) {
@@ -896,11 +899,12 @@ public abstract class AbstractDealDamageHandler extends AbstractPacketHandler {
                 if (mapItem.isPickedUp()) {
                     return;
                 }
-                map.pickItemDrop(PacketCreator.removeExplodedMesoFromMap(mapItem.getObjectId(), delay), mapItem);
+                int delay = attack.attackDelay + (index++ % 5) * EXPLODED_MESO_SPREAD_DELAY;
+                delay = Math.min(delay, EXPLODED_MESO_MAX_DELAY);
+                map.pickItemDrop(PacketCreator.removeExplodedMesoFromMap(mapItem.getObjectId(), (short) delay), mapItem);
             } finally {
                 mapItem.unlockItem();
             }
-            delay += 100;
         }
     }
 }
