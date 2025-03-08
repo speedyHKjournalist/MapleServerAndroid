@@ -38,6 +38,7 @@ import tools.Pair;
 import tools.Randomizer;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MonsterInformationProvider {
     private static final Logger log = LoggerFactory.getLogger(MonsterInformationProvider.class);
@@ -51,7 +52,7 @@ public class MonsterInformationProvider {
 
     private final Map<Integer, List<MonsterDropEntry>> drops = new HashMap<>();
     private final List<MonsterGlobalDropEntry> globaldrops = new ArrayList<>();
-    private final Map<Integer, List<MonsterGlobalDropEntry>> continentdrops = new HashMap<>();
+    private final Map<Integer, List<MonsterGlobalDropEntry>> continentDrops = new HashMap<>();
 
     private final Map<Integer, List<Integer>> dropsChancePool = new HashMap<>();    // thanks to ronan
     private final Set<Integer> hasNoMultiEquipDrops = new HashSet<>();
@@ -69,23 +70,15 @@ public class MonsterInformationProvider {
         retrieveGlobal();
     }
 
-    public final List<MonsterGlobalDropEntry> getRelevantGlobalDrops(int mapid) {
-        int continentid = mapid / 100000000;
+    public final List<MonsterGlobalDropEntry> getRelevantGlobalDrops(int mapId) {
+        final int continentId = mapId / 100000000;
+        return continentDrops.computeIfAbsent(continentId, this::loadContinentDrops);
+    }
 
-        List<MonsterGlobalDropEntry> contiItems = continentdrops.get(continentid);
-        if (contiItems == null) {   // continent separated global drops found thanks to marcuswoon
-            contiItems = new ArrayList<>();
-
-            for (MonsterGlobalDropEntry e : globaldrops) {
-                if (e.continentid < 0 || e.continentid == continentid) {
-                    contiItems.add(e);
-                }
-            }
-
-            continentdrops.put(continentid, contiItems);
-        }
-
-        return contiItems;
+    private List<MonsterGlobalDropEntry> loadContinentDrops(int continentId) {
+        return globaldrops.stream()
+                .filter(dropEntry -> dropEntry.continentid < 0 || dropEntry.continentid == continentId)
+                .collect(Collectors.toList());
     }
 
     private void retrieveGlobal() {
@@ -302,7 +295,7 @@ public class MonsterInformationProvider {
         extraMultiEquipDrops.clear();
         dropsChancePool.clear();
         globaldrops.clear();
-        continentdrops.clear();
+        continentDrops.clear();
         retrieveGlobal();
     }
 }
