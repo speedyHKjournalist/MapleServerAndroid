@@ -81,7 +81,6 @@ import server.partyquest.MonsterCarnivalParty;
 import server.partyquest.PartyQuest;
 import server.quest.Quest;
 import tools.*;
-import tools.exceptions.NotEnabledException;
 import tools.packets.WeddingPackets;
 
 import java.lang.ref.WeakReference;
@@ -11295,75 +11294,6 @@ public class Character extends AbstractCharacterObject {
         } catch (SQLiteException e) {
             log.error("setRewardPoints error", e);
         }
-    }
-
-    public void setReborns(int value) {
-        if (!YamlConfig.config.server.USE_REBIRTH_SYSTEM) {
-            yellowMessage("Rebirth system is not enabled!");
-            throw new NotEnabledException();
-        }
-
-        ContentValues values = new ContentValues();
-        values.put("reborns", value);
-        String whereClause = "id = ?";
-        String[] whereArgs = { String.valueOf(id) };
-        SQLiteDatabase con = DatabaseConnection.getConnection();
-        try {
-            con.update("characters", values, whereClause, whereArgs);
-        } catch (SQLiteException e) {
-            log.error("setReborns error", e);
-        }
-    }
-
-    public void addReborns() {
-        setReborns(getReborns() + 1);
-    }
-
-    public int getReborns() {
-        if (!YamlConfig.config.server.USE_REBIRTH_SYSTEM) {
-            yellowMessage("Rebirth system is not enabled!");
-            throw new NotEnabledException();
-        }
-        String[] columns = { "reborns" };
-        String selection = "id = ?";
-        String[] selectionArgs = { String.valueOf(id) };
-        SQLiteDatabase con = DatabaseConnection.getConnection();
-        try (Cursor cursor = con.query("characters", columns, selection, selectionArgs,
-                null, null, null)) {
-            if (cursor.moveToFirst()) {
-                int columnIndex = cursor.getColumnIndex("reborns");
-                if (columnIndex != -1) {
-                    return cursor.getInt(columnIndex);
-                }
-            }
-        } catch (SQLiteException e) {
-            log.error("getReborns error", e);
-        }
-        throw new RuntimeException();
-    }
-
-    public void executeReborn() {
-        // default to beginner: job id = 0
-        // this prevents a breaking change
-        executeRebornAs(Job.BEGINNER);
-    }
-
-    public void executeRebornAsId(int jobId) {
-        executeRebornAs(Job.getById(jobId));
-    }
-
-    public void executeRebornAs(Job job) {
-        if (!YamlConfig.config.server.USE_REBIRTH_SYSTEM) {
-            yellowMessage("Rebirth system is not enabled!");
-            throw new NotEnabledException();
-        }
-        if (getLevel() != getMaxClassLevel()) {
-            return;
-        }
-        addReborns();
-        changeJob(job);
-        setLevel(0);
-        levelUp(true);
     }
 
     //EVENTS

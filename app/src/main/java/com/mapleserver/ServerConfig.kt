@@ -262,9 +262,6 @@ data class ServerConfiguration(
     @JsonProperty("USE_ENABLE_CHAT_LOG")
     var USE_ENABLE_CHAT_LOG: Boolean,
 
-    @JsonProperty("USE_REBIRTH_SYSTEM")
-    var USE_REBIRTH_SYSTEM: Boolean,
-
     @JsonProperty("USE_MAP_OWNERSHIP_SYSTEM")
     var USE_MAP_OWNERSHIP_SYSTEM: Boolean,
 
@@ -363,8 +360,6 @@ data class ServerConfiguration(
     var WORLD_TRANSFER_COOLDOWN: Long,
     @JsonProperty("INSTANT_NAME_CHANGE")
     var INSTANT_NAME_CHANGE: Boolean,
-    @JsonProperty("REBIRTH_NPC_ID")
-    var REBIRTH_NPC_ID: Int,
 
     // Dangling Items/Locks Configuration
     @JsonProperty("ITEM_EXPIRE_TIME")
