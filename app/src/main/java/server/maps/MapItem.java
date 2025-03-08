@@ -20,6 +20,7 @@
 */
 package server.maps;
 
+import android.graphics.Point;
 import client.Character;
 import client.Client;
 import client.inventory.Item;
@@ -29,7 +30,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import android.graphics.Point;
 
 public class MapItem extends AbstractMapObject {
     protected Client ownerClient;
@@ -208,7 +208,8 @@ public class MapItem extends AbstractMapObject {
         if (chr.needQuestItem(questid, getItemId())) {
             this.lockItem();
             try {
-                client.sendPacket(PacketCreator.dropItemFromMapObject(chr, this, null, getPosition(), (byte) 2));
+                client.sendPacket(PacketCreator.dropItemFromMapObject(chr, this, null, getPosition(),
+                        (byte) 2, (short) 0));
             } finally {
                 this.unlockItem();
             }

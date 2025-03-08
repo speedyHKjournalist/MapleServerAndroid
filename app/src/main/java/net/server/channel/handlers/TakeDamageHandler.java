@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package net.server.channel.handlers;
 
+import android.graphics.Point;
 import client.Character;
 import client.*;
 import client.inventory.Inventory;
@@ -49,7 +50,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import android.graphics.Point;
 
 public final class TakeDamageHandler extends AbstractPacketHandler {
     private static final Logger log = LoggerFactory.getLogger(TakeDamageHandler.class);
@@ -281,7 +281,7 @@ public final class TakeDamageHandler extends AbstractPacketHandler {
         }
 
         for (Character player : banishPlayers) {  // chill, if this list ever gets non-empty an attacker does exist, trust me :)
-            player.changeMapBanish(attacker.getBanish().getMap(), attacker.getBanish().getPortal(), attacker.getBanish().getMsg());
+            player.changeMapBanish(attacker.getBanish());
         }
     }
 }

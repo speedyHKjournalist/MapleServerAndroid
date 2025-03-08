@@ -26,7 +26,7 @@ package client.command.commands.gm3;
 import client.Character;
 import client.Client;
 import client.command.Command;
-import net.packet.logging.MonitoredChrLogger;
+import net.net.logging.MonitoredChrLogger;
 import net.server.Server;
 import tools.PacketCreator;
 

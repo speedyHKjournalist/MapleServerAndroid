@@ -21,6 +21,7 @@
  */
 package server.life;
 
+import android.graphics.Point;
 import client.Character;
 import client.*;
 import client.status.MonsterStatus;
@@ -43,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import scripting.event.EventInstanceManager;
 import server.StatEffect;
 import server.TimerManager;
-import server.life.LifeFactory.BanishInfo;
 import server.loot.LootManager;
 import server.maps.AbstractAnimatedMapObject;
 import server.maps.MapObjectType;
@@ -62,7 +62,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import android.graphics.Point;
 
 public class Monster extends AbstractLoadedLife {
     private static final Logger log = LoggerFactory.getLogger(Monster.class);
@@ -804,12 +803,12 @@ public class Monster extends AbstractLoadedLife {
                                 }
 
                                 if (htKilled) {
-                                    reviveMap.killMonster(ht, killer, true);
+                                    reviveMap.killMonster(ht, killer, true, (short) 0);
                                 }
                             }
 
                             for (int i = MobId.DEAD_HORNTAIL_MAX; i >= MobId.DEAD_HORNTAIL_MIN; i--) {
-                                reviveMap.killMonster(reviveMap.getMonsterById(i), killer, true);
+                                reviveMap.killMonster(reviveMap.getMonsterById(i), killer, true, (short) 0);
                             }
                         } else if (controller != null) {
                             mob.aggroSwitchController(controller, aggro);

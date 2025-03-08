@@ -1,4 +1,4 @@
-package net.packet.logging;
+package net.net.logging;
 
 import constants.net.OpcodeConstants;
 import io.netty.channel.ChannelHandler.Sharable;

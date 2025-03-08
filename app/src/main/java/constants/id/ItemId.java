@@ -165,7 +165,6 @@ public class ItemId {
     public static final int EYEDROP = 2050001;
     public static final int TONIC = 2050002;
     public static final int HOLY_WATER = 2050003;
-    public static final int ANTI_BANISH_SCROLL = 2030100;
     private static final int DOJO_PARTY_ALL_CURE = 2022433;
     private static final int CARNIVAL_PARTY_ALL_CURE = 2022163;
     public static final int WHITE_ELIXIR = 2022544;
@@ -310,6 +309,10 @@ public class ItemId {
 
     public static boolean isNxCard(int itemId) {
         return itemId == NX_CARD_100 || itemId == NX_CARD_250;
+    }
+
+    public static boolean isCashPackage(int itemId) {
+        return itemId / 10000 == 910;
     }
 
     // Face expression

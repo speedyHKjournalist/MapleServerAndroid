@@ -39,6 +39,7 @@ import net.server.Server;
 import net.server.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.CashShop;
 import server.ItemInformationProvider;
 import server.MTSItemInfo;
 import tools.DatabaseConnection;
@@ -419,7 +420,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                     if (cursor.moveToFirst()) {
                         int priceIdx = cursor.getColumnIndex("price");
                         int price = cursor.getInt(priceIdx) + 100 + (int) (cursor.getInt(priceIdx) * 0.1); // taxes
-                        if (c.getPlayer().getCashShop().getCash(4) >= price) { // FIX
+                        if (c.getPlayer().getCashShop().getCash(CashShop.NX_PREPAID) >= price) { // FIX
                             boolean alwaysnull = true;
                             int sellerIdx = cursor.getColumnIndex("seller");
                             for (Channel cserv : Server.getInstance().getAllChannels()) {
@@ -470,11 +471,11 @@ public final class MTSHandler extends AbstractPacketHandler {
                         int sellerIdx = cursor.getColumnIndex("seller");
 
                         int price = cursor.getInt(priceIdx) + 100 + (int) (cursor.getInt(priceIdx) * 0.1);
-                        if (c.getPlayer().getCashShop().getCash(4) >= price) {
+                        if (c.getPlayer().getCashShop().getCash(CashShop.NX_PREPAID) >= price) {
                             for (Channel cserv : Server.getInstance().getAllChannels()) {
                                 Character victim = cserv.getPlayerStorage().getCharacterById(cursor.getInt(sellerIdx));
                                 if (victim != null) {
-                                    victim.getCashShop().gainCash(4, cursor.getInt(priceIdx));
+                                    victim.getCashShop().gainCash(CashShop.NX_PREPAID, cursor.getInt(priceIdx));
                                 } else {
                                     try (Cursor accountCursor = con.rawQuery("SELECT accountid FROM characters WHERE id = ?",
                                             new String[]{ String.valueOf(cursor.getInt(sellerIdx)) })) {

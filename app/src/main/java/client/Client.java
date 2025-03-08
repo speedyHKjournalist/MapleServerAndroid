@@ -38,8 +38,8 @@ import net.PacketProcessor;
 import net.netty.InvalidPacketHeaderException;
 import net.packet.InPacket;
 import net.packet.Packet;
-import net.packet.logging.LoggingUtil;
-import net.packet.logging.MonitoredChrLogger;
+import net.net.logging.LoggingUtil;
+import net.net.logging.MonitoredChrLogger;
 import net.server.Server;
 import net.server.channel.Channel;
 import net.server.coordinator.login.LoginBypassCoordinator;
@@ -1516,7 +1516,6 @@ public class Client extends ChannelInboundHandlerAdapter {
 
         player.getInventory(InventoryType.EQUIPPED).checked(false); //test
         player.getMap().removePlayer(player);
-        player.clearBanishPlayerData();
         player.getClient().getChannelServer().removePlayer(player);
 
         player.saveCharToDB();

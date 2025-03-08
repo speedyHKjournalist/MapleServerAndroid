@@ -232,9 +232,6 @@ data class ServerConfiguration(
     @JsonProperty("USE_SPAWN_CLEAN_MDOOR")
     var USE_SPAWN_CLEAN_MDOOR: Boolean,
 
-    @JsonProperty("USE_SPAWN_LOOT_ON_ANIMATION")
-    var USE_SPAWN_LOOT_ON_ANIMATION: Boolean,
-
     @JsonProperty("USE_SPAWN_RELEVANT_LOOT")
     var USE_SPAWN_RELEVANT_LOOT: Boolean,
 
@@ -256,17 +253,11 @@ data class ServerConfiguration(
     @JsonProperty("USE_MULTIPLE_SAME_EQUIP_DROP")
     var USE_MULTIPLE_SAME_EQUIP_DROP: Boolean,
 
-    @JsonProperty("USE_BANISHABLE_TOWN_SCROLL")
-    var USE_BANISHABLE_TOWN_SCROLL: Boolean,
-
     @JsonProperty("USE_ENABLE_FULL_RESPAWN")
     var USE_ENABLE_FULL_RESPAWN: Boolean,
 
     @JsonProperty("USE_ENABLE_CHAT_LOG")
     var USE_ENABLE_CHAT_LOG: Boolean,
-
-    @JsonProperty("USE_REBIRTH_SYSTEM")
-    var USE_REBIRTH_SYSTEM: Boolean,
 
     @JsonProperty("USE_MAP_OWNERSHIP_SYSTEM")
     var USE_MAP_OWNERSHIP_SYSTEM: Boolean,
@@ -366,8 +357,6 @@ data class ServerConfiguration(
     var WORLD_TRANSFER_COOLDOWN: Long,
     @JsonProperty("INSTANT_NAME_CHANGE")
     var INSTANT_NAME_CHANGE: Boolean,
-    @JsonProperty("REBIRTH_NPC_ID")
-    var REBIRTH_NPC_ID: Int,
 
     // Dangling Items/Locks Configuration
     @JsonProperty("ITEM_EXPIRE_TIME")
@@ -487,8 +476,6 @@ data class ServerConfiguration(
     var USE_EQUIPMNT_LVLUP_POWER: Boolean,
     @JsonProperty("USE_EQUIPMNT_LVLUP_CASH")
     var USE_EQUIPMNT_LVLUP_CASH: Boolean,
-    @JsonProperty("USE_SPIKES_AVOID_BANISH")
-    var USE_SPIKES_AVOID_BANISH: Boolean,
     @JsonProperty("MAX_EQUIPMNT_LVLUP_STAT_UP")
     var MAX_EQUIPMNT_LVLUP_STAT_UP: Int,
     @JsonProperty("MAX_EQUIPMNT_STAT")

@@ -1,4 +1,4 @@
-package net.packet.logging;
+package net.net.logging;
 
 import net.packet.Packet;
 

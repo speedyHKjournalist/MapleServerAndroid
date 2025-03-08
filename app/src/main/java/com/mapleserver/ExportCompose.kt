@@ -5,6 +5,7 @@ import android.os.Environment
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -69,7 +70,7 @@ fun BackButton(navController: NavHostController) {
             navController.navigate("main_screen")
         }
     ) {
-        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back Button")
+        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back Button")
     }
 }
 
