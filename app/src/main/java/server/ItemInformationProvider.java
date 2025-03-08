@@ -2074,7 +2074,7 @@ public class ItemInformationProvider {
                     int dropperidIdx = cursor.getColumnIndex("dropperid");
                     if (dropperidIdx != -1) {
                         int dropperid = cursor.getInt(dropperidIdx);
-                        itemid = getCrystalForLevel(LifeFactory.getMonsterLevel(dropperid) - 1);
+                        itemid = getCrystalForLevel(LifeFactory.getMonsterLevel(dropperid));
                     }
                 }
             }
