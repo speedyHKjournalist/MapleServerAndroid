@@ -21,6 +21,8 @@
  */
 package server;
 
+import android.graphics.Point;
+import android.graphics.Rect;
 import client.Character;
 import client.*;
 import client.inventory.Inventory;
@@ -51,8 +53,6 @@ import tools.PacketCreator;
 import tools.Pair;
 
 import java.util.*;
-import android.graphics.Point;
-import android.graphics.Rect;
 
 /**
  * @author Matze
@@ -910,18 +910,8 @@ public class StatEffect {
                 Portal pt;
 
                 if (moveTo == MapId.NONE) {
-                    if (sourceid != ItemId.ANTI_BANISH_SCROLL) {
-                        target = applyto.getMap().getReturnMap();
-                        pt = target.getRandomPlayerSpawnpoint();
-                    } else {
-                        if (!applyto.canRecoverLastBanish()) {
-                            return false;
-                        }
-
-                        Pair<Integer, Integer> lastBanishInfo = applyto.getLastBanishData();
-                        target = applyto.getWarpMap(lastBanishInfo.getLeft());
-                        pt = target.getPortal(lastBanishInfo.getRight());
-                    }
+                    target = applyto.getMap().getReturnMap();
+                    pt = target.getRandomPlayerSpawnpoint();
                 } else {
                     target = applyto.getClient().getWorldServer().getChannel(applyto.getClient().getChannel()).getMapFactory().getMap(moveTo);
                     int targetid = target.getId() / 10000000;

@@ -256,9 +256,6 @@ data class ServerConfiguration(
     @JsonProperty("USE_MULTIPLE_SAME_EQUIP_DROP")
     var USE_MULTIPLE_SAME_EQUIP_DROP: Boolean,
 
-    @JsonProperty("USE_BANISHABLE_TOWN_SCROLL")
-    var USE_BANISHABLE_TOWN_SCROLL: Boolean,
-
     @JsonProperty("USE_ENABLE_FULL_RESPAWN")
     var USE_ENABLE_FULL_RESPAWN: Boolean,
 
@@ -487,8 +484,6 @@ data class ServerConfiguration(
     var USE_EQUIPMNT_LVLUP_POWER: Boolean,
     @JsonProperty("USE_EQUIPMNT_LVLUP_CASH")
     var USE_EQUIPMNT_LVLUP_CASH: Boolean,
-    @JsonProperty("USE_SPIKES_AVOID_BANISH")
-    var USE_SPIKES_AVOID_BANISH: Boolean,
     @JsonProperty("MAX_EQUIPMNT_LVLUP_STAT_UP")
     var MAX_EQUIPMNT_LVLUP_STAT_UP: Int,
     @JsonProperty("MAX_EQUIPMNT_STAT")
